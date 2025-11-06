@@ -34,18 +34,46 @@ const Index = () => {
     setIsIdentifying(true);
     setResult(null);
     
-    // TODO: Implement AI identification
-    // For now, show a placeholder result
-    setTimeout(() => {
-      setResult({
-        name: "Sample Species",
-        scientificName: "Species scientificus",
-        category: "plant",
-        confidence: 95,
-        description: "AI identification will be enabled after setting up Lovable Cloud."
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/identify-species`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ imageData }),
+        }
+      );
+
+      if (!response.ok) {
+        const error = await response.json();
+        toast({
+          title: "Identification Failed",
+          description: error.error || "Failed to identify species. Please try again.",
+          variant: "destructive",
+        });
+        setIsIdentifying(false);
+        return;
+      }
+
+      const data = await response.json();
+      setResult(data);
+      toast({
+        title: "Species Identified!",
+        description: `Found: ${data.name}`,
       });
+    } catch (error) {
+      console.error("Error identifying species:", error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setIsIdentifying(false);
-    }, 1500);
+    }
   };
 
   const getCategoryColor = (category: string) => {
