@@ -57,6 +57,16 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        species: {
+          plant: "hsl(var(--species-plant))",
+          mammal: "hsl(var(--species-mammal))",
+          insect: "hsl(var(--species-insect))",
+          bird: "hsl(var(--species-bird))",
+          reptile: "hsl(var(--species-reptile))",
+          fish: "hsl(var(--species-fish))",
+          amphibian: "hsl(var(--species-amphibian))",
+          other: "hsl(var(--species-other))",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

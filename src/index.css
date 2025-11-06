@@ -53,6 +53,16 @@ All colors MUST be HSL.
     --sidebar-border: 220 13% 91%;
 
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Species category colors */
+    --species-plant: 142 71% 45%;
+    --species-mammal: 25 95% 80%;
+    --species-insect: 30 40% 45%;
+    --species-bird: 200 70% 60%;
+    --species-reptile: 45 60% 50%;
+    --species-fish: 210 80% 55%;
+    --species-amphibian: 160 50% 50%;
+    --species-other: 270 50% 60%;
   }
 
   .dark {
@@ -91,6 +101,16 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    
+    /* Species category colors - dark mode */
+    --species-plant: 142 71% 55%;
+    --species-mammal: 25 85% 70%;
+    --species-insect: 30 50% 55%;
+    --species-bird: 200 70% 65%;
+    --species-reptile: 45 60% 60%;
+    --species-fish: 210 80% 60%;
+    --species-amphibian: 160 50% 60%;
+    --species-other: 270 50% 65%;
   }
 }
 
