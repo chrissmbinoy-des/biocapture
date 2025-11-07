@@ -1,16 +1,46 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Camera, Upload, Loader2 } from "lucide-react";
+import { Camera, Upload, Loader2, LogOut } from "lucide-react";
 import { CameraCapture } from "@/components/CameraCapture";
+import { FindingsHistory } from "@/components/FindingsHistory";
 import { useToast } from "@/hooks/use-toast";
+import { Session } from "@supabase/supabase-js";
 
 const Index = () => {
+  const [session, setSession] = useState<Session | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isIdentifying, setIsIdentifying] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Set up auth listener
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate("/auth");
+  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -35,30 +65,20 @@ const Index = () => {
     setResult(null);
     
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/identify-species`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ imageData }),
-        }
-      );
+      const { data, error } = await supabase.functions.invoke('identify-species', {
+        body: { imageData },
+      });
 
-      if (!response.ok) {
-        const error = await response.json();
+      if (error) {
         toast({
           title: "Identification Failed",
-          description: error.error || "Failed to identify species. Please try again.",
+          description: error.message || "Failed to identify species. Please try again.",
           variant: "destructive",
         });
         setIsIdentifying(false);
         return;
       }
 
-      const data = await response.json();
       setResult(data);
       toast({
         title: "Species Identified!",
@@ -90,15 +110,25 @@ const Index = () => {
     return colorMap[category] || colorMap.other;
   };
 
+  if (!session) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-2xl mx-auto space-y-6">
-          <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight">Species Identifier</h1>
-            <p className="text-muted-foreground">
-              Identify any living being with AI-powered precision
-            </p>
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="flex justify-between items-center">
+            <div className="text-center flex-1 space-y-2">
+              <h1 className="text-4xl font-bold tracking-tight">Species Identifier</h1>
+              <p className="text-muted-foreground">
+                Identify any living being with AI-powered precision
+              </p>
+            </div>
+            <Button variant="outline" onClick={handleSignOut}>
+              <LogOut className="mr-2 h-4 w-4" />
+              Sign Out
+            </Button>
           </div>
 
           {!selectedImage && (
@@ -203,6 +233,8 @@ const Index = () => {
               </Button>
             </Card>
           )}
+
+          <FindingsHistory />
         </div>
       </div>
 

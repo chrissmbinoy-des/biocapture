@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      species_identifications: {
+        Row: {
+          confidence: number | null
+          description: string | null
+          id: string
+          identified_at: string
+          image_url: string | null
+          kingdom: string
+          scientific_name: string | null
+          species_name: string
+          user_id: string
+        }
+        Insert: {
+          confidence?: number | null
+          description?: string | null
+          id?: string
+          identified_at?: string
+          image_url?: string | null
+          kingdom: string
+          scientific_name?: string | null
+          species_name: string
+          user_id: string
+        }
+        Update: {
+          confidence?: number | null
+          description?: string | null
+          id?: string
+          identified_at?: string
+          image_url?: string | null
+          kingdom?: string
+          scientific_name?: string | null
+          species_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
