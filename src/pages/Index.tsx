@@ -3,9 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Camera, Upload, Loader2, LogOut } from "lucide-react";
+import { Camera, Upload, Loader2, LogOut, Archive } from "lucide-react";
 import { CameraCapture } from "@/components/CameraCapture";
-import { FindingsHistory } from "@/components/FindingsHistory";
 import { useToast } from "@/hooks/use-toast";
 import { Session } from "@supabase/supabase-js";
 
@@ -125,10 +124,16 @@ const Index = () => {
                 Identify any living being with AI-powered precision
               </p>
             </div>
-            <Button variant="outline" onClick={handleSignOut}>
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign Out
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate("/collection")}>
+                <Archive className="mr-2 h-4 w-4" />
+                Collection
+              </Button>
+              <Button variant="outline" onClick={handleSignOut}>
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign Out
+              </Button>
+            </div>
           </div>
 
           {!selectedImage && (
@@ -233,8 +238,6 @@ const Index = () => {
               </Button>
             </Card>
           )}
-
-          <FindingsHistory />
         </div>
       </div>
 
