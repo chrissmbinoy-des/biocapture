@@ -194,12 +194,14 @@ export default function Collection() {
               <span>🔍</span>
               <span>All ({stats.total})</span>
             </TabsTrigger>
-            {Object.keys(stats.kingdoms).map((kingdom) => (
-              <TabsTrigger key={kingdom} value={kingdom} className="flex items-center gap-2">
-                <span>{KINGDOM_ICONS[kingdom] || "🔍"}</span>
-                <span>{KINGDOM_LABELS[kingdom]} ({stats.kingdoms[kingdom]})</span>
-              </TabsTrigger>
-            ))}
+            {Object.keys(KINGDOM_LABELS)
+              .filter(k => k !== 'all')
+              .map((kingdom) => (
+                <TabsTrigger key={kingdom} value={kingdom} className="flex items-center gap-2">
+                  <span>{KINGDOM_ICONS[kingdom] || "🔍"}</span>
+                  <span>{KINGDOM_LABELS[kingdom]} ({stats.kingdoms[kingdom] || 0})</span>
+                </TabsTrigger>
+              ))}
           </TabsList>
 
           <TabsContent value={activeTab} className="mt-6">
