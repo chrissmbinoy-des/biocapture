@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2, ChevronDown } from "lucide-react";
+import { Loader2, Trash2, ChevronDown, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "react-router-dom";
 import {
   Accordion,
   AccordionContent,
@@ -298,6 +299,16 @@ export default function Collection() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Floating Camera Button */}
+      <Link to="/">
+        <Button
+          size="lg"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-full h-16 w-16 shadow-lg hover:shadow-xl transition-all z-50"
+        >
+          <Camera className="h-6 w-6" />
+        </Button>
+      </Link>
     </div>
   );
 }
