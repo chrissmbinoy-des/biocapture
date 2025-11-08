@@ -3,9 +3,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 interface Finding {
   id: string;
@@ -206,60 +212,86 @@ export default function Collection() {
                 </p>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <Accordion type="single" collapsible className="w-full space-y-2">
                 {filteredFindings.map((finding) => (
-                  <Card key={finding.id} className="overflow-hidden group hover:shadow-lg transition-shadow">
-                    <div className="relative aspect-square">
-                      {finding.image_url ? (
-                        <img
-                          src={finding.image_url}
-                          alt={finding.species_name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-muted flex items-center justify-center text-6xl">
-                          {KINGDOM_ICONS[finding.kingdom] || "🔍"}
+                  <AccordionItem
+                    key={finding.id}
+                    value={finding.id}
+                    className="border rounded-lg bg-card overflow-hidden"
+                  >
+                    <AccordionTrigger className="hover:no-underline px-4 py-3 hover:bg-muted/50">
+                      <div className="flex items-center gap-4 w-full">
+                        <div className="w-16 h-16 rounded-md overflow-hidden shrink-0">
+                          {finding.image_url ? (
+                            <img
+                              src={finding.image_url}
+                              alt={finding.species_name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-muted flex items-center justify-center text-2xl">
+                              {KINGDOM_ICONS[finding.kingdom] || "🔍"}
+                            </div>
+                          )}
                         </div>
-                      )}
-                      <Button
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => handleDelete(finding.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="p-4">
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="font-bold text-lg line-clamp-1">{finding.species_name}</h3>
-                        {finding.confidence && (
-                          <Badge variant="secondary" className="shrink-0">
-                            {finding.confidence}%
-                          </Badge>
+                        <div className="flex-1 text-left">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-bold text-base">{finding.species_name}</h3>
+                            {finding.confidence && (
+                              <Badge variant="secondary" className="shrink-0">
+                                {finding.confidence}%
+                              </Badge>
+                            )}
+                          </div>
+                          {finding.scientific_name && (
+                            <p className="text-sm italic text-muted-foreground">
+                              {finding.scientific_name}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-xl">{KINGDOM_ICONS[finding.kingdom] || "🔍"}</span>
+                          <span className="text-sm font-medium capitalize">{finding.kingdom}</span>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      <div className="space-y-3 pt-2">
+                        {finding.image_url && (
+                          <div className="relative aspect-video rounded-lg overflow-hidden">
+                            <img
+                              src={finding.image_url}
+                              alt={finding.species_name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
                         )}
+                        {finding.description && (
+                          <div>
+                            <h4 className="font-semibold text-sm mb-1">Description</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {finding.description}
+                            </p>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between pt-2 border-t">
+                          <p className="text-xs text-muted-foreground">
+                            Identified on {new Date(finding.identified_at).toLocaleDateString()}
+                          </p>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDelete(finding.id)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </Button>
+                        </div>
                       </div>
-                      {finding.scientific_name && (
-                        <p className="text-sm italic text-muted-foreground mb-2 line-clamp-1">
-                          {finding.scientific_name}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-lg">{KINGDOM_ICONS[finding.kingdom] || "🔍"}</span>
-                        <span className="text-sm font-medium capitalize">{finding.kingdom}</span>
-                      </div>
-                      {finding.description && (
-                        <p className="text-xs text-muted-foreground line-clamp-2">
-                          {finding.description}
-                        </p>
-                      )}
-                      <p className="text-xs text-muted-foreground mt-2">
-                        {new Date(finding.identified_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </Card>
+                    </AccordionContent>
+                  </AccordionItem>
                 ))}
-              </div>
+              </Accordion>
             )}
           </TabsContent>
         </Tabs>
