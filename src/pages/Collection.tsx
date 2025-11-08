@@ -30,6 +30,22 @@ interface Stats {
   kingdoms: { [key: string]: number };
 }
 
+interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  requirement_type: string;
+  requirement_value: string | null;
+}
+
+interface UserBadge {
+  id: string;
+  badge_id: string;
+  earned_at: string;
+  badges: Badge;
+}
+
 const KINGDOM_LABELS: { [key: string]: string } = {
   plant: "Plants",
   mammal: "Mammals",
@@ -58,10 +74,15 @@ export default function Collection() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [stats, setStats] = useState<Stats>({ total: 0, kingdoms: {} });
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
+  const [singleOccurrences, setSingleOccurrences] = useState<Finding[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchFindings();
+    fetchBadges();
+    fetchUserBadges();
     
     // Subscribe to real-time updates
     const channel = supabase
@@ -75,6 +96,7 @@ export default function Collection() {
         },
         () => {
           fetchFindings();
+          checkAndAwardBadges();
         }
       )
       .subscribe();
@@ -97,14 +119,23 @@ export default function Collection() {
       
       // Calculate stats
       const kingdomCounts: { [key: string]: number } = {};
+      const speciesCounts: { [key: string]: number } = {};
+      
       data?.forEach((finding) => {
         kingdomCounts[finding.kingdom] = (kingdomCounts[finding.kingdom] || 0) + 1;
+        speciesCounts[finding.species_name] = (speciesCounts[finding.species_name] || 0) + 1;
       });
+      
+      // Find single occurrence species
+      const singles = data?.filter(f => speciesCounts[f.species_name] === 1) || [];
+      setSingleOccurrences(singles);
       
       setStats({
         total: data?.length || 0,
         kingdoms: kingdomCounts
       });
+
+      await checkAndAwardBadges();
     } catch (error) {
       console.error("Error fetching findings:", error);
       toast({
@@ -114,6 +145,77 @@ export default function Collection() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchBadges = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("badges")
+        .select("*");
+
+      if (error) throw error;
+      setBadges(data || []);
+    } catch (error) {
+      console.error("Error fetching badges:", error);
+    }
+  };
+
+  const fetchUserBadges = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("user_badges")
+        .select("*, badges(*)")
+        .order("earned_at", { ascending: false });
+
+      if (error) throw error;
+      setUserBadges(data || []);
+    } catch (error) {
+      console.error("Error fetching user badges:", error);
+    }
+  };
+
+  const checkAndAwardBadges = async () => {
+    try {
+      const { data: currentUserBadges } = await supabase
+        .from("user_badges")
+        .select("badge_id");
+
+      const earnedBadgeIds = new Set(currentUserBadges?.map(ub => ub.badge_id) || []);
+
+      for (const badge of badges) {
+        if (earnedBadgeIds.has(badge.id)) continue;
+
+        let shouldAward = false;
+
+        if (badge.requirement_type === 'total_count') {
+          const required = parseInt(badge.requirement_value || '0');
+          shouldAward = stats.total >= required;
+        } else if (badge.requirement_type === 'kingdom_count') {
+          const req = JSON.parse(badge.requirement_value || '{}');
+          shouldAward = (stats.kingdoms[req.kingdom] || 0) >= req.count;
+        } else if (badge.requirement_type === 'single_rare') {
+          shouldAward = singleOccurrences.length > 0;
+        }
+
+        if (shouldAward) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) continue;
+          
+          await supabase
+            .from("user_badges")
+            .insert({ badge_id: badge.id, user_id: user.id });
+          
+          toast({
+            title: "🎉 Badge Earned!",
+            description: `${badge.icon} ${badge.name}: ${badge.description}`,
+          });
+        }
+      }
+
+      await fetchUserBadges();
+    } catch (error) {
+      console.error("Error checking badges:", error);
     }
   };
 
@@ -142,6 +244,8 @@ export default function Collection() {
 
   const filteredFindings = activeTab === "all" 
     ? findings 
+    : activeTab === "single"
+    ? singleOccurrences
     : findings.filter((f) => f.kingdom === activeTab);
 
   if (loading) {
@@ -153,8 +257,31 @@ export default function Collection() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-24">
       <div className="container mx-auto px-4 py-6">
+        {/* Badges Section */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold mb-3 flex items-center gap-2">
+            <span>🏅</span> Badges
+          </h2>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+            {badges.map((badge) => {
+              const isEarned = userBadges.some(ub => ub.badge_id === badge.id);
+              return (
+                <Card
+                  key={badge.id}
+                  className={`p-3 flex flex-col items-center justify-center text-center transition-all ${
+                    isEarned ? 'bg-gradient-to-br from-primary/20 to-primary/5' : 'opacity-40 grayscale'
+                  }`}
+                >
+                  <div className="text-3xl mb-1">{badge.icon}</div>
+                  <div className="text-xs font-semibold line-clamp-1">{badge.name}</div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Stats Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold mb-4">My Collection</h1>
@@ -194,6 +321,10 @@ export default function Collection() {
             <TabsTrigger value="all" className="flex items-center gap-2">
               <span>🔍</span>
               <span>All ({stats.total})</span>
+            </TabsTrigger>
+            <TabsTrigger value="single" className="flex items-center gap-2">
+              <span>✨</span>
+              <span>Single Finds ({singleOccurrences.length})</span>
             </TabsTrigger>
             {Object.keys(KINGDOM_LABELS)
               .filter(k => k !== 'all')
