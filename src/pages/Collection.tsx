@@ -19,6 +19,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
 
 interface Finding {
   id: string;
@@ -28,6 +35,7 @@ interface Finding {
   confidence: number | null;
   description: string | null;
   image_url: string | null;
+  example_images: string[] | null;
   identified_at: string;
 }
 
@@ -452,15 +460,47 @@ export default function Collection() {
                     </AccordionTrigger>
                     <AccordionContent className="px-4 pb-4">
                       <div className="space-y-3 pt-2">
-                        {finding.image_url && (
-                          <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
-                            <img
-                              src={finding.image_url}
-                              alt={finding.species_name}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
-                          </div>
+                        {(finding.image_url || (finding.example_images && finding.example_images.length > 0)) && (
+                          <Carousel className="w-full">
+                            <CarouselContent>
+                              {finding.image_url && (
+                                <CarouselItem>
+                                  <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
+                                    <img
+                                      src={finding.image_url}
+                                      alt={finding.species_name}
+                                      className="w-full h-full object-cover"
+                                      loading="lazy"
+                                    />
+                                    <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                                      Your Photo
+                                    </div>
+                                  </div>
+                                </CarouselItem>
+                              )}
+                              {finding.example_images?.map((exampleUrl, idx) => (
+                                <CarouselItem key={idx}>
+                                  <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
+                                    <img
+                                      src={exampleUrl}
+                                      alt={`${finding.species_name} example ${idx + 1}`}
+                                      className="w-full h-full object-cover"
+                                      loading="lazy"
+                                    />
+                                    <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                                      Example {idx + 1}
+                                    </div>
+                                  </div>
+                                </CarouselItem>
+                              ))}
+                            </CarouselContent>
+                            {((finding.example_images?.length || 0) > 0) && (
+                              <>
+                                <CarouselPrevious className="left-2" />
+                                <CarouselNext className="right-2" />
+                              </>
+                            )}
+                          </Carousel>
                         )}
                         {finding.description && (
                           <div>

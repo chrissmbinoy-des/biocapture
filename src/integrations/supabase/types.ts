@@ -48,6 +48,7 @@ export type Database = {
         Row: {
           confidence: number | null
           description: string | null
+          example_images: string[] | null
           id: string
           identified_at: string
           image_url: string | null
@@ -59,6 +60,7 @@ export type Database = {
         Insert: {
           confidence?: number | null
           description?: string | null
+          example_images?: string[] | null
           id?: string
           identified_at?: string
           image_url?: string | null
@@ -70,6 +72,7 @@ export type Database = {
         Update: {
           confidence?: number | null
           description?: string | null
+          example_images?: string[] | null
           id?: string
           identified_at?: string
           image_url?: string | null

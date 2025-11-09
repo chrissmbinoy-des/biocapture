@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.79.0';
+import { decode as base64Decode } from "https://deno.land/std@0.177.0/encoding/base64.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -162,6 +163,105 @@ Return ONLY valid JSON in this exact format:
     };
     const kingdom = kingdomMap[result.category.toLowerCase()] || "other";
 
+    // Upload user's image to storage
+    let imageUrl = imageData;
+    try {
+      const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
+      const imageBuffer = base64Decode(base64Data);
+      const fileName = `${user.id}/${Date.now()}.jpg`;
+      
+      const serviceSupabase = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      );
+      
+      const { error: uploadError } = await serviceSupabase.storage
+        .from('species-images')
+        .upload(fileName, imageBuffer, {
+          contentType: 'image/jpeg',
+          upsert: false
+        });
+      
+      if (!uploadError) {
+        const { data: { publicUrl } } = serviceSupabase.storage
+          .from('species-images')
+          .getPublicUrl(fileName);
+        imageUrl = publicUrl;
+        console.log("Image uploaded to storage");
+      }
+    } catch (uploadErr) {
+      console.error("Failed to upload image:", uploadErr);
+      // Continue with base64 if upload fails
+    }
+
+    // Generate example images
+    const exampleImages: string[] = [];
+    console.log("Generating example images...");
+    
+    try {
+      for (let i = 0; i < 2; i++) {
+        const examplePrompt = `Generate a high-quality, realistic photograph of ${result.name}${result.scientificName ? ` (${result.scientificName})` : ''} in its natural habitat. Show the ${kingdom} clearly with natural lighting and professional wildlife photography style.`;
+        
+        const exampleResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: 'google/gemini-2.5-flash-image-preview',
+            messages: [
+              {
+                role: 'user',
+                content: examplePrompt
+              }
+            ],
+            modalities: ['image', 'text']
+          })
+        });
+        
+        if (exampleResponse.ok) {
+          const exampleData = await exampleResponse.json();
+          const generatedImageUrl = exampleData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+          
+          if (generatedImageUrl) {
+            // Upload generated example to storage
+            try {
+              const exampleBase64 = generatedImageUrl.replace(/^data:image\/\w+;base64,/, '');
+              const exampleBuffer = base64Decode(exampleBase64);
+              const exampleFileName = `examples/${result.name.replace(/\s+/g, '_')}_${Date.now()}_${i}.jpg`;
+              
+              const serviceSupabase = createClient(
+                Deno.env.get('SUPABASE_URL')!,
+                Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+              );
+              
+              const { error: exampleUploadError } = await serviceSupabase.storage
+                .from('species-images')
+                .upload(exampleFileName, exampleBuffer, {
+                  contentType: 'image/jpeg',
+                  upsert: false
+                });
+              
+              if (!exampleUploadError) {
+                const { data: { publicUrl: examplePublicUrl } } = serviceSupabase.storage
+                  .from('species-images')
+                  .getPublicUrl(exampleFileName);
+                
+                exampleImages.push(examplePublicUrl);
+              }
+            } catch (exUploadErr) {
+              console.error("Failed to upload example image:", exUploadErr);
+            }
+          }
+        }
+      }
+      console.log("Generated example images:", exampleImages.length);
+    } catch (exampleErr) {
+      console.error("Error generating example images:", exampleErr);
+      // Continue without examples if generation fails
+    }
+
     // Save to database
     try {
       const { error: insertError } = await supabase
@@ -173,7 +273,8 @@ Return ONLY valid JSON in this exact format:
           kingdom: kingdom,
           confidence: result.confidence,
           description: result.description,
-          image_url: imageData,
+          image_url: imageUrl,
+          example_images: exampleImages,
         });
 
       if (insertError) {
