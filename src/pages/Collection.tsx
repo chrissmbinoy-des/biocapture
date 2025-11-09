@@ -13,6 +13,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Finding {
   id: string;
@@ -77,6 +84,7 @@ export default function Collection() {
   const [badges, setBadges] = useState<Badge[]>([]);
   const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
   const [singleOccurrences, setSingleOccurrences] = useState<Finding[]>([]);
+  const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -242,6 +250,18 @@ export default function Collection() {
     }
   };
 
+  const getBadgeRequirementText = (badge: Badge) => {
+    if (badge.requirement_type === 'total_count') {
+      return `Identify ${badge.requirement_value} species`;
+    } else if (badge.requirement_type === 'kingdom_count') {
+      const req = JSON.parse(badge.requirement_value || '{}');
+      return `Identify ${req.count} ${req.kingdom} species`;
+    } else if (badge.requirement_type === 'single_rare') {
+      return 'Discover a rare species (found only once in your collection)';
+    }
+    return 'Complete special requirements';
+  };
+
   const filteredFindings = activeTab === "all" 
     ? findings 
     : activeTab === "single"
@@ -270,7 +290,8 @@ export default function Collection() {
               return (
                 <Card
                   key={badge.id}
-                  className={`p-3 flex flex-col items-center justify-center text-center transition-all ${
+                  onClick={() => setSelectedBadge(badge)}
+                  className={`p-3 flex flex-col items-center justify-center text-center transition-all cursor-pointer hover:scale-105 ${
                     isEarned ? 'bg-gradient-to-br from-primary/20 to-primary/5' : 'opacity-40 grayscale'
                   }`}
                 >
@@ -281,6 +302,33 @@ export default function Collection() {
             })}
           </div>
         </div>
+
+        {/* Badge Details Dialog */}
+        <Dialog open={!!selectedBadge} onOpenChange={(open) => !open && setSelectedBadge(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <span className="text-4xl">{selectedBadge?.icon}</span>
+                <span>{selectedBadge?.name}</span>
+              </DialogTitle>
+              <DialogDescription className="space-y-3 pt-2">
+                <p className="text-base">{selectedBadge?.description}</p>
+                <div className="bg-muted/50 p-3 rounded-lg">
+                  <p className="text-sm font-semibold text-foreground mb-1">Requirement:</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedBadge && getBadgeRequirementText(selectedBadge)}
+                  </p>
+                </div>
+                {selectedBadge && userBadges.some(ub => ub.badge_id === selectedBadge.id) && (
+                  <div className="flex items-center gap-2 text-sm text-primary">
+                    <span>✓</span>
+                    <span>Earned on {new Date(userBadges.find(ub => ub.badge_id === selectedBadge.id)?.earned_at || '').toLocaleDateString()}</span>
+                  </div>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
 
         {/* Stats Header */}
         <div className="mb-6">
