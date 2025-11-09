@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -16,7 +16,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -91,7 +90,9 @@ export default function Collection() {
     fetchFindings();
     fetchBadges();
     fetchUserBadges();
-    
+  }, []);
+
+  useEffect(() => {
     // Subscribe to real-time updates
     const channel = supabase
       .channel('species_identifications_changes')
@@ -227,7 +228,7 @@ export default function Collection() {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = useCallback(async (id: string) => {
     try {
       const { error } = await supabase
         .from("species_identifications")
@@ -248,9 +249,9 @@ export default function Collection() {
         variant: "destructive",
       });
     }
-  };
+  }, [toast]);
 
-  const getBadgeRequirementText = (badge: Badge) => {
+  const getBadgeRequirementText = useCallback((badge: Badge) => {
     if (badge.requirement_type === 'total_count') {
       return `Identify ${badge.requirement_value} species`;
     } else if (badge.requirement_type === 'kingdom_count') {
@@ -260,13 +261,28 @@ export default function Collection() {
       return 'Discover a rare species (found only once in your collection)';
     }
     return 'Complete special requirements';
-  };
+  }, []);
 
-  const filteredFindings = activeTab === "all" 
-    ? findings 
-    : activeTab === "single"
-    ? singleOccurrences
-    : findings.filter((f) => f.kingdom === activeTab);
+  const filteredFindings = useMemo(() => {
+    if (activeTab === "all") return findings;
+    if (activeTab === "single") return singleOccurrences;
+    return findings.filter((f) => f.kingdom === activeTab);
+  }, [activeTab, findings, singleOccurrences]);
+
+  const avgConfidence = useMemo(() => {
+    if (findings.length === 0) return 0;
+    return Math.round(
+      findings.reduce((acc, f) => acc + (f.confidence || 0), 0) / findings.length
+    );
+  }, [findings]);
+
+  const mostFoundKingdom = useMemo(() => {
+    if (Object.keys(stats.kingdoms).length === 0) return 0;
+    const maxKingdom = Object.keys(stats.kingdoms).reduce((a, b) => 
+      stats.kingdoms[a] > stats.kingdoms[b] ? a : b, 'plant'
+    );
+    return stats.kingdoms[maxKingdom] || 0;
+  }, [stats.kingdoms]);
 
   if (loading) {
     return (
@@ -311,22 +327,22 @@ export default function Collection() {
                 <span className="text-4xl">{selectedBadge?.icon}</span>
                 <span>{selectedBadge?.name}</span>
               </DialogTitle>
-              <DialogDescription className="space-y-3 pt-2">
-                <p className="text-base">{selectedBadge?.description}</p>
-                <div className="bg-muted/50 p-3 rounded-lg">
-                  <p className="text-sm font-semibold text-foreground mb-1">Requirement:</p>
-                  <p className="text-sm text-muted-foreground">
-                    {selectedBadge && getBadgeRequirementText(selectedBadge)}
-                  </p>
-                </div>
-                {selectedBadge && userBadges.some(ub => ub.badge_id === selectedBadge.id) && (
-                  <div className="flex items-center gap-2 text-sm text-primary">
-                    <span>✓</span>
-                    <span>Earned on {new Date(userBadges.find(ub => ub.badge_id === selectedBadge.id)?.earned_at || '').toLocaleDateString()}</span>
-                  </div>
-                )}
-              </DialogDescription>
             </DialogHeader>
+            <div className="space-y-3 pt-2">
+              <p className="text-base text-muted-foreground">{selectedBadge?.description}</p>
+              <div className="bg-muted/50 p-3 rounded-lg">
+                <p className="text-sm font-semibold text-foreground mb-1">Requirement:</p>
+                <p className="text-sm text-muted-foreground">
+                  {selectedBadge && getBadgeRequirementText(selectedBadge)}
+                </p>
+              </div>
+              {selectedBadge && userBadges.some(ub => ub.badge_id === selectedBadge.id) && (
+                <div className="flex items-center gap-2 text-sm text-primary">
+                  <span>✓</span>
+                  <span>Earned on {new Date(userBadges.find(ub => ub.badge_id === selectedBadge.id)?.earned_at || '').toLocaleDateString()}</span>
+                </div>
+              )}
+            </div>
           </DialogContent>
         </Dialog>
 
@@ -346,17 +362,13 @@ export default function Collection() {
             </Card>
             <Card className="p-4 bg-gradient-to-br from-accent/10 to-accent/5">
               <div className="text-3xl font-bold text-foreground">
-                {stats.kingdoms[Object.keys(stats.kingdoms).reduce((a, b) => 
-                  stats.kingdoms[a] > stats.kingdoms[b] ? a : b, 'plant'
-                )] || 0}
+                {mostFoundKingdom}
               </div>
               <div className="text-sm text-muted-foreground">Most Found</div>
             </Card>
             <Card className="p-4 bg-gradient-to-br from-muted/30 to-muted/10">
               <div className="text-3xl font-bold text-foreground">
-                {findings.length > 0 ? Math.round(
-                  findings.reduce((acc, f) => acc + (f.confidence || 0), 0) / findings.length
-                ) : 0}%
+                {avgConfidence}%
               </div>
               <div className="text-sm text-muted-foreground">Avg. Confidence</div>
             </Card>
@@ -403,17 +415,18 @@ export default function Collection() {
                   >
                     <AccordionTrigger className="hover:no-underline px-4 py-3 hover:bg-muted/50">
                       <div className="flex items-center gap-4 w-full">
-                        <div className="w-16 h-16 rounded-md overflow-hidden shrink-0">
+                        <div className="w-16 h-16 rounded-md overflow-hidden shrink-0 bg-muted flex items-center justify-center">
                           {finding.image_url ? (
                             <img
                               src={finding.image_url}
                               alt={finding.species_name}
                               className="w-full h-full object-cover"
+                              loading="lazy"
                             />
                           ) : (
-                            <div className="w-full h-full bg-muted flex items-center justify-center text-2xl">
+                            <span className="text-2xl">
                               {KINGDOM_ICONS[finding.kingdom] || "🔍"}
-                            </div>
+                            </span>
                           )}
                         </div>
                         <div className="flex-1 text-left">
@@ -440,11 +453,12 @@ export default function Collection() {
                     <AccordionContent className="px-4 pb-4">
                       <div className="space-y-3 pt-2">
                         {finding.image_url && (
-                          <div className="relative aspect-video rounded-lg overflow-hidden">
+                          <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
                             <img
                               src={finding.image_url}
                               alt={finding.species_name}
                               className="w-full h-full object-cover"
+                              loading="lazy"
                             />
                           </div>
                         )}
