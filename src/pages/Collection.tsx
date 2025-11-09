@@ -96,7 +96,6 @@ export default function Collection() {
         },
         () => {
           fetchFindings();
-          checkAndAwardBadges();
         }
       )
       .subscribe();
@@ -130,12 +129,13 @@ export default function Collection() {
       const singles = data?.filter(f => speciesCounts[f.species_name] === 1) || [];
       setSingleOccurrences(singles);
       
-      setStats({
+      const currentStats = {
         total: data?.length || 0,
         kingdoms: kingdomCounts
-      });
+      };
+      setStats(currentStats);
 
-      await checkAndAwardBadges();
+      await checkAndAwardBadges(currentStats, singles);
     } catch (error) {
       console.error("Error fetching findings:", error);
       toast({
@@ -175,7 +175,7 @@ export default function Collection() {
     }
   };
 
-  const checkAndAwardBadges = async () => {
+  const checkAndAwardBadges = async (currentStats: Stats, currentSingles: Finding[]) => {
     try {
       const { data: currentUserBadges } = await supabase
         .from("user_badges")
@@ -190,12 +190,12 @@ export default function Collection() {
 
         if (badge.requirement_type === 'total_count') {
           const required = parseInt(badge.requirement_value || '0');
-          shouldAward = stats.total >= required;
+          shouldAward = currentStats.total >= required;
         } else if (badge.requirement_type === 'kingdom_count') {
           const req = JSON.parse(badge.requirement_value || '{}');
-          shouldAward = (stats.kingdoms[req.kingdom] || 0) >= req.count;
+          shouldAward = (currentStats.kingdoms[req.kingdom] || 0) >= req.count;
         } else if (badge.requirement_type === 'single_rare') {
-          shouldAward = singleOccurrences.length > 0;
+          shouldAward = currentSingles.length > 0;
         }
 
         if (shouldAward) {
