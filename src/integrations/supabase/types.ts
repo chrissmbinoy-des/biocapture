@@ -119,6 +119,7 @@ export type Database = {
       species_identifications: {
         Row: {
           confidence: number | null
+          coordinates: Json | null
           description: string | null
           example_images: string[] | null
           id: string
@@ -131,6 +132,7 @@ export type Database = {
         }
         Insert: {
           confidence?: number | null
+          coordinates?: Json | null
           description?: string | null
           example_images?: string[] | null
           id?: string
@@ -143,6 +145,7 @@ export type Database = {
         }
         Update: {
           confidence?: number | null
+          coordinates?: Json | null
           description?: string | null
           example_images?: string[] | null
           id?: string

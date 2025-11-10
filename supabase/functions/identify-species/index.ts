@@ -30,7 +30,7 @@ serve(async (req) => {
       );
     }
 
-    const { imageData } = await req.json();
+    const { imageData, coordinates } = await req.json();
     
     if (!imageData) {
       return new Response(
@@ -38,6 +38,8 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    console.log("Coordinates received:", coordinates);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -262,9 +264,9 @@ Return ONLY valid JSON in this exact format:
       // Continue without examples if generation fails
     }
 
-    // Save to database
+    // Save identification to database
     try {
-      const { error: insertError } = await supabase
+      const { data: identificationData, error: insertError } = await supabase
         .from('species_identifications')
         .insert({
           user_id: user.id,
@@ -275,12 +277,40 @@ Return ONLY valid JSON in this exact format:
           description: result.description,
           image_url: imageUrl,
           example_images: exampleImages,
-        });
+          coordinates: coordinates,
+        })
+        .select()
+        .single();
 
       if (insertError) {
         console.error("Error saving to database:", insertError);
       } else {
         console.log("Identification saved to database");
+        
+        // Also save to locations table if coordinates are available
+        if (coordinates && identificationData) {
+          try {
+            const locationName = `${result.name} Location`;
+            const { error: locationError } = await supabase
+              .from('locations')
+              .insert({
+                user_id: user.id,
+                name: locationName,
+                description: `Location where ${result.name} was found`,
+                coordinates: coordinates,
+                image_url: imageUrl,
+                example_images: exampleImages,
+              });
+
+            if (locationError) {
+              console.error("Error saving location:", locationError);
+            } else {
+              console.log("Location saved to database");
+            }
+          } catch (locationErr) {
+            console.error("Location save error:", locationErr);
+          }
+        }
       }
     } catch (dbError) {
       console.error("Database error:", dbError);

@@ -14,6 +14,7 @@ const Index = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isIdentifying, setIsIdentifying] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [coordinates, setCoordinates] = useState<{latitude: number, longitude: number} | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -32,6 +33,21 @@ const Index = () => {
         navigate("/auth");
       }
     });
+
+    // Get user's location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setCoordinates({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.log("Location access denied or unavailable:", error);
+        }
+      );
+    }
 
     return () => subscription.unsubscribe();
   }, [navigate]);
@@ -65,7 +81,10 @@ const Index = () => {
     
     try {
       const { data, error } = await supabase.functions.invoke('identify-species', {
-        body: { imageData },
+        body: { 
+          imageData,
+          coordinates 
+        },
       });
 
       if (error) {
