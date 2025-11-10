@@ -61,24 +61,28 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/95 flex flex-col">
-      <div className="flex justify-between items-center p-4 border-b">
+    <div className="fixed inset-0 z-50 bg-background flex flex-col safe-area-inset">
+      <div className="flex justify-between items-center p-4 border-b bg-background shrink-0">
         <h2 className="text-lg font-semibold">Take Photo</h2>
         <Button variant="ghost" size="icon" onClick={onClose}>
           <X className="h-5 w-5" />
         </Button>
       </div>
-      <div className="flex-1 flex items-center justify-center p-4">
+      <div className="flex-1 flex items-center justify-center overflow-hidden relative">
         <video
           ref={videoRef}
           autoPlay
           playsInline
-          className="max-w-full max-h-full rounded-lg"
+          className="w-full h-full object-cover"
         />
       </div>
-      <div className="p-4 border-t">
-        <Button onClick={captureImage} size="lg" className="w-full">
-          <Camera className="mr-2 h-5 w-5" />
+      <div className="p-4 border-t bg-background shrink-0 safe-bottom">
+        <Button 
+          onClick={captureImage} 
+          size="lg" 
+          className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-6"
+        >
+          <Camera className="mr-2 h-6 w-6" />
           Capture Photo
         </Button>
       </div>
