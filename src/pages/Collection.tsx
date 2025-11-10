@@ -39,6 +39,26 @@ interface Finding {
   identified_at: string;
 }
 
+interface Location {
+  id: string;
+  name: string;
+  description: string | null;
+  coordinates: any;
+  image_url: string | null;
+  example_images: string[] | null;
+  identified_at: string;
+}
+
+interface Item {
+  id: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  image_url: string | null;
+  example_images: string[] | null;
+  identified_at: string;
+}
+
 interface Stats {
   total: number;
   kingdoms: { [key: string]: number };
@@ -85,8 +105,11 @@ const KINGDOM_ICONS: { [key: string]: string } = {
 
 export default function Collection() {
   const [findings, setFindings] = useState<Finding[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
+  const [collectionType, setCollectionType] = useState<"species" | "locations" | "items">("species");
   const [stats, setStats] = useState<Stats>({ total: 0, kingdoms: {} });
   const [badges, setBadges] = useState<Badge[]>([]);
   const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
@@ -96,6 +119,8 @@ export default function Collection() {
 
   useEffect(() => {
     fetchFindings();
+    fetchLocations();
+    fetchItems();
     fetchBadges();
     fetchUserBadges();
   }, []);
@@ -162,6 +187,44 @@ export default function Collection() {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchLocations = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("locations")
+        .select("*")
+        .order("identified_at", { ascending: false });
+
+      if (error) throw error;
+      setLocations(data || []);
+    } catch (error) {
+      console.error("Error fetching locations:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load locations",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const fetchItems = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("items")
+        .select("*")
+        .order("identified_at", { ascending: false });
+
+      if (error) throw error;
+      setItems(data || []);
+    } catch (error) {
+      console.error("Error fetching items:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load items",
+        variant: "destructive",
+      });
     }
   };
 
@@ -236,24 +299,33 @@ export default function Collection() {
     }
   };
 
-  const handleDelete = useCallback(async (id: string) => {
+  const handleDelete = useCallback(async (id: string, type: "species" | "locations" | "items") => {
     try {
+      const table = type === "species" ? "species_identifications" : type;
       const { error } = await supabase
-        .from("species_identifications")
+        .from(table)
         .delete()
         .eq("id", id);
 
       if (error) throw error;
 
+      if (type === "species") {
+        fetchFindings();
+      } else if (type === "locations") {
+        fetchLocations();
+      } else {
+        fetchItems();
+      }
+
       toast({
         title: "Deleted",
-        description: "Finding removed from collection",
+        description: `${type === "species" ? "Species" : type === "locations" ? "Location" : "Item"} removed from collection`,
       });
     } catch (error) {
-      console.error("Error deleting finding:", error);
+      console.error("Error deleting:", error);
       toast({
         title: "Error",
-        description: "Failed to delete finding",
+        description: "Failed to delete",
         variant: "destructive",
       });
     }
@@ -354,10 +426,22 @@ export default function Collection() {
           </DialogContent>
         </Dialog>
 
-        {/* Stats Header */}
+        {/* Collection Type Selector */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-4">My Collection</h1>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Tabs value={collectionType} onValueChange={(v) => setCollectionType(v as "species" | "locations" | "items")} className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-4">
+              <TabsTrigger value="species">Species ({stats.total})</TabsTrigger>
+              <TabsTrigger value="locations">Locations ({locations.length})</TabsTrigger>
+              <TabsTrigger value="items">Items ({items.length})</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+
+        {/* Stats Header - Only show for species */}
+        {collectionType === "species" && (
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold mb-4">Species Collection</h1>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Card className="p-4 bg-gradient-to-br from-primary/10 to-primary/5">
               <div className="text-3xl font-bold text-primary">{stats.total}</div>
               <div className="text-sm text-muted-foreground">Total Species</div>
@@ -382,9 +466,237 @@ export default function Collection() {
             </Card>
           </div>
         </div>
+        )}
 
-        {/* Kingdom Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        {/* Locations Section */}
+        {collectionType === "locations" && (
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold mb-4">📍 Locations</h1>
+            {locations.length === 0 ? (
+              <Card className="p-12 text-center">
+                <div className="text-6xl mb-4">📍</div>
+                <h3 className="text-xl font-semibold mb-2">No locations yet</h3>
+                <p className="text-muted-foreground">
+                  Start adding places you've discovered!
+                </p>
+              </Card>
+            ) : (
+              <Accordion type="single" collapsible className="w-full space-y-2">
+                {locations.map((location) => (
+                  <AccordionItem
+                    key={location.id}
+                    value={location.id}
+                    className="border rounded-lg bg-card overflow-hidden"
+                  >
+                    <AccordionTrigger className="hover:no-underline px-4 py-3 hover:bg-muted/50">
+                      <div className="flex items-center gap-4 w-full">
+                        <div className="w-16 h-16 rounded-md overflow-hidden shrink-0 bg-muted flex items-center justify-center">
+                          {location.image_url ? (
+                            <img
+                              src={location.image_url}
+                              alt={location.name}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <span className="text-2xl">📍</span>
+                          )}
+                        </div>
+                        <div className="flex-1 text-left">
+                          <h3 className="font-bold text-base">{location.name}</h3>
+                          {location.coordinates && typeof location.coordinates === 'object' && 'lat' in location.coordinates && (
+                            <p className="text-sm text-muted-foreground">
+                              {location.coordinates.lat.toFixed(4)}, {location.coordinates.lng.toFixed(4)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      <div className="space-y-3 pt-2">
+                        {(location.image_url || (location.example_images && location.example_images.length > 0)) && (
+                          <Carousel className="w-full">
+                            <CarouselContent>
+                              {location.image_url && (
+                                <CarouselItem>
+                                  <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
+                                    <img
+                                      src={location.image_url}
+                                      alt={location.name}
+                                      className="w-full h-full object-cover"
+                                      loading="lazy"
+                                    />
+                                    <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                                      Your Photo
+                                    </div>
+                                  </div>
+                                </CarouselItem>
+                              )}
+                              {location.example_images?.map((imgUrl, idx) => (
+                                <CarouselItem key={idx}>
+                                  <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
+                                    <img
+                                      src={imgUrl}
+                                      alt={`${location.name} example ${idx + 1}`}
+                                      className="w-full h-full object-cover"
+                                      loading="lazy"
+                                    />
+                                    <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                                      Example {idx + 1}
+                                    </div>
+                                  </div>
+                                </CarouselItem>
+                              ))}
+                            </CarouselContent>
+                            <CarouselPrevious />
+                            <CarouselNext />
+                          </Carousel>
+                        )}
+                        {location.description && (
+                          <div>
+                            <h4 className="font-semibold mb-1 text-sm">Description</h4>
+                            <p className="text-sm text-muted-foreground">{location.description}</p>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center pt-2 border-t">
+                          <span className="text-xs text-muted-foreground">
+                            Added {new Date(location.identified_at).toLocaleDateString()}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(location.id, "locations")}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            )}
+          </div>
+        )}
+
+        {/* Items Section */}
+        {collectionType === "items" && (
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold mb-4">📦 Item Inventory</h1>
+            {items.length === 0 ? (
+              <Card className="p-12 text-center">
+                <div className="text-6xl mb-4">📦</div>
+                <h3 className="text-xl font-semibold mb-2">No items yet</h3>
+                <p className="text-muted-foreground">
+                  Start cataloging items you've collected!
+                </p>
+              </Card>
+            ) : (
+              <Accordion type="single" collapsible className="w-full space-y-2">
+                {items.map((item) => (
+                  <AccordionItem
+                    key={item.id}
+                    value={item.id}
+                    className="border rounded-lg bg-card overflow-hidden"
+                  >
+                    <AccordionTrigger className="hover:no-underline px-4 py-3 hover:bg-muted/50">
+                      <div className="flex items-center gap-4 w-full">
+                        <div className="w-16 h-16 rounded-md overflow-hidden shrink-0 bg-muted flex items-center justify-center">
+                          {item.image_url ? (
+                            <img
+                              src={item.image_url}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <span className="text-2xl">📦</span>
+                          )}
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-bold text-base">{item.name}</h3>
+                            {item.category && (
+                              <Badge variant="secondary" className="shrink-0">
+                                {item.category}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      <div className="space-y-3 pt-2">
+                        {(item.image_url || (item.example_images && item.example_images.length > 0)) && (
+                          <Carousel className="w-full">
+                            <CarouselContent>
+                              {item.image_url && (
+                                <CarouselItem>
+                                  <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
+                                    <img
+                                      src={item.image_url}
+                                      alt={item.name}
+                                      className="w-full h-full object-cover"
+                                      loading="lazy"
+                                    />
+                                    <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                                      Your Photo
+                                    </div>
+                                  </div>
+                                </CarouselItem>
+                              )}
+                              {item.example_images?.map((imgUrl, idx) => (
+                                <CarouselItem key={idx}>
+                                  <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
+                                    <img
+                                      src={imgUrl}
+                                      alt={`${item.name} example ${idx + 1}`}
+                                      className="w-full h-full object-cover"
+                                      loading="lazy"
+                                    />
+                                    <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                                      Example {idx + 1}
+                                    </div>
+                                  </div>
+                                </CarouselItem>
+                              ))}
+                            </CarouselContent>
+                            <CarouselPrevious />
+                            <CarouselNext />
+                          </Carousel>
+                        )}
+                        {item.description && (
+                          <div>
+                            <h4 className="font-semibold mb-1 text-sm">Description</h4>
+                            <p className="text-sm text-muted-foreground">{item.description}</p>
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center pt-2 border-t">
+                          <span className="text-xs text-muted-foreground">
+                            Added {new Date(item.identified_at).toLocaleDateString()}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(item.id, "items")}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+            )}
+          </div>
+        )}
+
+        {/* Kingdom Tabs - Only show for species */}
+        {collectionType === "species" && (
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full justify-start overflow-x-auto flex-wrap h-auto gap-2 bg-muted/30 p-2">
             <TabsTrigger value="all" className="flex items-center gap-2">
               <span>🔍</span>
@@ -517,7 +829,7 @@ export default function Collection() {
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => handleDelete(finding.id)}
+                            onClick={() => handleDelete(finding.id, "species")}
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete
@@ -531,6 +843,7 @@ export default function Collection() {
             )}
           </TabsContent>
         </Tabs>
+        )}
       </div>
 
       {/* Floating Camera Button */}

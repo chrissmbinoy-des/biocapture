@@ -44,6 +44,78 @@ export type Database = {
         }
         Relationships: []
       }
+      items: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          example_images: string[] | null
+          id: string
+          identified_at: string
+          image_url: string | null
+          name: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          example_images?: string[] | null
+          id?: string
+          identified_at?: string
+          image_url?: string | null
+          name: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          example_images?: string[] | null
+          id?: string
+          identified_at?: string
+          image_url?: string | null
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      locations: {
+        Row: {
+          coordinates: Json | null
+          created_at: string
+          description: string | null
+          example_images: string[] | null
+          id: string
+          identified_at: string
+          image_url: string | null
+          name: string
+          user_id: string
+        }
+        Insert: {
+          coordinates?: Json | null
+          created_at?: string
+          description?: string | null
+          example_images?: string[] | null
+          id?: string
+          identified_at?: string
+          image_url?: string | null
+          name: string
+          user_id: string
+        }
+        Update: {
+          coordinates?: Json | null
+          created_at?: string
+          description?: string | null
+          example_images?: string[] | null
+          id?: string
+          identified_at?: string
+          image_url?: string | null
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       species_identifications: {
         Row: {
           confidence: number | null
