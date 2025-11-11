@@ -432,7 +432,9 @@ export default function Collection() {
             <TabsList className="grid w-full grid-cols-3 mb-4">
               <TabsTrigger value="species">Species ({stats.total})</TabsTrigger>
               <TabsTrigger value="locations">Locations ({locations.length})</TabsTrigger>
-              <TabsTrigger value="items">Items ({items.length})</TabsTrigger>
+              <TabsTrigger value="items" className="data-[state=active]:bg-gray-700 data-[state=active]:text-white">
+                Non-Living Things ({items.length})
+              </TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -583,13 +585,13 @@ export default function Collection() {
         {/* Items Section */}
         {collectionType === "items" && (
           <div className="mb-6">
-            <h1 className="text-3xl font-bold mb-4">📦 Item Inventory</h1>
+            <h1 className="text-3xl font-bold mb-4 text-gray-700 dark:text-gray-300">⚙️ Non-Living Things</h1>
             {items.length === 0 ? (
-              <Card className="p-12 text-center">
-                <div className="text-6xl mb-4">📦</div>
-                <h3 className="text-xl font-semibold mb-2">No items yet</h3>
-                <p className="text-muted-foreground">
-                  Start cataloging items you've collected!
+              <Card className="p-12 text-center bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+                <div className="text-6xl mb-4">⚙️</div>
+                <h3 className="text-xl font-semibold mb-2 text-gray-700 dark:text-gray-300">No items yet</h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  Start cataloging non-living things you've discovered!
                 </p>
               </Card>
             ) : (
@@ -598,11 +600,11 @@ export default function Collection() {
                   <AccordionItem
                     key={item.id}
                     value={item.id}
-                    className="border rounded-lg bg-card overflow-hidden"
+                    className="border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-800 overflow-hidden"
                   >
-                    <AccordionTrigger className="hover:no-underline px-4 py-3 hover:bg-muted/50">
+                    <AccordionTrigger className="hover:no-underline px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700">
                       <div className="flex items-center gap-4 w-full">
-                        <div className="w-16 h-16 rounded-md overflow-hidden shrink-0 bg-muted flex items-center justify-center">
+                        <div className="w-16 h-16 rounded-md overflow-hidden shrink-0 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
                           {item.image_url ? (
                             <img
                               src={item.image_url}
@@ -611,14 +613,14 @@ export default function Collection() {
                               loading="lazy"
                             />
                           ) : (
-                            <span className="text-2xl">📦</span>
+                            <span className="text-2xl">⚙️</span>
                           )}
                         </div>
                         <div className="flex-1 text-left">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-bold text-base">{item.name}</h3>
+                            <h3 className="font-bold text-base text-gray-800 dark:text-gray-200">{item.name}</h3>
                             {item.category && (
-                              <Badge variant="secondary" className="shrink-0">
+                              <Badge variant="secondary" className="shrink-0 bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-200">
                                 {item.category}
                               </Badge>
                             )}
@@ -633,7 +635,7 @@ export default function Collection() {
                             <CarouselContent>
                               {item.image_url && (
                                 <CarouselItem>
-                                  <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
+                                  <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700">
                                     <img
                                       src={item.image_url}
                                       alt={item.name}
@@ -648,7 +650,7 @@ export default function Collection() {
                               )}
                               {item.example_images?.map((imgUrl, idx) => (
                                 <CarouselItem key={idx}>
-                                  <div className="relative aspect-video rounded-lg overflow-hidden bg-muted">
+                                  <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700">
                                     <img
                                       src={imgUrl}
                                       alt={`${item.name} example ${idx + 1}`}
@@ -668,12 +670,12 @@ export default function Collection() {
                         )}
                         {item.description && (
                           <div>
-                            <h4 className="font-semibold mb-1 text-sm">Description</h4>
-                            <p className="text-sm text-muted-foreground">{item.description}</p>
+                            <h4 className="font-semibold mb-1 text-sm text-gray-700 dark:text-gray-300">Description</h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{item.description}</p>
                           </div>
                         )}
-                        <div className="flex justify-between items-center pt-2 border-t">
-                          <span className="text-xs text-muted-foreground">
+                        <div className="flex justify-between items-center pt-2 border-t border-gray-300 dark:border-gray-600">
+                          <span className="text-xs text-gray-600 dark:text-gray-400">
                             Added {new Date(item.identified_at).toLocaleDateString()}
                           </span>
                           <Button

@@ -63,22 +63,33 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an expert biologist and species identification specialist. Analyze images and identify living organisms with extreme precision.
+            content: `You are an expert biologist and species identification specialist. Analyze images and identify both living organisms and non-living things with extreme precision.
 
-For each identification, provide:
+IMPORTANT: First determine if the subject is LIVING or NON-LIVING.
+
+For LIVING organisms (animals, plants, fungi, etc.), provide:
 1. Common name (e.g., "Bengal Tiger", "Oak Tree", "Monarch Butterfly")
 2. Scientific name (e.g., "Panthera tigris tigris")
 3. Category: one of [plant, mammal, insect, bird, reptile, fish, amphibian, other]
 4. Confidence percentage (0-100)
 5. Brief description (2-3 sentences about the species)
+6. isLiving: true
+
+For NON-LIVING things (rocks, artifacts, objects, structures, etc.), provide:
+1. Name (e.g., "Granite Rock", "Ancient Pottery", "Modern Chair")
+2. Category (e.g., "rock", "artifact", "furniture", "structure")
+3. Confidence percentage (0-100)
+4. Brief description (2-3 sentences about the object)
+5. isLiving: false
 
 Return ONLY valid JSON in this exact format:
 {
-  "name": "Common Name",
-  "scientificName": "Scientific name",
+  "name": "Common Name or Object Name",
+  "scientificName": "Scientific name (only for living things, null otherwise)",
   "category": "category",
   "confidence": 95,
-  "description": "Brief description of the species including habitat and characteristics."
+  "description": "Brief description of the species or object.",
+  "isLiving": true/false
 }`
           },
           {
@@ -151,7 +162,30 @@ Return ONLY valid JSON in this exact format:
       );
     }
 
-    console.log("Species identified:", result.name);
+    console.log("Identified:", result.name, "Living:", result.isLiving);
+
+    // Get place name from coordinates using reverse geocoding
+    let placeName = null;
+    if (coordinates) {
+      try {
+        const geocodeResponse = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${coordinates.latitude}&lon=${coordinates.longitude}`,
+          {
+            headers: {
+              'User-Agent': 'SpeciesIdentificationApp/1.0'
+            }
+          }
+        );
+        if (geocodeResponse.ok) {
+          const geocodeData = await geocodeResponse.json();
+          const address = geocodeData.address;
+          placeName = address.city || address.town || address.village || address.county || address.state || geocodeData.display_name;
+          console.log("Place name:", placeName);
+        }
+      } catch (geoError) {
+        console.error("Geocoding error:", geoError);
+      }
+    }
 
     // Map category to kingdom
     const kingdomMap: Record<string, string> = {
@@ -264,52 +298,74 @@ Return ONLY valid JSON in this exact format:
       // Continue without examples if generation fails
     }
 
-    // Save identification to database
+    // Save to appropriate database table based on living/non-living
     try {
-      const { data: identificationData, error: insertError } = await supabase
-        .from('species_identifications')
-        .insert({
-          user_id: user.id,
-          species_name: result.name,
-          scientific_name: result.scientificName,
-          kingdom: kingdom,
-          confidence: result.confidence,
-          description: result.description,
-          image_url: imageUrl,
-          example_images: exampleImages,
-          coordinates: coordinates,
-        })
-        .select()
-        .single();
+      if (result.isLiving) {
+        // Save living organisms to species_identifications
+        const { data: identificationData, error: insertError } = await supabase
+          .from('species_identifications')
+          .insert({
+            user_id: user.id,
+            species_name: result.name,
+            scientific_name: result.scientificName,
+            kingdom: kingdom,
+            confidence: result.confidence,
+            description: result.description,
+            image_url: imageUrl,
+            example_images: exampleImages,
+            coordinates: coordinates,
+          })
+          .select()
+          .single();
 
-      if (insertError) {
-        console.error("Error saving to database:", insertError);
+        if (insertError) {
+          console.error("Error saving species to database:", insertError);
+        } else {
+          console.log("Species identification saved to database");
+        }
       } else {
-        console.log("Identification saved to database");
-        
-        // Also save to locations table if coordinates are available
-        if (coordinates && identificationData) {
-          try {
-            const locationName = `${result.name} Location`;
-            const { error: locationError } = await supabase
-              .from('locations')
-              .insert({
-                user_id: user.id,
-                name: locationName,
-                description: `Location where ${result.name} was found`,
-                coordinates: coordinates,
-                image_url: imageUrl,
-                example_images: exampleImages,
-              });
+        // Save non-living things to items table
+        const { error: itemError } = await supabase
+          .from('items')
+          .insert({
+            user_id: user.id,
+            name: result.name,
+            category: result.category,
+            description: result.description,
+            image_url: imageUrl,
+            example_images: exampleImages,
+          });
 
-            if (locationError) {
-              console.error("Error saving location:", locationError);
-            } else {
-              console.log("Location saved to database");
-            }
-          } catch (locationErr) {
-            console.error("Location save error:", locationErr);
+        if (itemError) {
+          console.error("Error saving item to database:", itemError);
+        } else {
+          console.log("Non-living item saved to database");
+        }
+      }
+
+      // Save to locations table if coordinates are available
+      if (coordinates && placeName) {
+        try {
+          const { error: locationError } = await supabase
+            .from('locations')
+            .insert({
+              user_id: user.id,
+              name: placeName,
+              description: result.isLiving 
+                ? `Location where ${result.name} was found`
+                : `Location of ${result.name}`,
+              coordinates: coordinates,
+              image_url: imageUrl,
+              example_images: exampleImages,
+            });
+
+          if (locationError) {
+            console.error("Error saving location:", locationError);
+          } else {
+            console.log("Location saved to database");
           }
+        } catch (locationErr) {
+          console.error("Location save error:", locationErr);
         }
       }
     } catch (dbError) {

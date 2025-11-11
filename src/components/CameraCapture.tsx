@@ -11,13 +11,18 @@ interface CameraCaptureProps {
 export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
+  const [zoom, setZoom] = useState(1);
   const { toast } = useToast();
 
   useEffect(() => {
     const startCamera = async () => {
       try {
         const mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
+          video: { 
+            facingMode: "environment",
+            width: { ideal: 1920 },
+            height: { ideal: 1080 }
+          },
         });
         setStream(mediaStream);
         if (videoRef.current) {
@@ -41,6 +46,20 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    // Apply zoom to video track if supported
+    if (stream && videoRef.current) {
+      const track = stream.getVideoTracks()[0];
+      const capabilities = track.getCapabilities() as any;
+      
+      if (capabilities.zoom) {
+        track.applyConstraints({
+          advanced: [{ zoom: zoom } as any]
+        }).catch(err => console.log("Zoom not supported:", err));
+      }
+    }
+  }, [zoom, stream]);
 
   const captureImage = () => {
     if (videoRef.current) {
@@ -74,7 +93,33 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
           autoPlay
           playsInline
           className="w-full h-full object-cover"
+          style={{ transform: `scale(${zoom})` }}
         />
+        
+        {/* Zoom Controls */}
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-full px-4 py-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setZoom(Math.max(1, zoom - 0.5))}
+            disabled={zoom <= 1}
+            className="text-white hover:bg-white/20 h-8 w-8 p-0"
+          >
+            -
+          </Button>
+          <span className="text-white font-semibold text-sm min-w-[40px] text-center">
+            {zoom.toFixed(1)}x
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setZoom(Math.min(10, zoom + 0.5))}
+            disabled={zoom >= 10}
+            className="text-white hover:bg-white/20 h-8 w-8 p-0"
+          >
+            +
+          </Button>
+        </div>
       </div>
       <div className="p-4 border-t bg-background shrink-0 safe-bottom">
         <Button 
