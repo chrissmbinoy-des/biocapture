@@ -12,6 +12,8 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [zoom, setZoom] = useState(1);
+  const [initialPinchDistance, setInitialPinchDistance] = useState<number | null>(null);
+  const [initialZoom, setInitialZoom] = useState(1);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -61,6 +63,34 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
     }
   }, [zoom, stream]);
 
+  const getDistance = (touch1: React.Touch, touch2: React.Touch) => {
+    const dx = touch1.clientX - touch2.clientX;
+    const dy = touch1.clientY - touch2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (e.touches.length === 2) {
+      const distance = getDistance(e.touches[0], e.touches[1]);
+      setInitialPinchDistance(distance);
+      setInitialZoom(zoom);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length === 2 && initialPinchDistance) {
+      e.preventDefault();
+      const distance = getDistance(e.touches[0], e.touches[1]);
+      const scale = distance / initialPinchDistance;
+      const newZoom = Math.min(10, Math.max(1, initialZoom * scale));
+      setZoom(newZoom);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setInitialPinchDistance(null);
+  };
+
   const captureImage = () => {
     if (videoRef.current) {
       const canvas = document.createElement("canvas");
@@ -87,7 +117,12 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
           <X className="h-5 w-5" />
         </Button>
       </div>
-      <div className="flex-1 flex items-center justify-center overflow-hidden relative">
+      <div 
+        className="flex-1 flex items-center justify-center overflow-hidden relative"
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         <video
           ref={videoRef}
           autoPlay
@@ -96,29 +131,11 @@ export const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
           style={{ transform: `scale(${zoom})` }}
         />
         
-        {/* Zoom Controls */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center gap-2 bg-black/50 backdrop-blur-sm rounded-full px-4 py-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setZoom(Math.max(1, zoom - 0.5))}
-            disabled={zoom <= 1}
-            className="text-white hover:bg-white/20 h-8 w-8 p-0"
-          >
-            -
-          </Button>
-          <span className="text-white font-semibold text-sm min-w-[40px] text-center">
+        {/* Zoom Indicator */}
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/50 backdrop-blur-sm rounded-full px-4 py-2">
+          <span className="text-white font-semibold text-sm">
             {zoom.toFixed(1)}x
           </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setZoom(Math.min(10, zoom + 0.5))}
-            disabled={zoom >= 10}
-            className="text-white hover:bg-white/20 h-8 w-8 p-0"
-          >
-            +
-          </Button>
         </div>
       </div>
       <div className="p-4 border-t bg-background shrink-0 safe-bottom">
