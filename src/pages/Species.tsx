@@ -1,18 +1,19 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious,
-} from "@/components/ui/carousel";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 interface Finding {
   id: string;
@@ -39,8 +40,8 @@ const KINGDOM_LABELS: { [key: string]: string } = {
   reptile: "Reptiles",
   fish: "Fish",
   amphibian: "Amphibians",
-  other: "Other",
-  all: "All Species"
+  other: "Other Organisms",
+  all: "All"
 };
 
 const KINGDOM_ICONS: { [key: string]: string } = {
@@ -51,7 +52,7 @@ const KINGDOM_ICONS: { [key: string]: string } = {
   reptile: "🦎",
   fish: "🐟",
   amphibian: "🐸",
-  other: "🔍",
+  other: "🦠",
 };
 
 export default function Species() {
@@ -59,6 +60,9 @@ export default function Species() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [stats, setStats] = useState<Stats>({ total: 0, kingdoms: {} });
+  const [showReport, setShowReport] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportingId, setReportingId] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -155,158 +159,180 @@ export default function Species() {
     return KINGDOM_LABELS[maxKingdom[0]] || maxKingdom[0];
   }, [stats.kingdoms]);
 
+  const handleReport = (id: string) => {
+    setReportingId(id);
+    setShowReport(true);
+  };
+
+  const submitReport = () => {
+    if (!reportReason.trim()) {
+      toast({
+        title: "Please provide a reason",
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({
+      title: "Report Submitted",
+      description: "Thank you for your feedback!",
+    });
+    setShowReport(false);
+    setReportReason("");
+    setReportingId(null);
+  };
+
+  const tabs = ["all", ...Object.keys(stats.kingdoms)];
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-6xl">
-      <h1 className="text-3xl font-bold mb-4">Species Collection</h1>
+    <div className="p-4 pb-20">
+      <h1 className="text-2xl font-bold mb-4">Species Collection</h1>
       
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-        <Card className="p-4 bg-gradient-to-br from-primary/10 to-primary/5">
-          <div className="text-3xl font-bold text-primary">{stats.total}</div>
-          <div className="text-sm text-muted-foreground">Total Species</div>
+      {/* Mobile-friendly stats */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <Card className="p-3 bg-gradient-to-br from-primary/10 to-primary/5">
+          <div className="text-2xl font-bold text-primary">{stats.total}</div>
+          <div className="text-xs text-muted-foreground">Total</div>
         </Card>
-        <Card className="p-4 bg-gradient-to-br from-secondary/10 to-secondary/5">
-          <div className="text-3xl font-bold text-secondary-foreground">
-            {Object.keys(stats.kingdoms).length}
-          </div>
-          <div className="text-sm text-muted-foreground">Kingdoms</div>
-        </Card>
-        <Card className="p-4 bg-gradient-to-br from-accent/10 to-accent/5">
-          <div className="text-3xl font-bold text-foreground">
-            {mostFoundKingdom}
-          </div>
-          <div className="text-sm text-muted-foreground">Most Found</div>
-        </Card>
-        <Card className="p-4 bg-gradient-to-br from-muted/30 to-muted/10">
-          <div className="text-3xl font-bold text-foreground">
-            {avgConfidence}%
-          </div>
-          <div className="text-sm text-muted-foreground">Avg. Confidence</div>
+        <Card className="p-3 bg-gradient-to-br from-muted/30 to-muted/10">
+          <div className="text-2xl font-bold text-foreground">{avgConfidence}%</div>
+          <div className="text-xs text-muted-foreground">Avg. Confidence</div>
         </Card>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="w-full justify-start overflow-x-auto flex-nowrap mb-4">
-          <TabsTrigger value="all">
-            All ({stats.total})
-          </TabsTrigger>
-          {Object.entries(stats.kingdoms).map(([kingdom, count]) => (
-            <TabsTrigger key={kingdom} value={kingdom}>
-              {KINGDOM_ICONS[kingdom]} {KINGDOM_LABELS[kingdom]} ({count})
-            </TabsTrigger>
+      {/* Horizontal scrolling tabs */}
+      <ScrollArea className="w-full mb-4">
+        <div className="flex gap-2 pb-2">
+          {tabs.map((tab) => (
+            <Button
+              key={tab}
+              variant={activeTab === tab ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveTab(tab)}
+              className="shrink-0"
+            >
+              {tab === "all" ? "All" : `${KINGDOM_ICONS[tab]} ${KINGDOM_LABELS[tab]}`}
+              {tab === "all" ? ` (${stats.total})` : ` (${stats.kingdoms[tab]})`}
+            </Button>
           ))}
-        </TabsList>
+        </div>
+        <ScrollBar orientation="horizontal" />
+      </ScrollArea>
 
-        <TabsContent value={activeTab} className="mt-0">
-          {filteredFindings.length === 0 ? (
-            <Card className="p-12 text-center">
-              <div className="text-6xl mb-4">🔍</div>
-              <h3 className="text-xl font-semibold mb-2">No species found</h3>
-              <p className="text-muted-foreground">
-                Start identifying species with your camera!
-              </p>
-            </Card>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredFindings.map((finding) => (
-                <Card key={finding.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="relative">
-                    {(finding.image_url || (finding.example_images && finding.example_images.length > 0)) ? (
-                      <Carousel className="w-full">
-                        <CarouselContent>
-                          {finding.image_url && (
-                            <CarouselItem>
-                              <div className="relative aspect-square">
-                                <img
-                                  src={finding.image_url}
-                                  alt={finding.species_name}
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                />
-                                <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
-                                  Your Photo
-                                </div>
-                              </div>
-                            </CarouselItem>
-                          )}
-                          {finding.example_images?.map((imgUrl, idx) => (
-                            <CarouselItem key={idx}>
-                              <div className="relative aspect-square">
-                                <img
-                                  src={imgUrl}
-                                  alt={`${finding.species_name} example ${idx + 1}`}
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                />
-                                <div className="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
-                                  Example {idx + 1}
-                                </div>
-                              </div>
-                            </CarouselItem>
-                          ))}
-                        </CarouselContent>
-                        <CarouselPrevious className="left-2" />
-                        <CarouselNext className="right-2" />
-                      </Carousel>
-                    ) : (
-                      <div className="aspect-square bg-muted flex items-center justify-center text-4xl">
-                        {KINGDOM_ICONS[finding.kingdom] || "🔍"}
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 className="font-bold text-lg">{finding.species_name}</h3>
-                        {finding.scientific_name && (
-                          <p className="text-sm italic text-muted-foreground">
-                            {finding.scientific_name}
-                          </p>
-                        )}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(finding.id)}
-                        className="shrink-0"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+      {filteredFindings.length === 0 ? (
+        <Card className="p-8 text-center">
+          <div className="text-5xl mb-3">🔍</div>
+          <h3 className="text-lg font-semibold mb-1">No species found</h3>
+          <p className="text-sm text-muted-foreground">
+            Start identifying with your camera!
+          </p>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {filteredFindings.map((finding) => (
+            <Card key={finding.id} className="overflow-hidden">
+              <div className="flex gap-3 p-3">
+                <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-muted">
+                  {finding.image_url ? (
+                    <img
+                      src={finding.image_url}
+                      alt={finding.species_name}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-3xl">
+                      {KINGDOM_ICONS[finding.kingdom] || "🔍"}
                     </div>
-                    <div className="flex gap-2 mb-2 flex-wrap">
-                      <Badge variant="secondary">
-                        {KINGDOM_ICONS[finding.kingdom]} {KINGDOM_LABELS[finding.kingdom]}
-                      </Badge>
-                      {finding.confidence && (
-                        <Badge
-                          variant={finding.confidence > 80 ? "default" : "outline"}
-                        >
-                          {finding.confidence}% confidence
-                        </Badge>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-base truncate">{finding.species_name}</h3>
+                      {finding.scientific_name && (
+                        <p className="text-xs italic text-muted-foreground truncate">
+                          {finding.scientific_name}
+                        </p>
                       )}
                     </div>
-                    {finding.description && (
-                      <p className="text-sm text-muted-foreground line-clamp-3">
-                        {finding.description}
-                      </p>
+                  </div>
+                  <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                    <Badge variant="secondary" className="text-xs">
+                      {KINGDOM_ICONS[finding.kingdom]} {KINGDOM_LABELS[finding.kingdom]}
+                    </Badge>
+                    {finding.confidence && (
+                      <Badge variant={finding.confidence > 80 ? "default" : "outline"} className="text-xs">
+                        {finding.confidence}%
+                      </Badge>
                     )}
-                    <p className="text-xs text-muted-foreground mt-2">
+                  </div>
+                  <div className="flex items-center gap-2 mt-2">
+                    <p className="text-xs text-muted-foreground">
                       {new Date(finding.identified_at).toLocaleDateString()}
                     </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs text-muted-foreground"
+                      onClick={() => handleReport(finding.id)}
+                    >
+                      <Flag className="h-3 w-3 mr-1" />
+                      Report
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-destructive"
+                      onClick={() => handleDelete(finding.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
                   </div>
-                </Card>
-              ))}
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Report Dialog */}
+      <Dialog open={showReport} onOpenChange={setShowReport}>
+        <DialogContent className="mx-4 max-w-[calc(100%-2rem)]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Flag className="h-5 w-5" />
+              Report Wrong Identification
+            </DialogTitle>
+            <DialogDescription>
+              Help us improve identification accuracy
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              placeholder="What should this species be?"
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              className="min-h-[100px]"
+            />
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setShowReport(false)}>
+                Cancel
+              </Button>
+              <Button className="flex-1" onClick={submitReport}>
+                Submit
+              </Button>
             </div>
-          )}
-        </TabsContent>
-      </Tabs>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

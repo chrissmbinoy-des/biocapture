@@ -93,7 +93,7 @@ export default function Badges() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -102,28 +102,25 @@ export default function Badges() {
   const earnedBadgeIds = new Set(userBadges.map(ub => ub.badge_id));
 
   return (
-    <div className="container mx-auto p-4 max-w-6xl">
-      <h1 className="text-3xl font-bold mb-4">🏆 Badges</h1>
+    <div className="p-4 pb-20">
+      <h1 className="text-2xl font-bold mb-4">🏆 Badges</h1>
       
       <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-3">Earned Badges ({userBadges.length})</h2>
+        <h2 className="text-lg font-semibold mb-3">Earned ({userBadges.length})</h2>
         {userBadges.length === 0 ? (
-          <Card className="p-8 text-center">
-            <p className="text-muted-foreground">No badges earned yet. Keep exploring to earn your first badge!</p>
+          <Card className="p-6 text-center">
+            <p className="text-sm text-muted-foreground">No badges earned yet. Keep exploring!</p>
           </Card>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             {userBadges.map((userBadge) => (
               <Card
                 key={userBadge.id}
-                className="p-4 text-center cursor-pointer hover:shadow-lg transition-all hover:scale-105"
+                className="p-3 text-center cursor-pointer active:scale-95 transition-transform"
                 onClick={() => setSelectedBadge(userBadge.badges)}
               >
-                <div className="text-4xl mb-2">{userBadge.badges.icon}</div>
-                <h3 className="font-semibold text-sm">{userBadge.badges.name}</h3>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {new Date(userBadge.earned_at).toLocaleDateString()}
-                </p>
+                <div className="text-3xl mb-1">{userBadge.badges.icon}</div>
+                <h3 className="font-semibold text-xs truncate">{userBadge.badges.name}</h3>
               </Card>
             ))}
           </div>
@@ -131,36 +128,35 @@ export default function Badges() {
       </div>
 
       <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-3">Available Badges</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <h2 className="text-lg font-semibold mb-3">Available</h2>
+        <div className="grid grid-cols-3 gap-3">
           {badges
             .filter((badge) => !earnedBadgeIds.has(badge.id))
             .map((badge) => (
               <Card
                 key={badge.id}
-                className="p-4 text-center cursor-pointer hover:shadow-lg transition-all opacity-50 grayscale hover:opacity-70"
+                className="p-3 text-center cursor-pointer opacity-50 grayscale active:scale-95 transition-transform"
                 onClick={() => setSelectedBadge(badge)}
               >
-                <div className="text-4xl mb-2">{badge.icon}</div>
-                <h3 className="font-semibold text-sm">{badge.name}</h3>
-                <p className="text-xs text-muted-foreground mt-1">Not earned</p>
+                <div className="text-3xl mb-1">{badge.icon}</div>
+                <h3 className="font-semibold text-xs truncate">{badge.name}</h3>
               </Card>
             ))}
         </div>
       </div>
 
       <Dialog open={!!selectedBadge} onOpenChange={(open) => !open && setSelectedBadge(null)}>
-        <DialogContent>
+        <DialogContent className="mx-4 max-w-[calc(100%-2rem)]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-3">
-              <span className="text-4xl">{selectedBadge?.icon}</span>
-              <span>{selectedBadge?.name}</span>
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-3xl">{selectedBadge?.icon}</span>
+              <span className="text-lg">{selectedBadge?.name}</span>
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 pt-2">
-            <p className="text-base text-muted-foreground">{selectedBadge?.description}</p>
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">{selectedBadge?.description}</p>
             <div className="bg-muted/50 p-3 rounded-lg">
-              <p className="text-sm font-semibold text-foreground mb-1">Requirement:</p>
+              <p className="text-xs font-semibold text-foreground mb-1">Requirement:</p>
               <p className="text-sm text-muted-foreground">
                 {selectedBadge && getBadgeRequirementText(selectedBadge)}
               </p>
@@ -168,7 +164,7 @@ export default function Badges() {
             {selectedBadge && userBadges.some(ub => ub.badge_id === selectedBadge.id) && (
               <div className="flex items-center gap-2 text-sm text-primary">
                 <span>✓</span>
-                <span>Earned on {new Date(userBadges.find(ub => ub.badge_id === selectedBadge.id)?.earned_at || '').toLocaleDateString()}</span>
+                <span>Earned {new Date(userBadges.find(ub => ub.badge_id === selectedBadge.id)?.earned_at || '').toLocaleDateString()}</span>
               </div>
             )}
           </div>

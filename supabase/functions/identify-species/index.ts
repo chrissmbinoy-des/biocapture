@@ -67,20 +67,25 @@ serve(async (req) => {
 
 IMPORTANT: First determine if the subject is LIVING or NON-LIVING.
 
-For LIVING organisms (animals, plants, fungi, etc.), provide:
+For LIVING organisms (animals, plants, fungi, bacteria, protists, etc.), provide:
 1. Common name (e.g., "Bengal Tiger", "Oak Tree", "Monarch Butterfly")
 2. Scientific name (e.g., "Panthera tigris tigris")
 3. Category: one of [plant, mammal, insect, bird, reptile, fish, amphibian, other]
+   - Use "other" for: fungi, bacteria, protists, microscopic organisms, slime molds, lichens, algae, and any other living organisms that don't fit the main categories
 4. Confidence percentage (0-100)
 5. Brief description (2-3 sentences about the species)
 6. isLiving: true
 
-For NON-LIVING things (rocks, artifacts, objects, structures, etc.), provide:
+For NON-LIVING things (rocks, artifacts, objects, structures, fossils, etc.), provide:
 1. Name (e.g., "Granite Rock", "Ancient Pottery", "Modern Chair")
-2. Category (e.g., "rock", "artifact", "furniture", "structure")
+2. Category (e.g., "rock", "artifact", "furniture", "structure", "fossil")
 3. Confidence percentage (0-100)
 4. Brief description (2-3 sentences about the object)
 5. isLiving: false
+
+IMPORTANT DISTINCTION:
+- "other" category is ONLY for low-level or uncommon LIVING organisms like fungi, bacteria, protists, etc.
+- NON-LIVING things should NEVER be categorized as "other" - they should have isLiving: false
 
 Return ONLY valid JSON in this exact format:
 {

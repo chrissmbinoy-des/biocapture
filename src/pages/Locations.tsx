@@ -84,22 +84,22 @@ export default function Locations() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-6xl">
-      <h1 className="text-3xl font-bold mb-4">📍 Locations</h1>
+    <div className="p-4 pb-20">
+      <h1 className="text-2xl font-bold mb-4">📍 Locations</h1>
       
       {locations.length === 0 ? (
-        <Card className="p-12 text-center">
-          <div className="text-6xl mb-4">📍</div>
-          <h3 className="text-xl font-semibold mb-2">No locations yet</h3>
-          <p className="text-muted-foreground">
-            Locations will be automatically recorded when you identify species with location data
+        <Card className="p-8 text-center">
+          <div className="text-5xl mb-3">📍</div>
+          <h3 className="text-lg font-semibold mb-1">No locations yet</h3>
+          <p className="text-sm text-muted-foreground">
+            Enable location access to track where you find species
           </p>
         </Card>
       ) : (
