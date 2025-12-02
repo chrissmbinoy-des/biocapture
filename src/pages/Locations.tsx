@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -92,11 +92,16 @@ export default function Locations() {
 
   return (
     <div className="p-4 pb-20">
-      <h1 className="text-2xl font-bold mb-4">📍 Locations</h1>
+      <div className="flex items-center gap-2 mb-4">
+        <MapPin className="h-6 w-6 text-emerald-600" />
+        <h1 className="text-2xl font-bold">Locations</h1>
+      </div>
       
       {locations.length === 0 ? (
         <Card className="p-8 text-center">
-          <div className="text-5xl mb-3">📍</div>
+          <div className="flex justify-center mb-3">
+            <MapPin className="h-12 w-12 text-emerald-600" />
+          </div>
           <h3 className="text-lg font-semibold mb-1">No locations yet</h3>
           <p className="text-sm text-muted-foreground">
             Enable location access to track where you find species
@@ -121,7 +126,7 @@ export default function Locations() {
                         loading="lazy"
                       />
                     ) : (
-                      <span className="text-2xl">📍</span>
+                      <MapPin className="h-8 w-8 text-emerald-600" />
                     )}
                   </div>
                   <div className="flex-1 text-left">
