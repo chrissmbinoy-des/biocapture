@@ -85,22 +85,22 @@ export default function NonLivingThings() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 max-w-6xl">
-      <h1 className="text-3xl font-bold mb-4">⚙️ Non-Living Things</h1>
+    <div className="p-4 pb-20">
+      <h1 className="text-2xl font-bold mb-4">⚙️ Non-Living Things</h1>
       
       {items.length === 0 ? (
-        <Card className="p-12 text-center bg-gray-50 dark:bg-gray-900">
-          <div className="text-6xl mb-4">⚙️</div>
-          <h3 className="text-xl font-semibold mb-2 text-gray-800 dark:text-gray-200">No items yet</h3>
-          <p className="text-muted-foreground">
-            Start identifying non-living objects with your camera!
+        <Card className="p-8 text-center bg-muted/30">
+          <div className="text-5xl mb-3">⚙️</div>
+          <h3 className="text-lg font-semibold mb-1">No items yet</h3>
+          <p className="text-sm text-muted-foreground">
+            Identify non-living objects with your camera!
           </p>
         </Card>
       ) : (

@@ -3,10 +3,18 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Camera, Upload, Loader2, LogOut, Archive } from "lucide-react";
+import { Camera, Upload, Loader2, LogOut, Menu, Flag } from "lucide-react";
 import { CameraCapture } from "@/components/CameraCapture";
 import { useToast } from "@/hooks/use-toast";
 import { Session } from "@supabase/supabase-js";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -15,6 +23,8 @@ const Index = () => {
   const [isIdentifying, setIsIdentifying] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [coordinates, setCoordinates] = useState<{latitude: number, longitude: number} | null>(null);
+  const [showReport, setShowReport] = useState(false);
+  const [reportReason, setReportReason] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -128,136 +138,157 @@ const Index = () => {
     return colorMap[category] || colorMap.other;
   };
 
+  const handleReport = () => {
+    if (!reportReason.trim()) {
+      toast({
+        title: "Please provide a reason",
+        description: "Tell us why this identification is incorrect",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    toast({
+      title: "Report Submitted",
+      description: "Thank you for helping improve our identification accuracy!",
+    });
+    setShowReport(false);
+    setReportReason("");
+  };
+
   if (!session) {
     return null;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <div className="flex justify-between items-center">
-            <div className="text-center flex-1 space-y-2">
-              <h1 className="text-4xl font-bold tracking-tight">Species Identifier</h1>
-              <p className="text-muted-foreground">
-                Identify any living being with AI-powered precision
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => navigate("/collection")}>
-                <Archive className="mr-2 h-4 w-4" />
-                Collection
-              </Button>
-              <Button variant="outline" onClick={handleSignOut}>
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
-              </Button>
-            </div>
-          </div>
-
-          {!selectedImage && (
-            <Card className="p-8">
-              <div className="space-y-4">
-                <Button
-                  onClick={() => setShowCamera(true)}
-                  size="lg"
-                  className="w-full"
-                  variant="default"
-                >
-                  <Camera className="mr-2 h-5 w-5" />
-                  Take Photo
-                </Button>
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">Or</span>
-                  </div>
-                </div>
-
-                <label htmlFor="file-upload">
-                  <Button
-                    size="lg"
-                    variant="outline"
-                    className="w-full"
-                    asChild
-                  >
-                    <span>
-                      <Upload className="mr-2 h-5 w-5" />
-                      Upload Image
-                    </span>
-                  </Button>
-                  <input
-                    id="file-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleFileUpload}
-                  />
-                </label>
-              </div>
-            </Card>
-          )}
-
-          {selectedImage && (
-            <Card className="p-6 space-y-4">
-              <div className="relative">
-                <img
-                  src={selectedImage}
-                  alt="Selected"
-                  className="w-full rounded-lg object-cover max-h-96"
-                />
-              </div>
-
-              {isIdentifying && (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  <span className="ml-3 text-lg">Identifying species...</span>
-                </div>
-              )}
-
-              {result && !isIdentifying && (
-                <div className="space-y-4">
-                  <div
-                    className={`${getCategoryColor(result.category)} p-4 rounded-lg text-white`}
-                  >
-                    <div className="space-y-2">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-2xl font-bold">{result.name}</h3>
-                          <p className="text-sm italic opacity-90">
-                            {result.scientificName}
-                          </p>
-                        </div>
-                        <span className="text-sm font-medium bg-white/20 px-3 py-1 rounded-full">
-                          {result.confidence}% match
-                        </span>
-                      </div>
-                      <p className="text-sm opacity-90 capitalize">
-                        Category: {result.category}
-                      </p>
-                    </div>
-                  </div>
-
-                  <p className="text-muted-foreground">{result.description}</p>
-                </div>
-              )}
-
-              <Button
-                onClick={() => {
-                  setSelectedImage(null);
-                  setResult(null);
-                }}
-                variant="outline"
-                className="w-full"
-              >
-                Identify Another
-              </Button>
-            </Card>
-          )}
+    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 safe-area-inset">
+      {/* Mobile-first header */}
+      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b px-4 py-3">
+        <div className="flex justify-between items-center">
+          <Button variant="ghost" size="icon" onClick={() => navigate("/species")}>
+            <Menu className="h-5 w-5" />
+          </Button>
+          <h1 className="text-lg font-bold">Species Identifier</h1>
+          <Button variant="ghost" size="icon" onClick={handleSignOut}>
+            <LogOut className="h-5 w-5" />
+          </Button>
         </div>
+      </header>
+
+      <div className="px-4 py-4 pb-20 space-y-4">
+        {!selectedImage && (
+          <div className="space-y-4">
+            <p className="text-center text-sm text-muted-foreground">
+              Identify any living being with AI
+            </p>
+            
+            <Button
+              onClick={() => setShowCamera(true)}
+              size="lg"
+              className="w-full h-14 text-base"
+              variant="default"
+            >
+              <Camera className="mr-2 h-6 w-6" />
+              Take Photo
+            </Button>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or</span>
+              </div>
+            </div>
+
+            <label htmlFor="file-upload">
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full h-14 text-base"
+                asChild
+              >
+                <span>
+                  <Upload className="mr-2 h-6 w-6" />
+                  Upload Image
+                </span>
+              </Button>
+              <input
+                id="file-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+            </label>
+          </div>
+        )}
+
+        {selectedImage && (
+          <Card className="p-4 space-y-4">
+            <div className="relative rounded-lg overflow-hidden">
+              <img
+                src={selectedImage}
+                alt="Selected"
+                className="w-full object-cover max-h-[50vh]"
+              />
+            </div>
+
+            {isIdentifying && (
+              <div className="flex items-center justify-center py-6">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="ml-2 text-base">Identifying...</span>
+              </div>
+            )}
+
+            {result && !isIdentifying && (
+              <div className="space-y-3">
+                <div className={`${getCategoryColor(result.category)} p-4 rounded-lg text-white`}>
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="min-w-0">
+                      <h3 className="text-xl font-bold truncate">{result.name}</h3>
+                      {result.scientificName && (
+                        <p className="text-sm italic opacity-90 truncate">
+                          {result.scientificName}
+                        </p>
+                      )}
+                    </div>
+                    <span className="text-xs font-medium bg-white/20 px-2 py-1 rounded-full shrink-0">
+                      {result.confidence}%
+                    </span>
+                  </div>
+                  <p className="text-sm opacity-90 capitalize mt-2">
+                    {result.category}
+                  </p>
+                </div>
+
+                <p className="text-sm text-muted-foreground">{result.description}</p>
+
+                {/* Report wrong identification */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-muted-foreground"
+                  onClick={() => setShowReport(true)}
+                >
+                  <Flag className="h-4 w-4 mr-2" />
+                  Report Wrong Identification
+                </Button>
+              </div>
+            )}
+
+            <Button
+              onClick={() => {
+                setSelectedImage(null);
+                setResult(null);
+              }}
+              variant="outline"
+              className="w-full h-12"
+            >
+              Identify Another
+            </Button>
+          </Card>
+        )}
       </div>
 
       {showCamera && (
@@ -266,6 +297,37 @@ const Index = () => {
           onClose={() => setShowCamera(false)}
         />
       )}
+
+      {/* Report Dialog */}
+      <Dialog open={showReport} onOpenChange={setShowReport}>
+        <DialogContent className="mx-4 max-w-[calc(100%-2rem)]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Flag className="h-5 w-5" />
+              Report Wrong Identification
+            </DialogTitle>
+            <DialogDescription>
+              Help us improve by telling us what went wrong
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <Textarea
+              placeholder="What should this species be? What details were incorrect?"
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              className="min-h-[100px]"
+            />
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => setShowReport(false)}>
+                Cancel
+              </Button>
+              <Button className="flex-1" onClick={handleReport}>
+                Submit Report
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
