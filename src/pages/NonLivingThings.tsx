@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, Box } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -93,11 +93,16 @@ export default function NonLivingThings() {
 
   return (
     <div className="p-4 pb-20">
-      <h1 className="text-2xl font-bold mb-4">⚙️ Non-Living Things</h1>
+      <div className="flex items-center gap-2 mb-4">
+        <Box className="h-6 w-6 text-emerald-600" />
+        <h1 className="text-2xl font-bold">Non-Living Things</h1>
+      </div>
       
       {items.length === 0 ? (
         <Card className="p-8 text-center bg-muted/30">
-          <div className="text-5xl mb-3">⚙️</div>
+          <div className="flex justify-center mb-3">
+            <Box className="h-12 w-12 text-emerald-600" />
+          </div>
           <h3 className="text-lg font-semibold mb-1">No items yet</h3>
           <p className="text-sm text-muted-foreground">
             Identify non-living objects with your camera!
@@ -113,7 +118,7 @@ export default function NonLivingThings() {
             >
               <AccordionTrigger className="hover:no-underline px-4 py-3 hover:bg-gray-100 dark:hover:bg-gray-700">
                 <div className="flex items-center gap-4 w-full">
-                  <div className="w-16 h-16 rounded-md overflow-hidden shrink-0 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-md overflow-hidden shrink-0 bg-muted flex items-center justify-center">
                     {item.image_url ? (
                       <img
                         src={item.image_url}
@@ -122,7 +127,7 @@ export default function NonLivingThings() {
                         loading="lazy"
                       />
                     ) : (
-                      <span className="text-2xl">⚙️</span>
+                      <Box className="h-8 w-8 text-emerald-600" />
                     )}
                   </div>
                   <div className="flex-1 text-left">

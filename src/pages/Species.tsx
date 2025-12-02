@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2, Flag } from "lucide-react";
+import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -14,6 +14,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { LucideIcon } from "lucide-react";
 
 interface Finding {
   id: string;
@@ -44,15 +45,20 @@ const KINGDOM_LABELS: { [key: string]: string } = {
   all: "All"
 };
 
-const KINGDOM_ICONS: { [key: string]: string } = {
-  plant: "🌿",
-  mammal: "🦁",
-  insect: "🦋",
-  bird: "🦅",
-  reptile: "🦎",
-  fish: "🐟",
-  amphibian: "🐸",
-  other: "🦠",
+const KINGDOM_ICONS: { [key: string]: LucideIcon } = {
+  plant: Leaf,
+  mammal: Cat,
+  insect: Bug,
+  bird: Bird,
+  reptile: Cat,
+  fish: Fish,
+  amphibian: Fish,
+  other: Microscope,
+};
+
+const KingdomIcon = ({ kingdom, className }: { kingdom: string; className?: string }) => {
+  const Icon = KINGDOM_ICONS[kingdom] || Search;
+  return <Icon className={className || "h-4 w-4 text-emerald-600"} />;
 };
 
 export default function Species() {
@@ -216,10 +222,10 @@ export default function Species() {
               variant={activeTab === tab ? "default" : "outline"}
               size="sm"
               onClick={() => setActiveTab(tab)}
-              className="shrink-0"
+              className="shrink-0 flex items-center gap-1"
             >
-              {tab === "all" ? "All" : `${KINGDOM_ICONS[tab]} ${KINGDOM_LABELS[tab]}`}
-              {tab === "all" ? ` (${stats.total})` : ` (${stats.kingdoms[tab]})`}
+              {tab !== "all" && <KingdomIcon kingdom={tab} className="h-3 w-3" />}
+              {tab === "all" ? `All (${stats.total})` : `${KINGDOM_LABELS[tab]} (${stats.kingdoms[tab]})`}
             </Button>
           ))}
         </div>
@@ -228,7 +234,9 @@ export default function Species() {
 
       {filteredFindings.length === 0 ? (
         <Card className="p-8 text-center">
-          <div className="text-5xl mb-3">🔍</div>
+          <div className="flex justify-center mb-3">
+            <Search className="h-12 w-12 text-emerald-600" />
+          </div>
           <h3 className="text-lg font-semibold mb-1">No species found</h3>
           <p className="text-sm text-muted-foreground">
             Start identifying with your camera!
@@ -248,8 +256,8 @@ export default function Species() {
                       loading="lazy"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-3xl">
-                      {KINGDOM_ICONS[finding.kingdom] || "🔍"}
+                    <div className="w-full h-full flex items-center justify-center">
+                      <KingdomIcon kingdom={finding.kingdom} className="h-8 w-8 text-emerald-600" />
                     </div>
                   )}
                 </div>
@@ -265,8 +273,9 @@ export default function Species() {
                     </div>
                   </div>
                   <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                    <Badge variant="secondary" className="text-xs">
-                      {KINGDOM_ICONS[finding.kingdom]} {KINGDOM_LABELS[finding.kingdom]}
+                    <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                      <KingdomIcon kingdom={finding.kingdom} className="h-3 w-3 text-emerald-600" />
+                      {KINGDOM_LABELS[finding.kingdom]}
                     </Badge>
                     {finding.confidence && (
                       <Badge variant={finding.confidence > 80 ? "default" : "outline"} className="text-xs">

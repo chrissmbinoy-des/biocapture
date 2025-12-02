@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, Egg } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface EasterEgg {
@@ -70,7 +70,7 @@ export default function EasterEggs() {
   return (
     <div className="p-4 pb-20">
       <div className="flex items-center gap-2 mb-4">
-        <Sparkles className="h-6 w-6 text-yellow-500" />
+        <Sparkles className="h-6 w-6 text-emerald-600" />
         <h1 className="text-2xl font-bold">Easter Egg Findings</h1>
       </div>
       
@@ -80,7 +80,9 @@ export default function EasterEggs() {
 
       {findings.length === 0 ? (
         <Card className="p-8 text-center">
-          <div className="text-6xl mb-4">🥚</div>
+          <div className="flex justify-center mb-4">
+            <Egg className="h-16 w-16 text-emerald-600" />
+          </div>
           <h3 className="text-lg font-semibold mb-2">No Easter Eggs Yet</h3>
           <p className="text-sm text-muted-foreground">
             Keep exploring to find rare and endangered species!
@@ -91,7 +93,7 @@ export default function EasterEggs() {
           {findings.map((finding) => (
             <Card 
               key={finding.id} 
-              className="overflow-hidden bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-500/30"
+              className="overflow-hidden bg-gradient-to-br from-emerald-500/10 to-green-500/10 border-emerald-500/30"
             >
               <div className="flex gap-4 p-4">
                 <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-muted">
@@ -103,14 +105,14 @@ export default function EasterEggs() {
                       loading="lazy"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-3xl">
-                      🥚
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Egg className="h-10 w-10 text-emerald-600" />
                     </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <Sparkles className="h-4 w-4 text-yellow-500 shrink-0" />
+                    <Sparkles className="h-4 w-4 text-emerald-600 shrink-0" />
                     <h3 className="font-bold text-base truncate">{finding.species_name}</h3>
                   </div>
                   {finding.scientific_name && (
