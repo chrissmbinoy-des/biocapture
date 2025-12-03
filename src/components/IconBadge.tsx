@@ -1,11 +1,13 @@
-import { LucideIcon } from "lucide-react";
+import { ComponentType } from "react";
 import { cn } from "@/lib/utils";
 
 type IconSize = "xs" | "sm" | "md" | "lg" | "xl";
 type IconVariant = "plant" | "mammal" | "insect" | "bird" | "reptile" | "fish" | "amphibian" | "other" | "nonliving" | "default" | "muted";
 
+export type IconComponent = ComponentType<{ className?: string; size?: number | string }>;
+
 interface IconBadgeProps {
-  icon: LucideIcon;
+  icon: IconComponent;
   size?: IconSize;
   variant?: IconVariant;
   className?: string;
