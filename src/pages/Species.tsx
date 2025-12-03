@@ -2,7 +2,10 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope, LucideIcon } from "lucide-react";
+import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope } from "lucide-react";
+import SnakeIcon from "@/components/icons/SnakeIcon";
+import FrogIcon from "@/components/icons/FrogIcon";
+import { IconBadge, getKingdomVariant, IconComponent } from "@/components/IconBadge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -14,7 +17,6 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { IconBadge, getKingdomVariant } from "@/components/IconBadge";
 
 interface Finding {
   id: string;
@@ -47,14 +49,14 @@ const KINGDOM_LABELS: { [key: string]: string } = {
   all: "All"
 };
 
-const KINGDOM_ICONS: { [key: string]: LucideIcon } = {
+const KINGDOM_ICONS: { [key: string]: IconComponent } = {
   plant: Leaf,
   mammal: Cat,
   insect: Bug,
   bird: Bird,
-  reptile: Cat,
+  reptile: SnakeIcon,
   fish: Fish,
-  amphibian: Fish,
+  amphibian: FrogIcon,
   other: Microscope,
 };
 
