@@ -17,6 +17,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { IconBadge } from "@/components/IconBadge";
 
 interface Location {
   id: string;
@@ -92,15 +93,15 @@ export default function Locations() {
 
   return (
     <div className="p-4 pb-20">
-      <div className="flex items-center gap-2 mb-4">
-        <MapPin className="h-6 w-6 text-emerald-600" />
+      <div className="flex items-center gap-3 mb-4">
+        <IconBadge icon={MapPin} size="md" variant="bird" withGlow />
         <h1 className="text-2xl font-bold">Locations</h1>
       </div>
       
       {locations.length === 0 ? (
         <Card className="p-8 text-center">
           <div className="flex justify-center mb-3">
-            <MapPin className="h-12 w-12 text-emerald-600" />
+            <IconBadge icon={MapPin} size="xl" variant="bird" withGlow />
           </div>
           <h3 className="text-lg font-semibold mb-1">No locations yet</h3>
           <p className="text-sm text-muted-foreground">
@@ -126,7 +127,7 @@ export default function Locations() {
                         loading="lazy"
                       />
                     ) : (
-                      <MapPin className="h-8 w-8 text-emerald-600" />
+                      <IconBadge icon={MapPin} size="lg" variant="bird" />
                     )}
                   </div>
                   <div className="flex-1 text-left">

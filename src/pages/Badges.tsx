@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { Loader2, Award, Leaf, Cat, Bug, Bird, Fish, Microscope, Star, Trophy, Target, Zap, Crown, Medal, Shield, Heart, Flame, Sun, Moon, Mountain, Trees, Waves, Wind, Cloud, Snowflake, LucideIcon } from "lucide-react";
+import { Loader2, Award, Leaf, Cat, Bug, Bird, Fish, Microscope, Star, Trophy, Target, Zap, Crown, Medal, Shield, Heart, Flame, Sun, Moon, Mountain, Trees, Waves, Wind, Cloud, Snowflake, LucideIcon, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { IconBadge } from "@/components/IconBadge";
 
 const BADGE_ICON_MAP: { [key: string]: LucideIcon } = {
   "🌿": Leaf,
@@ -36,9 +37,8 @@ const BADGE_ICON_MAP: { [key: string]: LucideIcon } = {
   "❄️": Snowflake,
 };
 
-const BadgeIcon = ({ iconStr, className }: { iconStr: string; className?: string }) => {
-  const Icon = BADGE_ICON_MAP[iconStr] || Award;
-  return <Icon className={className || "h-8 w-8 text-emerald-600"} />;
+const getBadgeIcon = (iconStr: string): LucideIcon => {
+  return BADGE_ICON_MAP[iconStr] || Award;
 };
 
 interface Badge {
@@ -153,8 +153,8 @@ export default function Badges() {
                 className="p-3 text-center cursor-pointer active:scale-95 transition-transform"
                 onClick={() => setSelectedBadge(userBadge.badges)}
               >
-                <div className="flex justify-center mb-1">
-                  <BadgeIcon iconStr={userBadge.badges.icon} className="h-8 w-8 text-emerald-600" />
+                <div className="flex justify-center mb-2">
+                  <IconBadge icon={getBadgeIcon(userBadge.badges.icon)} size="lg" withGlow />
                 </div>
                 <h3 className="font-semibold text-xs truncate">{userBadge.badges.name}</h3>
               </Card>
@@ -174,8 +174,8 @@ export default function Badges() {
                 className="p-3 text-center cursor-pointer opacity-50 grayscale active:scale-95 transition-transform"
                 onClick={() => setSelectedBadge(badge)}
               >
-                <div className="flex justify-center mb-1">
-                  <BadgeIcon iconStr={badge.icon} className="h-8 w-8 text-muted-foreground" />
+                <div className="flex justify-center mb-2">
+                  <IconBadge icon={getBadgeIcon(badge.icon)} size="lg" variant="muted" />
                 </div>
                 <h3 className="font-semibold text-xs truncate">{badge.name}</h3>
               </Card>
@@ -186,8 +186,8 @@ export default function Badges() {
       <Dialog open={!!selectedBadge} onOpenChange={(open) => !open && setSelectedBadge(null)}>
         <DialogContent className="mx-4 max-w-[calc(100%-2rem)]">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <BadgeIcon iconStr={selectedBadge?.icon || ""} className="h-8 w-8 text-emerald-600" />
+            <DialogTitle className="flex items-center gap-3">
+              <IconBadge icon={getBadgeIcon(selectedBadge?.icon || "")} size="lg" withGlow />
               <span className="text-lg">{selectedBadge?.name}</span>
             </DialogTitle>
           </DialogHeader>
@@ -200,8 +200,8 @@ export default function Badges() {
               </p>
             </div>
             {selectedBadge && userBadges.some(ub => ub.badge_id === selectedBadge.id) && (
-              <div className="flex items-center gap-2 text-sm text-emerald-600">
-                <span>✓</span>
+              <div className="flex items-center gap-2 text-sm">
+                <IconBadge icon={Check} size="xs" withBackground={false} />
                 <span>Earned {new Date(userBadges.find(ub => ub.badge_id === selectedBadge.id)?.earned_at || '').toLocaleDateString()}</span>
               </div>
             )}

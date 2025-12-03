@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope } from "lucide-react";
+import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope, LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
@@ -14,7 +14,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { LucideIcon } from "lucide-react";
+import { IconBadge, getKingdomVariant } from "@/components/IconBadge";
 
 interface Finding {
   id: string;
@@ -54,11 +54,6 @@ const KINGDOM_ICONS: { [key: string]: LucideIcon } = {
   fish: Fish,
   amphibian: Fish,
   other: Microscope,
-};
-
-const KingdomIcon = ({ kingdom, className }: { kingdom: string; className?: string }) => {
-  const Icon = KINGDOM_ICONS[kingdom] || Search;
-  return <Icon className={className || "h-4 w-4 text-emerald-600"} />;
 };
 
 export default function Species() {
@@ -224,7 +219,7 @@ export default function Species() {
               onClick={() => setActiveTab(tab)}
               className="shrink-0 flex items-center gap-1"
             >
-              {tab !== "all" && <KingdomIcon kingdom={tab} className="h-3 w-3" />}
+              {tab !== "all" && <IconBadge icon={KINGDOM_ICONS[tab] || Search} size="xs" variant={getKingdomVariant(tab)} withBackground={false} />}
               {tab === "all" ? `All (${stats.total})` : `${KINGDOM_LABELS[tab]} (${stats.kingdoms[tab]})`}
             </Button>
           ))}
@@ -235,7 +230,7 @@ export default function Species() {
       {filteredFindings.length === 0 ? (
         <Card className="p-8 text-center">
           <div className="flex justify-center mb-3">
-            <Search className="h-12 w-12 text-emerald-600" />
+            <IconBadge icon={Search} size="xl" withGlow />
           </div>
           <h3 className="text-lg font-semibold mb-1">No species found</h3>
           <p className="text-sm text-muted-foreground">
@@ -257,7 +252,7 @@ export default function Species() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <KingdomIcon kingdom={finding.kingdom} className="h-8 w-8 text-emerald-600" />
+                      <IconBadge icon={KINGDOM_ICONS[finding.kingdom] || Search} size="lg" variant={getKingdomVariant(finding.kingdom)} withGlow />
                     </div>
                   )}
                 </div>
@@ -274,7 +269,7 @@ export default function Species() {
                   </div>
                   <div className="flex gap-1.5 mt-1.5 flex-wrap">
                     <Badge variant="secondary" className="text-xs flex items-center gap-1">
-                      <KingdomIcon kingdom={finding.kingdom} className="h-3 w-3 text-emerald-600" />
+                      <IconBadge icon={KINGDOM_ICONS[finding.kingdom] || Search} size="xs" variant={getKingdomVariant(finding.kingdom)} withBackground={false} />
                       {KINGDOM_LABELS[finding.kingdom]}
                     </Badge>
                     {finding.confidence && (
