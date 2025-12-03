@@ -33,6 +33,8 @@ interface Stats {
   kingdoms: { [key: string]: number };
 }
 
+const ALL_KINGDOMS = ["plant", "mammal", "insect", "bird", "reptile", "fish", "amphibian", "other"];
+
 const KINGDOM_LABELS: { [key: string]: string } = {
   plant: "Plants",
   mammal: "Mammals",
@@ -182,7 +184,7 @@ export default function Species() {
     setReportingId(null);
   };
 
-  const tabs = ["all", ...Object.keys(stats.kingdoms)];
+  const tabs = ["all", ...ALL_KINGDOMS];
 
   if (loading) {
     return (
@@ -220,7 +222,7 @@ export default function Species() {
               className="shrink-0 flex items-center gap-1"
             >
               {tab !== "all" && <IconBadge icon={KINGDOM_ICONS[tab] || Search} size="xs" variant={getKingdomVariant(tab)} withBackground={false} />}
-              {tab === "all" ? `All (${stats.total})` : `${KINGDOM_LABELS[tab]} (${stats.kingdoms[tab]})`}
+              {tab === "all" ? `All (${stats.total})` : `${KINGDOM_LABELS[tab]} (${stats.kingdoms[tab] || 0})`}
             </Button>
           ))}
         </div>
