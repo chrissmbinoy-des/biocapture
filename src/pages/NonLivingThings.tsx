@@ -18,6 +18,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
+import { IconBadge } from "@/components/IconBadge";
 
 interface Item {
   id: string;
@@ -93,15 +94,15 @@ export default function NonLivingThings() {
 
   return (
     <div className="p-4 pb-20">
-      <div className="flex items-center gap-2 mb-4">
-        <Box className="h-6 w-6 text-emerald-600" />
+      <div className="flex items-center gap-3 mb-4">
+        <IconBadge icon={Box} size="md" variant="nonliving" withGlow />
         <h1 className="text-2xl font-bold">Non-Living Things</h1>
       </div>
       
       {items.length === 0 ? (
         <Card className="p-8 text-center bg-muted/30">
           <div className="flex justify-center mb-3">
-            <Box className="h-12 w-12 text-emerald-600" />
+            <IconBadge icon={Box} size="xl" variant="nonliving" withGlow />
           </div>
           <h3 className="text-lg font-semibold mb-1">No items yet</h3>
           <p className="text-sm text-muted-foreground">
@@ -127,7 +128,7 @@ export default function NonLivingThings() {
                         loading="lazy"
                       />
                     ) : (
-                      <Box className="h-8 w-8 text-emerald-600" />
+                      <IconBadge icon={Box} size="lg" variant="nonliving" />
                     )}
                   </div>
                   <div className="flex-1 text-left">

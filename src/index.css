@@ -56,13 +56,17 @@ All colors MUST be HSL.
     
     /* Species category colors */
     --species-plant: 142 71% 45%;
-    --species-mammal: 25 95% 80%;
-    --species-insect: 30 40% 45%;
-    --species-bird: 200 70% 60%;
-    --species-reptile: 45 60% 50%;
+    --species-mammal: 25 95% 70%;
+    --species-insect: 30 50% 45%;
+    --species-bird: 200 70% 55%;
+    --species-reptile: 45 70% 50%;
     --species-fish: 210 80% 55%;
-    --species-amphibian: 160 50% 50%;
-    --species-other: 270 50% 60%;
+    --species-amphibian: 160 60% 45%;
+    --species-other: 270 50% 55%;
+    --species-nonliving: 220 10% 40%;
+    
+    /* Icon styling */
+    --icon-glow: 142 70% 45%;
   }
 
   .dark {

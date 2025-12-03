@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Loader2, Sparkles, Egg } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { IconBadge } from "@/components/IconBadge";
 
 interface EasterEgg {
   id: string;
@@ -69,8 +70,8 @@ export default function EasterEggs() {
 
   return (
     <div className="p-4 pb-20">
-      <div className="flex items-center gap-2 mb-4">
-        <Sparkles className="h-6 w-6 text-emerald-600" />
+      <div className="flex items-center gap-3 mb-4">
+        <IconBadge icon={Sparkles} size="md" withGlow />
         <h1 className="text-2xl font-bold">Easter Egg Findings</h1>
       </div>
       
@@ -81,7 +82,7 @@ export default function EasterEggs() {
       {findings.length === 0 ? (
         <Card className="p-8 text-center">
           <div className="flex justify-center mb-4">
-            <Egg className="h-16 w-16 text-emerald-600" />
+            <IconBadge icon={Egg} size="xl" withGlow />
           </div>
           <h3 className="text-lg font-semibold mb-2">No Easter Eggs Yet</h3>
           <p className="text-sm text-muted-foreground">
@@ -106,13 +107,13 @@ export default function EasterEggs() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Egg className="h-10 w-10 text-emerald-600" />
+                      <IconBadge icon={Egg} size="lg" withGlow />
                     </div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <Sparkles className="h-4 w-4 text-emerald-600 shrink-0" />
+                    <IconBadge icon={Sparkles} size="xs" withBackground={false} />
                     <h3 className="font-bold text-base truncate">{finding.species_name}</h3>
                   </div>
                   {finding.scientific_name && (
