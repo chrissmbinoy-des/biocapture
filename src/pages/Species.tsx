@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope } from "lucide-react";
-import SnakeIcon from "@/components/icons/SnakeIcon";
+import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
 import { IconBadge, getKingdomVariant, IconComponent } from "@/components/IconBadge";
 import { Button } from "@/components/ui/button";
@@ -54,7 +54,7 @@ const KINGDOM_ICONS: { [key: string]: IconComponent } = {
   mammal: Cat,
   insect: Bug,
   bird: Bird,
-  reptile: SnakeIcon,
+  reptile: CrocodileIcon,
   fish: Fish,
   amphibian: FrogIcon,
   other: Microscope,
