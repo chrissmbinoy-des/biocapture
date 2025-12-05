@@ -17,21 +17,16 @@ const CrocodileIcon = forwardRef<SVGSVGElement, CrocodileIconProps>(
         className={className}
         {...props}
       >
-        {/* Lacoste-style crocodile - walking pose */}
-        {/* Main body + tail */}
-        <path d="M1 12 Q3 10 5 11 L15 11 Q17 10 19 9 L22 8 L23 9 L22 10 Q21 11 19 12 L18 13 Q17 14 15 14 L5 14 Q3 15 1 14 Z" />
-        {/* Jaw/mouth detail */}
-        <path d="M22 10 L23 11 L21 11 Z" />
-        {/* Front leg */}
-        <path d="M15 14 L16 17 L17 17 L18 17 L17 15 L15 14" />
-        {/* Back leg */}
-        <path d="M6 14 L5 17 L4 17 L3 17 L4 15 L6 14" />
+        {/* Crocodile head - side view */}
+        {/* Long snout/head */}
+        <path d="M2 10 L2 14 L22 16 L22 10 L2 10 Z" />
+        {/* Jaw line */}
+        <path d="M2 14 L20 15.5" fill="none" stroke="white" strokeWidth="0.5" />
         {/* Eye */}
-        <circle cx="20" cy="9.5" r="0.8" fill="white" />
-        {/* Back spikes */}
-        <path d="M8 11 L8.5 9 L9 11" />
-        <path d="M11 11 L11.5 9 L12 11" />
-        <path d="M14 11 L14.5 9.5 L15 11" />
+        <circle cx="18" cy="12" r="1.5" fill="white" />
+        <circle cx="18" cy="12" r="0.7" />
+        {/* Nostril */}
+        <circle cx="4" cy="11.5" r="0.8" fill="white" />
       </svg>
     );
   }
