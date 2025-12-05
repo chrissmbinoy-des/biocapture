@@ -13,27 +13,21 @@ const FrogIcon = forwardRef<SVGSVGElement, FrogIconProps>(
         width={size}
         height={size}
         viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+        fill="currentColor"
         className={className}
         {...props}
       >
-        {/* Frog outline - top view */}
-        {/* Left eye */}
-        <circle cx="7" cy="7" r="3" />
-        {/* Right eye */}
-        <circle cx="17" cy="7" r="3" />
+        {/* Sitting frog silhouette - side view */}
         {/* Body */}
-        <ellipse cx="12" cy="14" rx="8" ry="6" />
-        {/* Front legs */}
-        <path d="M4 12l-2 4" />
-        <path d="M20 12l2 4" />
-        {/* Back legs */}
-        <path d="M6 18l-3 3" />
-        <path d="M18 18l3 3" />
+        <ellipse cx="10" cy="14" rx="6" ry="4" />
+        {/* Head */}
+        <circle cx="16" cy="11" r="4" />
+        {/* Bulging eye */}
+        <circle cx="18" cy="8" r="2" />
+        {/* Front leg */}
+        <path d="M14 17 L16 20 L18 20 L17 18 L15 16" />
+        {/* Back leg (bent) */}
+        <path d="M5 14 Q2 16 3 19 L6 19 L5 17 Q6 15 6 14" />
       </svg>
     );
   }
