@@ -1,4 +1,4 @@
-import { Home, Camera, MapPin, Award, Package, Sparkles } from "lucide-react";
+import { Home, Camera, MapPin, Award, Sparkles } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 
@@ -19,7 +19,6 @@ const items = [
   { title: "Species", url: "/species", icon: Home },
   { title: "Locations", url: "/locations", icon: MapPin },
   { title: "Badges", url: "/badges", icon: Award },
-  { title: "Non-Living", url: "/items", icon: Package },
   { title: "Easter Eggs", url: "/easter-eggs", icon: Sparkles },
 ];
 
