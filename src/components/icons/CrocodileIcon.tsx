@@ -17,21 +17,23 @@ const CrocodileIcon = forwardRef<SVGSVGElement, CrocodileIconProps>(
         className={className}
         {...props}
       >
-        {/* Lizard - top view, slightly slanted */}
-        {/* Body */}
-        <ellipse cx="12" cy="12" rx="4" ry="7" transform="rotate(-15 12 12)" />
-        {/* Head */}
-        <ellipse cx="12" cy="4" rx="2.5" ry="2" transform="rotate(-15 12 12)" />
-        {/* Tail */}
-        <path d="M13 18 Q14 21 16 23" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-        {/* Front left leg */}
-        <path d="M9 8 L4 5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        {/* Front right leg */}
-        <path d="M15 9 L20 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        {/* Back left leg */}
-        <path d="M9 15 L4 19" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-        {/* Back right leg */}
-        <path d="M15 16 L20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        {/* House gecko / wall lizard - top view, slanted */}
+        <g transform="rotate(-20 12 12)">
+          {/* Body - oval */}
+          <ellipse cx="12" cy="11" rx="3.5" ry="5" />
+          {/* Head - rounded triangle */}
+          <ellipse cx="12" cy="4.5" rx="2.8" ry="2.2" />
+          {/* Tail - long and tapered */}
+          <path d="M12 16 Q12.5 19 13 22" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+          {/* Front left leg with toes */}
+          <path d="M9 7 L5 4 M5 4 L4 3 M5 4 L5 2.5 M5 4 L6 2.5" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          {/* Front right leg with toes */}
+          <path d="M15 7 L19 4 M19 4 L20 3 M19 4 L19 2.5 M19 4 L18 2.5" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          {/* Back left leg with toes */}
+          <path d="M9 14 L5 18 M5 18 L4 19.5 M5 18 L3.5 18 M5 18 L4 17" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+          {/* Back right leg with toes */}
+          <path d="M15 14 L19 18 M19 18 L20 19.5 M19 18 L20.5 18 M19 18 L20 17" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        </g>
       </svg>
     );
   }
