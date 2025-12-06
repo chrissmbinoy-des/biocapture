@@ -63,38 +63,28 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an expert biologist and species identification specialist. Analyze images and identify both living organisms and non-living things with extreme precision.
+            content: `You are an expert biologist and species identification specialist. Analyze images and identify ONLY living organisms with extreme precision.
 
-IMPORTANT: First determine if the subject is LIVING or NON-LIVING.
+You can ONLY identify living organisms: animals, plants, fungi, bacteria, protists, algae, lichens, and other life forms.
 
-For LIVING organisms (animals, plants, fungi, bacteria, protists, etc.), provide:
+If the image does NOT contain a living organism (e.g., rocks, objects, structures, man-made items, fossils), you MUST respond with:
+{"error": "NO_LIVING_ORGANISM", "message": "No living organism detected in this image."}
+
+For living organisms, provide:
 1. Common name (e.g., "Bengal Tiger", "Oak Tree", "Monarch Butterfly")
 2. Scientific name (e.g., "Panthera tigris tigris")
 3. Category: one of [plant, mammal, insect, bird, reptile, fish, amphibian, other]
    - Use "other" for: fungi, bacteria, protists, microscopic organisms, slime molds, lichens, algae, and any other living organisms that don't fit the main categories
 4. Confidence percentage (0-100)
 5. Brief description (2-3 sentences about the species)
-6. isLiving: true
-
-For NON-LIVING things (rocks, artifacts, objects, structures, fossils, etc.), provide:
-1. Name (e.g., "Granite Rock", "Ancient Pottery", "Modern Chair")
-2. Category (e.g., "rock", "artifact", "furniture", "structure", "fossil")
-3. Confidence percentage (0-100)
-4. Brief description (2-3 sentences about the object)
-5. isLiving: false
-
-IMPORTANT DISTINCTION:
-- "other" category is ONLY for low-level or uncommon LIVING organisms like fungi, bacteria, protists, etc.
-- NON-LIVING things should NEVER be categorized as "other" - they should have isLiving: false
 
 Return ONLY valid JSON in this exact format:
 {
-  "name": "Common Name or Object Name",
-  "scientificName": "Scientific name (only for living things, null otherwise)",
+  "name": "Common Name",
+  "scientificName": "Scientific name",
   "category": "category",
   "confidence": 95,
-  "description": "Brief description of the species or object.",
-  "isLiving": true/false
+  "description": "Brief description of the species."
 }`
           },
           {
@@ -102,7 +92,7 @@ Return ONLY valid JSON in this exact format:
             content: [
               {
                 type: "text",
-                text: "Identify this living organism with maximum accuracy. Provide detailed species information."
+                text: "Identify this living organism. If this is not a living organism, respond with the error format."
               },
               {
                 type: "image_url",
@@ -167,7 +157,16 @@ Return ONLY valid JSON in this exact format:
       );
     }
 
-    console.log("Identified:", result.name, "Living:", result.isLiving);
+    // Check if AI returned an error (no living organism)
+    if (result.error === "NO_LIVING_ORGANISM") {
+      console.log("No living organism detected");
+      return new Response(
+        JSON.stringify({ error: "No living organism detected. Please take a photo of a plant, animal, or other living thing." }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log("Identified:", result.name);
 
     // Get place name from coordinates using reverse geocoding
     let placeName = null;
@@ -303,49 +302,28 @@ Return ONLY valid JSON in this exact format:
       // Continue without examples if generation fails
     }
 
-    // Save to appropriate database table based on living/non-living
+    // Save to species_identifications table
     try {
-      if (result.isLiving) {
-        // Save living organisms to species_identifications
-        const { data: identificationData, error: insertError } = await supabase
-          .from('species_identifications')
-          .insert({
-            user_id: user.id,
-            species_name: result.name,
-            scientific_name: result.scientificName,
-            kingdom: kingdom,
-            confidence: result.confidence,
-            description: result.description,
-            image_url: imageUrl,
-            example_images: exampleImages,
-            coordinates: coordinates,
-          })
-          .select()
-          .single();
+      const { data: identificationData, error: insertError } = await supabase
+        .from('species_identifications')
+        .insert({
+          user_id: user.id,
+          species_name: result.name,
+          scientific_name: result.scientificName,
+          kingdom: kingdom,
+          confidence: result.confidence,
+          description: result.description,
+          image_url: imageUrl,
+          example_images: exampleImages,
+          coordinates: coordinates,
+        })
+        .select()
+        .single();
 
-        if (insertError) {
-          console.error("Error saving species to database:", insertError);
-        } else {
-          console.log("Species identification saved to database");
-        }
+      if (insertError) {
+        console.error("Error saving species to database:", insertError);
       } else {
-        // Save non-living things to items table
-        const { error: itemError } = await supabase
-          .from('items')
-          .insert({
-            user_id: user.id,
-            name: result.name,
-            category: result.category,
-            description: result.description,
-            image_url: imageUrl,
-            example_images: exampleImages,
-          });
-
-        if (itemError) {
-          console.error("Error saving item to database:", itemError);
-        } else {
-          console.log("Non-living item saved to database");
-        }
+        console.log("Species identification saved to database");
       }
 
       // Save to locations table if coordinates are available
@@ -356,9 +334,7 @@ Return ONLY valid JSON in this exact format:
             .insert({
               user_id: user.id,
               name: placeName,
-              description: result.isLiving 
-                ? `Location where ${result.name} was found`
-                : `Location of ${result.name}`,
+              description: `Location where ${result.name} was found`,
               coordinates: coordinates,
               image_url: imageUrl,
               example_images: exampleImages,
