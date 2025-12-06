@@ -17,16 +17,21 @@ const CrocodileIcon = forwardRef<SVGSVGElement, CrocodileIconProps>(
         className={className}
         {...props}
       >
-        {/* Crocodile head - side view */}
-        {/* Long snout/head */}
-        <path d="M2 10 L2 14 L22 16 L22 10 L2 10 Z" />
-        {/* Jaw line */}
-        <path d="M2 14 L20 15.5" fill="none" stroke="white" strokeWidth="0.5" />
-        {/* Eye */}
-        <circle cx="18" cy="12" r="1.5" fill="white" />
-        <circle cx="18" cy="12" r="0.7" />
-        {/* Nostril */}
-        <circle cx="4" cy="11.5" r="0.8" fill="white" />
+        {/* Lizard - top view, slightly slanted */}
+        {/* Body */}
+        <ellipse cx="12" cy="12" rx="4" ry="7" transform="rotate(-15 12 12)" />
+        {/* Head */}
+        <ellipse cx="12" cy="4" rx="2.5" ry="2" transform="rotate(-15 12 12)" />
+        {/* Tail */}
+        <path d="M13 18 Q14 21 16 23" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        {/* Front left leg */}
+        <path d="M9 8 L4 5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        {/* Front right leg */}
+        <path d="M15 9 L20 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        {/* Back left leg */}
+        <path d="M9 15 L4 19" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        {/* Back right leg */}
+        <path d="M15 16 L20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
     );
   }
