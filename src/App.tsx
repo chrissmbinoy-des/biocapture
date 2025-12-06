@@ -9,7 +9,6 @@ import Auth from "./pages/Auth";
 import Species from "./pages/Species";
 import Locations from "./pages/Locations";
 import Badges from "./pages/Badges";
-import NonLivingThings from "./pages/NonLivingThings";
 import EasterEggs from "./pages/EasterEggs";
 import Collection from "./pages/Collection";
 import Install from "./pages/Install";
@@ -31,7 +30,6 @@ const App = () => (
             <Route path="/species" element={<Species />} />
             <Route path="/locations" element={<Locations />} />
             <Route path="/badges" element={<Badges />} />
-            <Route path="/items" element={<NonLivingThings />} />
             <Route path="/easter-eggs" element={<EasterEggs />} />
             <Route path="/collection" element={<Collection />} />
           </Route>
