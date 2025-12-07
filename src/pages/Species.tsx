@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,6 @@ import FrogIcon from "@/components/icons/FrogIcon";
 import { IconBadge, getKingdomVariant, IconComponent } from "@/components/IconBadge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -47,7 +46,6 @@ const KINGDOM_LABELS: { [key: string]: string } = {
   fish: "Fish",
   amphibian: "Amphibians",
   other: "Other Organisms",
-  all: "All"
 };
 
 const KINGDOM_ICONS: { [key: string]: IconComponent } = {
@@ -69,12 +67,11 @@ export default function Species() {
   const [reportReason, setReportReason] = useState("");
   const [reportingId, setReportingId] = useState<string | null>(null);
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   
-  // Read kingdom from URL query params
+  // Read kingdom from URL query params for filtering
   const kingdomParam = searchParams.get("kingdom");
-  const activeTab = kingdomParam && ALL_KINGDOMS.includes(kingdomParam) ? kingdomParam : "all";
+  const activeKingdom = kingdomParam && ALL_KINGDOMS.includes(kingdomParam) ? kingdomParam : null;
 
   useEffect(() => {
     fetchFindings();
@@ -152,9 +149,9 @@ export default function Species() {
   };
 
   const filteredFindings = useMemo(() => {
-    if (activeTab === "all") return findings;
-    return findings.filter((f) => f.kingdom === activeTab);
-  }, [findings, activeTab]);
+    if (!activeKingdom) return findings;
+    return findings.filter((f) => f.kingdom === activeKingdom);
+  }, [findings, activeKingdom]);
 
   const avgConfidence = useMemo(() => {
     if (findings.length === 0) return 0;
@@ -192,8 +189,6 @@ export default function Species() {
     setReportingId(null);
   };
 
-  const tabs = ["all", ...ALL_KINGDOMS];
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -202,40 +197,30 @@ export default function Species() {
     );
   }
 
+  // Page title based on active kingdom filter
+  const pageTitle = activeKingdom 
+    ? `${KINGDOM_LABELS[activeKingdom]} Collection` 
+    : "Species Collection";
+
   return (
     <div className="p-4 pb-20">
-      <h1 className="text-2xl font-bold mb-4">Species Collection</h1>
+      <h1 className="text-2xl font-bold mb-4">{pageTitle}</h1>
       
-      {/* Mobile-friendly stats */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      {/* Stats overview */}
+      <div className="grid grid-cols-3 gap-3 mb-4">
         <Card className="p-3 bg-gradient-to-br from-primary/10 to-primary/5">
-          <div className="text-2xl font-bold text-primary">{stats.total}</div>
-          <div className="text-xs text-muted-foreground">Total</div>
+          <div className="text-2xl font-bold text-primary">{activeKingdom ? filteredFindings.length : stats.total}</div>
+          <div className="text-xs text-muted-foreground">{activeKingdom ? KINGDOM_LABELS[activeKingdom] : "Total Species"}</div>
         </Card>
         <Card className="p-3 bg-gradient-to-br from-muted/30 to-muted/10">
           <div className="text-2xl font-bold text-foreground">{avgConfidence}%</div>
           <div className="text-xs text-muted-foreground">Avg. Confidence</div>
         </Card>
+        <Card className="p-3 bg-gradient-to-br from-secondary/20 to-secondary/5">
+          <div className="text-2xl font-bold text-foreground">{mostFoundKingdom}</div>
+          <div className="text-xs text-muted-foreground">Most Found</div>
+        </Card>
       </div>
-
-      {/* Horizontal scrolling tabs */}
-      <ScrollArea className="w-full mb-4">
-        <div className="flex gap-2 pb-2">
-          {tabs.map((tab) => (
-            <Button
-              key={tab}
-              variant={activeTab === tab ? "default" : "outline"}
-              size="sm"
-              onClick={() => navigate(tab === "all" ? "/species" : `/species?kingdom=${tab}`)}
-              className="shrink-0 flex items-center gap-1"
-            >
-              {tab !== "all" && <IconBadge icon={KINGDOM_ICONS[tab] || Search} size="xs" variant={getKingdomVariant(tab)} withBackground={false} />}
-              {tab === "all" ? `All (${stats.total})` : `${KINGDOM_LABELS[tab]} (${stats.kingdoms[tab] || 0})`}
-            </Button>
-          ))}
-        </div>
-        <ScrollBar orientation="horizontal" />
-      </ScrollArea>
 
       {filteredFindings.length === 0 ? (
         <Card className="p-8 text-center">
