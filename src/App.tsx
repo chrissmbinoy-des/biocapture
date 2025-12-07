@@ -13,6 +13,14 @@ import EasterEggs from "./pages/EasterEggs";
 import Collection from "./pages/Collection";
 import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
+import Plants from "./pages/Plants";
+import Mammals from "./pages/Mammals";
+import Insects from "./pages/Insects";
+import Birds from "./pages/Birds";
+import Reptiles from "./pages/Reptiles";
+import Fishes from "./pages/Fishes";
+import Amphibians from "./pages/Amphibians";
+import OtherOrganisms from "./pages/OtherOrganisms";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +36,14 @@ const App = () => (
           <Route path="/install" element={<Install />} />
           <Route element={<Layout />}>
             <Route path="/species" element={<Species />} />
+            <Route path="/plants" element={<Plants />} />
+            <Route path="/mammals" element={<Mammals />} />
+            <Route path="/insects" element={<Insects />} />
+            <Route path="/birds" element={<Birds />} />
+            <Route path="/reptiles" element={<Reptiles />} />
+            <Route path="/fish" element={<Fishes />} />
+            <Route path="/amphibians" element={<Amphibians />} />
+            <Route path="/other-organisms" element={<OtherOrganisms />} />
             <Route path="/locations" element={<Locations />} />
             <Route path="/badges" element={<Badges />} />
             <Route path="/easter-eggs" element={<EasterEggs />} />

@@ -29,14 +29,14 @@ const mainItems = [
 ];
 
 const kingdoms = [
-  { title: "Plants", url: "/species?kingdom=plant", icon: Leaf, key: "plant" },
-  { title: "Mammals", url: "/species?kingdom=mammal", icon: Cat, key: "mammal" },
-  { title: "Insects", url: "/species?kingdom=insect", icon: Bug, key: "insect" },
-  { title: "Birds", url: "/species?kingdom=bird", icon: Bird, key: "bird" },
-  { title: "Reptiles", url: "/species?kingdom=reptile", icon: CrocodileIcon, key: "reptile" },
-  { title: "Fish", url: "/species?kingdom=fish", icon: Fish, key: "fish" },
-  { title: "Amphibians", url: "/species?kingdom=amphibian", icon: FrogIcon, key: "amphibian" },
-  { title: "Other Organisms", url: "/species?kingdom=other", icon: Microscope, key: "other" },
+  { title: "Plants", url: "/plants", icon: Leaf, key: "plant" },
+  { title: "Mammals", url: "/mammals", icon: Cat, key: "mammal" },
+  { title: "Insects", url: "/insects", icon: Bug, key: "insect" },
+  { title: "Birds", url: "/birds", icon: Bird, key: "bird" },
+  { title: "Reptiles", url: "/reptiles", icon: CrocodileIcon, key: "reptile" },
+  { title: "Fish", url: "/fish", icon: Fish, key: "fish" },
+  { title: "Amphibians", url: "/amphibians", icon: FrogIcon, key: "amphibian" },
+  { title: "Other Organisms", url: "/other-organisms", icon: Microscope, key: "other" },
 ];
 
 const bottomItems = [
@@ -46,14 +46,18 @@ const bottomItems = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, setOpenMobile } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
-  const searchParams = new URLSearchParams(location.search);
-  const currentKingdom = searchParams.get("kingdom");
 
-  const isSpeciesActive = currentPath === "/species";
+  const kingdomPaths = kingdoms.map(k => k.url);
+  const isObservationsActive = kingdomPaths.includes(currentPath);
   const isCollapsed = state === "collapsed";
+
+  const handleNavClick = () => {
+    // Collapse sidebar on mobile when clicking a nav item
+    setOpenMobile(false);
+  };
 
   return (
     <Sidebar className={isCollapsed ? "w-14" : "w-60"} collapsible="icon">
@@ -71,6 +75,7 @@ export function AppSidebar() {
                       end
                       className="hover:bg-muted/50"
                       activeClassName="bg-muted text-primary font-medium"
+                      onClick={handleNavClick}
                     >
                       <item.icon className="h-4 w-4" />
                       {!isCollapsed && <span>{item.title}</span>}
@@ -79,8 +84,8 @@ export function AppSidebar() {
                 </SidebarMenuItem>
               ))}
 
-              {/* Species with Kingdoms */}
-              <Collapsible defaultOpen={isSpeciesActive} className="group/collapsible">
+              {/* Observations with Kingdoms */}
+              <Collapsible defaultOpen={isObservationsActive} className="group/collapsible">
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton className="hover:bg-muted/50">
@@ -103,7 +108,8 @@ export function AppSidebar() {
                               <NavLink
                                 to={kingdom.url}
                                 className="hover:bg-muted/50"
-                                activeClassName={currentKingdom === kingdom.key ? "bg-muted text-primary font-medium" : ""}
+                                activeClassName="bg-muted text-primary font-medium"
+                                onClick={handleNavClick}
                               >
                                 <kingdom.icon className="h-3 w-3" />
                                 <span>{kingdom.title}</span>
@@ -126,6 +132,7 @@ export function AppSidebar() {
                       end
                       className="hover:bg-muted/50"
                       activeClassName="bg-muted text-primary font-medium"
+                      onClick={handleNavClick}
                     >
                       <item.icon className="h-4 w-4" />
                       {!isCollapsed && <span>{item.title}</span>}
