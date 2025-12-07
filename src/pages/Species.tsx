@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -63,12 +64,17 @@ const KINGDOM_ICONS: { [key: string]: IconComponent } = {
 export default function Species() {
   const [findings, setFindings] = useState<Finding[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("all");
   const [stats, setStats] = useState<Stats>({ total: 0, kingdoms: {} });
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportingId, setReportingId] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Read kingdom from URL query params
+  const kingdomParam = searchParams.get("kingdom");
+  const activeTab = kingdomParam && ALL_KINGDOMS.includes(kingdomParam) ? kingdomParam : "all";
 
   useEffect(() => {
     fetchFindings();
@@ -220,7 +226,7 @@ export default function Species() {
               key={tab}
               variant={activeTab === tab ? "default" : "outline"}
               size="sm"
-              onClick={() => setActiveTab(tab)}
+              onClick={() => navigate(tab === "all" ? "/species" : `/species?kingdom=${tab}`)}
               className="shrink-0 flex items-center gap-1"
             >
               {tab !== "all" && <IconBadge icon={KINGDOM_ICONS[tab] || Search} size="xs" variant={getKingdomVariant(tab)} withBackground={false} />}
