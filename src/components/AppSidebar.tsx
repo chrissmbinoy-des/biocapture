@@ -87,7 +87,7 @@ export function AppSidebar() {
                       <Home className="h-4 w-4" />
                       {!isCollapsed && (
                         <>
-                          <span className="flex-1">Species</span>
+                          <span className="flex-1">Observations</span>
                           <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
                         </>
                       )}
@@ -96,20 +96,6 @@ export function AppSidebar() {
                   {!isCollapsed && (
                     <CollapsibleContent>
                       <SidebarMenuSub>
-                        {/* All Species */}
-                        <SidebarMenuSubItem>
-                          <SidebarMenuSubButton asChild>
-                            <NavLink
-                              to="/species"
-                              end
-                              className="hover:bg-muted/50"
-                              activeClassName={!currentKingdom ? "bg-muted text-primary font-medium" : ""}
-                            >
-                              <Home className="h-3 w-3" />
-                              <span>All Species</span>
-                            </NavLink>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
                         {/* Kingdom sublists */}
                         {kingdoms.map((kingdom) => (
                           <SidebarMenuSubItem key={kingdom.key}>
