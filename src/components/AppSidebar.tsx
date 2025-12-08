@@ -1,8 +1,10 @@
-import { Home, Camera, MapPin, Award, Sparkles, Leaf, Cat, Bug, Bird, Fish, Microscope, ChevronDown, Target } from "lucide-react";
+import { Home, Camera, MapPin, Award, Sparkles, Leaf, Cat, Bug, Bird, Fish, Microscope, ChevronDown, Target, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
+import { Button } from "@/components/ui/button";
 
 import {
   Sidebar,
@@ -49,6 +51,7 @@ const bottomItems = [
 export function AppSidebar() {
   const { state, setOpenMobile } = useSidebar();
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname;
 
   const kingdomPaths = kingdoms.map(k => k.url);
@@ -58,6 +61,12 @@ export function AppSidebar() {
   const handleNavClick = () => {
     // Collapse sidebar on mobile when clicking a nav item
     setOpenMobile(false);
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setOpenMobile(false);
+    navigate("/auth");
   };
 
   return (
@@ -141,6 +150,20 @@ export function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+
+              {/* Logout */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    {!isCollapsed && <span>Logout</span>}
+                  </Button>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
