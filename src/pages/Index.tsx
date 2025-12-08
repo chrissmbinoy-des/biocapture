@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Camera, Upload, Loader2, LogOut, Menu, Flag } from "lucide-react";
+import { Camera, Upload, Loader2, Menu, Flag } from "lucide-react";
 import { CameraCapture } from "@/components/CameraCapture";
 import { useToast } from "@/hooks/use-toast";
 import { Session } from "@supabase/supabase-js";
@@ -61,11 +61,6 @@ const Index = () => {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
-
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
-  };
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -169,9 +164,7 @@ const Index = () => {
             <Menu className="h-5 w-5" />
           </Button>
           <h1 className="text-lg font-bold">Species Identifier</h1>
-          <Button variant="ghost" size="icon" onClick={handleSignOut}>
-            <LogOut className="h-5 w-5" />
-          </Button>
+          <div className="w-9" /> {/* Spacer for centering */}
         </div>
       </header>
 
