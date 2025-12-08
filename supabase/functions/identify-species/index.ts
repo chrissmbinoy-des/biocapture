@@ -324,6 +324,94 @@ Return ONLY valid JSON in this exact format:
         console.error("Error saving species to database:", insertError);
       } else {
         console.log("Species identification saved to database");
+        
+        // Check and complete daily challenges
+        try {
+          const today = new Date().toISOString().split("T")[0];
+          
+          // Fetch user's incomplete challenges for today
+          const { data: userChallenges } = await supabase
+            .from('user_daily_challenges')
+            .select('*, daily_challenge_templates(*)')
+            .eq('user_id', user.id)
+            .eq('challenge_date', today)
+            .eq('is_completed', false);
+          
+          if (userChallenges && userChallenges.length > 0) {
+            // Get today's species count for this user
+            const todayStart = new Date(today);
+            const { data: todaySpecies } = await supabase
+              .from('species_identifications')
+              .select('kingdom')
+              .eq('user_id', user.id)
+              .gte('identified_at', todayStart.toISOString());
+            
+            const todayCount = todaySpecies?.length || 0;
+            const todayKingdoms = new Set(todaySpecies?.map(s => s.kingdom) || []);
+            
+            for (const challenge of userChallenges) {
+              const template = challenge.daily_challenge_templates;
+              let shouldComplete = false;
+              
+              if (template.challenge_type === 'identify_kingdom') {
+                // Check if identified a species of the required kingdom
+                shouldComplete = kingdom === template.target_value;
+              } else if (template.challenge_type === 'identify_count') {
+                // Check if reached the count target
+                shouldComplete = todayCount >= parseInt(template.target_value || '1');
+              } else if (template.challenge_type === 'kingdom_diversity') {
+                // Check if identified species from multiple kingdoms
+                shouldComplete = todayKingdoms.size >= parseInt(template.target_value || '2');
+              }
+              
+              if (shouldComplete) {
+                // Mark challenge as completed
+                await supabase
+                  .from('user_daily_challenges')
+                  .update({ 
+                    is_completed: true, 
+                    completed_at: new Date().toISOString(),
+                    progress: 1
+                  })
+                  .eq('id', challenge.id);
+                
+                // Award coins
+                const serviceSupabase = createClient(
+                  Deno.env.get('SUPABASE_URL')!,
+                  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+                );
+                
+                // Get or create user coins record
+                const { data: coinData } = await serviceSupabase
+                  .from('user_coins')
+                  .select('balance')
+                  .eq('user_id', user.id)
+                  .maybeSingle();
+                
+                if (coinData) {
+                  await serviceSupabase
+                    .from('user_coins')
+                    .update({ 
+                      balance: coinData.balance + template.coin_reward,
+                      updated_at: new Date().toISOString()
+                    })
+                    .eq('user_id', user.id);
+                } else {
+                  await serviceSupabase
+                    .from('user_coins')
+                    .insert({ 
+                      user_id: user.id, 
+                      balance: template.coin_reward 
+                    });
+                }
+                
+                console.log(`Challenge completed: ${template.name}, awarded ${template.coin_reward} coins`);
+              }
+            }
+          }
+        } catch (challengeErr) {
+          console.error("Error processing daily challenges:", challengeErr);
+        }
       }
 
       // Save to locations table if coordinates are available
