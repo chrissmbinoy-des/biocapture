@@ -16,6 +16,7 @@ const EasterEggs = lazy(() => import("./pages/EasterEggs"));
 const Collection = lazy(() => import("./pages/Collection"));
 const Install = lazy(() => import("./pages/Install"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const DailyChallenges = lazy(() => import("./pages/DailyChallenges"));
 const Plants = lazy(() => import("./pages/Plants"));
 const Mammals = lazy(() => import("./pages/Mammals"));
 const Insects = lazy(() => import("./pages/Insects"));
@@ -65,7 +66,8 @@ const App = () => (
               <Route path="/fish" element={<Fishes />} />
               <Route path="/amphibians" element={<Amphibians />} />
               <Route path="/other-organisms" element={<OtherOrganisms />} />
-              <Route path="/locations" element={<Locations />} />
+            <Route path="/locations" element={<Locations />} />
+            <Route path="/daily-challenges" element={<DailyChallenges />} />
               <Route path="/badges" element={<Badges />} />
               <Route path="/easter-eggs" element={<EasterEggs />} />
               <Route path="/collection" element={<Collection />} />
