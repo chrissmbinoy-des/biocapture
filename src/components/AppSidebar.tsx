@@ -1,4 +1,4 @@
-import { Home, Camera, MapPin, Award, Sparkles, Leaf, Cat, Bug, Bird, Fish, Microscope, ChevronDown } from "lucide-react";
+import { Home, Camera, MapPin, Award, Sparkles, Leaf, Cat, Bug, Bird, Fish, Microscope, ChevronDown, Target } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
@@ -40,6 +40,7 @@ const kingdoms = [
 ];
 
 const bottomItems = [
+  { title: "Daily Challenges", url: "/daily-challenges", icon: Target },
   { title: "Locations", url: "/locations", icon: MapPin },
   { title: "Badges", url: "/badges", icon: Award },
   { title: "Easter Eggs", url: "/easter-eggs", icon: Sparkles },

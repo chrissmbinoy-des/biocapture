@@ -44,6 +44,36 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_challenge_templates: {
+        Row: {
+          challenge_type: string
+          coin_reward: number
+          created_at: string | null
+          description: string
+          id: string
+          name: string
+          target_value: string | null
+        }
+        Insert: {
+          challenge_type: string
+          coin_reward?: number
+          created_at?: string | null
+          description: string
+          id?: string
+          name: string
+          target_value?: string | null
+        }
+        Update: {
+          challenge_type?: string
+          coin_reward?: number
+          created_at?: string | null
+          description?: string
+          id?: string
+          name?: string
+          target_value?: string | null
+        }
+        Relationships: []
+      }
       items: {
         Row: {
           category: string | null
@@ -183,6 +213,71 @@ export type Database = {
             columns: ["badge_id"]
             isOneToOne: false
             referencedRelation: "badges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_coins: {
+        Row: {
+          balance: number
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_daily_challenges: {
+        Row: {
+          challenge_date: string
+          challenge_template_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          is_completed: boolean | null
+          progress: number | null
+          user_id: string
+        }
+        Insert: {
+          challenge_date?: string
+          challenge_template_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          is_completed?: boolean | null
+          progress?: number | null
+          user_id: string
+        }
+        Update: {
+          challenge_date?: string
+          challenge_template_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          is_completed?: boolean | null
+          progress?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_daily_challenges_challenge_template_id_fkey"
+            columns: ["challenge_template_id"]
+            isOneToOne: false
+            referencedRelation: "daily_challenge_templates"
             referencedColumns: ["id"]
           },
         ]
