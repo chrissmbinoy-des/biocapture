@@ -223,7 +223,7 @@ const Index = () => {
               Identify any living being with AI
             </p>
             
-            <div className="grid grid-cols-2 gap-6 w-full max-w-sm">
+          <div className="grid grid-cols-2 gap-6 w-full max-w-sm">
               <Button
                 onClick={() => setShowCamera(true)}
                 size="lg"
@@ -248,6 +248,80 @@ const Index = () => {
                 />
               </label>
             </div>
+
+            {/* Visual tips info card */}
+            <Card className="w-full max-w-sm mt-8 p-4 bg-gradient-to-br from-primary/5 to-accent/10 border-primary/20">
+              <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                <span className="text-lg">🔍</span>
+                What can I identify?
+              </h3>
+              <div className="grid grid-cols-4 gap-3 mb-3">
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-10 h-10 rounded-full bg-species-plant/20 flex items-center justify-center">
+                    <span className="text-lg">🌿</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Plants</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-10 h-10 rounded-full bg-species-mammal/20 flex items-center justify-center">
+                    <span className="text-lg">🐾</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Mammals</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-10 h-10 rounded-full bg-species-bird/20 flex items-center justify-center">
+                    <span className="text-lg">🐦</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Birds</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-10 h-10 rounded-full bg-species-insect/20 flex items-center justify-center">
+                    <span className="text-lg">🦋</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Insects</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-3 mb-4">
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-10 h-10 rounded-full bg-species-reptile/20 flex items-center justify-center">
+                    <span className="text-lg">🦎</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Reptiles</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-10 h-10 rounded-full bg-species-fish/20 flex items-center justify-center">
+                    <span className="text-lg">🐟</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Fish</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-10 h-10 rounded-full bg-species-amphibian/20 flex items-center justify-center">
+                    <span className="text-lg">🐸</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Amphibians</span>
+                </div>
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-10 h-10 rounded-full bg-species-other/20 flex items-center justify-center">
+                    <span className="text-lg">🔬</span>
+                  </div>
+                  <span className="text-xs text-muted-foreground">Others</span>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground space-y-1 border-t border-border/50 pt-3">
+                <p className="flex items-center gap-2">
+                  <span className="text-green-500">✓</span>
+                  Make sure the subject is clearly visible
+                </p>
+                <p className="flex items-center gap-2">
+                  <span className="text-green-500">✓</span>
+                  Good lighting helps accuracy
+                </p>
+                <p className="flex items-center gap-2">
+                  <span className="text-green-500">✓</span>
+                  Get close for better details
+                </p>
+              </div>
+            </Card>
           </div>
         )}
 
