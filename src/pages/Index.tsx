@@ -94,8 +94,9 @@ const Index = () => {
         },
       });
 
-      if (error) {
-        const isNoOrganism = error.message?.toLowerCase().includes("no living organism");
+      // Check for error in response data (edge function returned error JSON)
+      if (data?.error) {
+        const isNoOrganism = data.error.toLowerCase().includes("no living organism");
         
         if (isNoOrganism) {
           toast({
@@ -105,7 +106,28 @@ const Index = () => {
         } else {
           toast({
             title: "Identification Failed",
-            description: error.message || "Failed to identify species. Please try again.",
+            description: data.error,
+            variant: "destructive",
+          });
+        }
+        setIsIdentifying(false);
+        setSelectedImage(null);
+        return;
+      }
+
+      if (error) {
+        const errorMsg = error.message || "";
+        const isNoOrganism = errorMsg.toLowerCase().includes("no living organism");
+        
+        if (isNoOrganism) {
+          toast({
+            title: "No Living Organism Found",
+            description: "Try photographing plants, animals, birds, insects, or other living things. Make sure the subject is clearly visible!",
+          });
+        } else {
+          toast({
+            title: "Identification Failed",
+            description: errorMsg || "Failed to identify species. Please try again.",
             variant: "destructive",
           });
         }
@@ -119,13 +141,24 @@ const Index = () => {
         title: "Species Identified!",
         description: `Found: ${data.name}`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error identifying species:", error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
+      const errorMsg = error?.message || "";
+      const isNoOrganism = errorMsg.toLowerCase().includes("no living organism");
+      
+      if (isNoOrganism) {
+        toast({
+          title: "No Living Organism Found",
+          description: "Try photographing plants, animals, birds, insects, or other living things. Make sure the subject is clearly visible!",
+        });
+        setSelectedImage(null);
+      } else {
+        toast({
+          title: "Error",
+          description: "An unexpected error occurred. Please try again.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setIsIdentifying(false);
     }
