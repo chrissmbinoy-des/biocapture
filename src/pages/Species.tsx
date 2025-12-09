@@ -237,7 +237,7 @@ export default function Species() {
           {filteredFindings.map((finding) => (
             <Card key={finding.id} className="overflow-hidden">
               <div className="flex gap-3 p-3">
-                <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 bg-muted">
+                <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-muted">
                   {finding.image_url ? (
                     <img
                       src={finding.image_url}
@@ -247,7 +247,7 @@ export default function Species() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <IconBadge icon={KINGDOM_ICONS[finding.kingdom] || Search} size="md" variant={getKingdomVariant(finding.kingdom)} withGlow />
+                      <IconBadge icon={KINGDOM_ICONS[finding.kingdom] || Search} size="lg" variant={getKingdomVariant(finding.kingdom)} withGlow />
                     </div>
                   )}
                 </div>
