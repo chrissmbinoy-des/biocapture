@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope, ChevronDown, ChevronRight, Image as ImageIcon } from "lucide-react";
+import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope, ChevronDown, ChevronRight, ChevronLeft, Image as ImageIcon } from "lucide-react";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
 import { IconBadge, getKingdomVariant, IconComponent } from "@/components/IconBadge";
@@ -37,6 +37,7 @@ interface Finding {
 interface GroupedSpecies {
   species_name: string;
   scientific_name: string | null;
+  description: string | null;
   findings: Finding[];
   avgConfidence: number;
   latestDate: string;
@@ -53,6 +54,17 @@ const KINGDOM_LABELS: { [key: string]: string } = {
   other: "Other Organisms",
 };
 
+const KINGDOM_TAXONOMY: { [key: string]: string[] } = {
+  plant: ["Eukaryota", "Plantae"],
+  mammal: ["Eukaryota", "Animalia", "Chordata", "Mammalia"],
+  insect: ["Eukaryota", "Animalia", "Arthropoda", "Insecta"],
+  bird: ["Eukaryota", "Animalia", "Chordata", "Aves"],
+  reptile: ["Eukaryota", "Animalia", "Chordata", "Reptilia"],
+  fish: ["Eukaryota", "Animalia", "Chordata", "Actinopterygii"],
+  amphibian: ["Eukaryota", "Animalia", "Chordata", "Amphibia"],
+  other: ["Eukaryota"],
+};
+
 const KINGDOM_ICONS: { [key: string]: IconComponent } = {
   plant: Leaf,
   mammal: Cat,
@@ -63,6 +75,131 @@ const KINGDOM_ICONS: { [key: string]: IconComponent } = {
   amphibian: FrogIcon,
   other: Microscope,
 };
+
+// Slidable sightings carousel component
+function SightingsCarousel({ 
+  findings, 
+  kingdom, 
+  KingdomIcon,
+  onReport, 
+  onDelete 
+}: { 
+  findings: Finding[]; 
+  kingdom: string;
+  KingdomIcon: IconComponent;
+  onReport: (id: string) => void; 
+  onDelete: (id: string) => void;
+}) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const goToPrevious = () => {
+    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : findings.length - 1));
+  };
+
+  const goToNext = () => {
+    setCurrentIndex((prev) => (prev < findings.length - 1 ? prev + 1 : 0));
+  };
+
+  const currentFinding = findings[currentIndex];
+
+  return (
+    <div className="relative">
+      <div className="flex items-center gap-2">
+        {findings.length > 1 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 shrink-0"
+            onClick={goToPrevious}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+        )}
+        
+        <div className="flex-1 relative">
+          <div className="aspect-[4/3] rounded-lg overflow-hidden bg-muted relative group">
+            {currentFinding.image_url ? (
+              <img
+                src={currentFinding.image_url}
+                alt={currentFinding.species_name}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <IconBadge icon={KingdomIcon} size="lg" variant={getKingdomVariant(kingdom)} />
+              </div>
+            )}
+            
+            {/* Action overlay */}
+            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-10 w-10 p-0 text-white hover:text-white hover:bg-white/20"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onReport(currentFinding.id);
+                }}
+              >
+                <Flag className="h-5 w-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-10 w-10 p-0 text-destructive hover:text-destructive hover:bg-destructive/20"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(currentFinding.id);
+                }}
+              >
+                <Trash2 className="h-5 w-5" />
+              </Button>
+            </div>
+          </div>
+          
+          {/* Sighting info */}
+          <div className="mt-2 flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+              {new Date(currentFinding.identified_at).toLocaleDateString()}
+            </p>
+            {findings.length > 1 && (
+              <p className="text-xs text-muted-foreground">
+                {currentIndex + 1} / {findings.length}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {findings.length > 1 && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 shrink-0"
+            onClick={goToNext}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+
+      {/* Dot indicators */}
+      {findings.length > 1 && (
+        <div className="flex justify-center gap-1.5 mt-2">
+          {findings.map((_, index) => (
+            <button
+              key={index}
+              className={`w-2 h-2 rounded-full transition-colors ${
+                index === currentIndex ? 'bg-primary' : 'bg-muted-foreground/30'
+              }`}
+              onClick={() => setCurrentIndex(index)}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 interface KingdomCollectionProps {
   kingdom: string;
@@ -132,6 +269,7 @@ export function KingdomCollection({ kingdom }: KingdomCollectionProps) {
         groups[key] = {
           species_name: finding.species_name,
           scientific_name: finding.scientific_name,
+          description: finding.description,
           findings: [],
           avgConfidence: 0,
           latestDate: finding.identified_at,
@@ -269,6 +407,7 @@ export function KingdomCollection({ kingdom }: KingdomCollectionProps) {
             const isExpanded = expandedSpecies.has(group.species_name);
             const primaryFinding = group.findings[0];
             const hasMultiple = group.findings.length > 1;
+            const taxonomy = KINGDOM_TAXONOMY[kingdom] || KINGDOM_TAXONOMY.other;
 
             return (
               <Card key={group.species_name} className="overflow-hidden">
@@ -305,11 +444,12 @@ export function KingdomCollection({ kingdom }: KingdomCollectionProps) {
                               </p>
                             )}
                           </div>
-                          {hasMultiple && (
-                            isExpanded ? 
-                              <ChevronDown className="h-5 w-5 text-muted-foreground shrink-0" /> : 
-                              <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
-                          )}
+                          <div className="shrink-0">
+                            {isExpanded ? 
+                              <ChevronDown className="h-5 w-5 text-muted-foreground" /> : 
+                              <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                            }
+                          </div>
                         </div>
                         <div className="flex gap-1.5 mt-1.5 flex-wrap">
                           <Badge variant="secondary" className="text-xs flex items-center gap-1">
@@ -333,54 +473,48 @@ export function KingdomCollection({ kingdom }: KingdomCollectionProps) {
                   </CollapsibleTrigger>
                   
                   <CollapsibleContent>
-                    <div className="border-t bg-muted/30 p-3 space-y-3">
-                      <p className="text-xs text-muted-foreground font-medium">All Sightings</p>
-                      <div className="grid grid-cols-3 gap-2">
-                        {group.findings.map((finding) => (
-                          <div key={finding.id} className="relative group">
-                            <div className="aspect-square rounded-lg overflow-hidden bg-muted">
-                              {finding.image_url ? (
-                                <img
-                                  src={finding.image_url}
-                                  alt={finding.species_name}
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center">
-                                  <IconBadge icon={KingdomIcon} size="sm" variant={getKingdomVariant(kingdom)} />
-                                </div>
+                    <div className="border-t bg-muted/30 p-3 space-y-4">
+                      {/* Description */}
+                      {group.description && (
+                        <div>
+                          <p className="text-xs text-muted-foreground font-medium mb-1">About</p>
+                          <p className="text-sm text-foreground leading-relaxed">{group.description}</p>
+                        </div>
+                      )}
+
+                      {/* Taxonomy Tree */}
+                      <div>
+                        <p className="text-xs text-muted-foreground font-medium mb-2">Classification</p>
+                        <div className="flex items-center gap-1 overflow-x-auto pb-1">
+                          {taxonomy.map((level, index) => (
+                            <div key={level} className="flex items-center gap-1 shrink-0">
+                              <Badge variant="outline" className="text-xs bg-background/50">
+                                {level}
+                              </Badge>
+                              {index < taxonomy.length - 1 && (
+                                <ChevronRight className="h-3 w-3 text-muted-foreground" />
                               )}
                             </div>
-                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 text-white hover:text-white hover:bg-white/20"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleReport(finding.id);
-                                }}
-                              >
-                                <Flag className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/20"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDelete(finding.id);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                            <p className="text-xs text-center text-muted-foreground mt-1">
-                              {new Date(finding.identified_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                        ))}
+                          ))}
+                          <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <Badge variant="secondary" className="text-xs shrink-0">
+                            {group.species_name}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* Slidable Sightings */}
+                      <div>
+                        <p className="text-xs text-muted-foreground font-medium mb-2">
+                          Sightings ({group.findings.length})
+                        </p>
+                        <SightingsCarousel 
+                          findings={group.findings} 
+                          kingdom={kingdom}
+                          KingdomIcon={KingdomIcon}
+                          onReport={handleReport}
+                          onDelete={handleDelete}
+                        />
                       </div>
                     </div>
                   </CollapsibleContent>
