@@ -95,12 +95,22 @@ const Index = () => {
       });
 
       if (error) {
-        toast({
-          title: "Identification Failed",
-          description: error.message || "Failed to identify species. Please try again.",
-          variant: "destructive",
-        });
+        const isNoOrganism = error.message?.toLowerCase().includes("no living organism");
+        
+        if (isNoOrganism) {
+          toast({
+            title: "No Living Organism Found",
+            description: "Try photographing plants, animals, birds, insects, or other living things. Make sure the subject is clearly visible!",
+          });
+        } else {
+          toast({
+            title: "Identification Failed",
+            description: error.message || "Failed to identify species. Please try again.",
+            variant: "destructive",
+          });
+        }
         setIsIdentifying(false);
+        setSelectedImage(null);
         return;
       }
 
