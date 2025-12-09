@@ -482,24 +482,24 @@ export function KingdomCollection({ kingdom }: KingdomCollectionProps) {
                         </div>
                       )}
 
-                      {/* Taxonomy Tree */}
+                      {/* Taxonomy Tree - from largest to smallest */}
                       <div>
                         <p className="text-xs text-muted-foreground font-medium mb-2">Classification</p>
                         <div className="flex items-center gap-1 overflow-x-auto pb-1">
-                          {taxonomy.map((level, index) => (
+                          {/* Build full taxonomy from Kingdom to Species */}
+                          {[...taxonomy, group.scientific_name || group.species_name].map((level, index, arr) => (
                             <div key={level} className="flex items-center gap-1 shrink-0">
-                              <Badge variant="outline" className="text-xs bg-background/50">
+                              <Badge 
+                                variant={index === arr.length - 1 ? "default" : "outline"} 
+                                className={`text-xs ${index === arr.length - 1 ? '' : 'bg-background/50'}`}
+                              >
                                 {level}
                               </Badge>
-                              {index < taxonomy.length - 1 && (
+                              {index < arr.length - 1 && (
                                 <ChevronRight className="h-3 w-3 text-muted-foreground" />
                               )}
                             </div>
                           ))}
-                          <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
-                          <Badge variant="secondary" className="text-xs shrink-0">
-                            {group.species_name}
-                          </Badge>
                         </div>
                       </div>
 
