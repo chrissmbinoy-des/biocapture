@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Coins, Target, CheckCircle2, Clock, RefreshCw } from "lucide-react";
+import { Coins, Target, CheckCircle2, Clock, RefreshCw, Leaf } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { BadgeProgressCircle } from "@/components/BadgeProgressCircle";
 
 interface ChallengeTemplate {
   id: string;
@@ -166,12 +167,17 @@ const DailyChallenges = () => {
       <div className="max-w-lg mx-auto space-y-6">
         {/* Header with Coins */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Daily Challenges</h1>
-            <p className="text-sm text-muted-foreground flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              Resets in {getTimeUntilReset()}
-            </p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-species-plant/10 flex items-center justify-center">
+              <Target className="h-5 w-5 text-species-plant" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Daily Challenges</h1>
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                Resets in {getTimeUntilReset()}
+              </p>
+            </div>
           </div>
           <Card className="bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border-yellow-500/30">
             <CardContent className="p-3 flex items-center gap-2">
@@ -206,18 +212,19 @@ const DailyChallenges = () => {
                   key={challenge.id}
                   className={`transition-all ${
                     isCompleted
-                      ? "bg-green-500/10 border-green-500/30"
-                      : "hover:border-primary/50"
+                      ? "bg-species-plant/10 border-species-plant/30"
+                      : "hover:border-species-plant/50"
                   }`}
                 >
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2">
-                        {isCompleted ? (
-                          <CheckCircle2 className="w-5 h-5 text-green-500" />
-                        ) : (
-                          <Target className="w-5 h-5 text-primary" />
-                        )}
+                      <div className="flex items-center gap-3">
+                        <BadgeProgressCircle
+                          icon={isCompleted ? CheckCircle2 : Target}
+                          progress={isCompleted ? 1 : challenge.progress}
+                          isEarned={isCompleted}
+                          size="sm"
+                        />
                         <CardTitle className="text-base">{template.name}</CardTitle>
                       </div>
                       <Badge
@@ -239,11 +246,11 @@ const DailyChallenges = () => {
                           <span>Progress</span>
                           <span>{challenge.progress} / 1</span>
                         </div>
-                        <Progress value={challenge.progress * 100} className="h-2" />
+                        <Progress value={challenge.progress * 100} className="h-2 [&>div]:bg-species-plant" />
                       </div>
                     )}
                     {isCompleted && (
-                      <p className="text-sm text-green-600 dark:text-green-400 font-medium">
+                      <p className="text-sm text-species-plant font-medium">
                         Completed! Coins earned.
                       </p>
                     )}

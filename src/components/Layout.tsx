@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { CoinDisplay } from "@/components/CoinDisplay";
+import { FloatingCameraButton } from "@/components/FloatingCameraButton";
 import { Menu } from "lucide-react";
 import { Outlet } from "react-router-dom";
 
@@ -22,6 +23,7 @@ export default function Layout() {
           <main className="flex-1 overflow-auto">
             <Outlet />
           </main>
+          <FloatingCameraButton />
         </div>
       </div>
     </SidebarProvider>
