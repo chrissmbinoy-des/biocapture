@@ -168,8 +168,9 @@ Return ONLY valid JSON in this exact format:
 
     console.log("Identified:", result.name);
 
-    // Get place name from coordinates using reverse geocoding
+    // Get place name and country from coordinates using reverse geocoding
     let placeName = null;
+    let country = null;
     if (coordinates) {
       try {
         const geocodeResponse = await fetch(
@@ -184,7 +185,8 @@ Return ONLY valid JSON in this exact format:
           const geocodeData = await geocodeResponse.json();
           const address = geocodeData.address;
           placeName = address.city || address.town || address.village || address.county || address.state || geocodeData.display_name;
-          console.log("Place name:", placeName);
+          country = address.country || null;
+          console.log("Place name:", placeName, "Country:", country);
         }
       } catch (geoError) {
         console.error("Geocoding error:", geoError);
@@ -316,6 +318,7 @@ Return ONLY valid JSON in this exact format:
           image_url: imageUrl,
           example_images: exampleImages,
           coordinates: coordinates,
+          country: country,
         })
         .select()
         .single();

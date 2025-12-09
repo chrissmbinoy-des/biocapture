@@ -180,6 +180,7 @@ export type Database = {
         Row: {
           confidence: number | null
           coordinates: Json | null
+          country: string | null
           description: string | null
           example_images: string[] | null
           id: string
@@ -193,6 +194,7 @@ export type Database = {
         Insert: {
           confidence?: number | null
           coordinates?: Json | null
+          country?: string | null
           description?: string | null
           example_images?: string[] | null
           id?: string
@@ -206,6 +208,7 @@ export type Database = {
         Update: {
           confidence?: number | null
           coordinates?: Json | null
+          country?: string | null
           description?: string | null
           example_images?: string[] | null
           id?: string
@@ -341,7 +344,23 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_country_leaderboard: {
+        Args: { country_filter: string; limit_count?: number }
+        Returns: {
+          rank: number
+          species_count: number
+          user_id: string
+        }[]
+      }
+      get_user_country: { Args: { target_user_id: string }; Returns: string }
+      get_worldwide_leaderboard: {
+        Args: { limit_count?: number }
+        Returns: {
+          rank: number
+          species_count: number
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
