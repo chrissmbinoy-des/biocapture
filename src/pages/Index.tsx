@@ -175,50 +175,36 @@ const Index = () => {
 
       <div className="px-4 py-4 pb-20 space-y-4">
         {!selectedImage && (
-          <div className="space-y-4">
-            <p className="text-center text-sm text-muted-foreground">
+          <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh]">
+            <p className="text-center text-sm text-muted-foreground mb-8">
               Identify any living being with AI
             </p>
             
-            <Button
-              onClick={() => setShowCamera(true)}
-              size="lg"
-              className="w-full h-14 text-base"
-              variant="default"
-            >
-              <Camera className="mr-2 h-6 w-6" />
-              Take Photo
-            </Button>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or</span>
-              </div>
-            </div>
-
-            <label htmlFor="file-upload">
+            <div className="grid grid-cols-2 gap-6 w-full max-w-sm">
               <Button
+                onClick={() => setShowCamera(true)}
                 size="lg"
-                variant="outline"
-                className="w-full h-14 text-base"
-                asChild
+                className="aspect-square h-auto flex-col gap-3 text-base transition-transform duration-200 active:scale-95 hover:scale-105"
+                variant="default"
               >
-                <span>
-                  <Upload className="mr-2 h-6 w-6" />
-                  Upload Image
-                </span>
+                <Camera className="h-10 w-10" />
+                <span>Take Photo</span>
               </Button>
-              <input
-                id="file-upload"
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleFileUpload}
-              />
-            </label>
+
+              <label htmlFor="file-upload" className="cursor-pointer">
+                <div className="aspect-square h-full flex flex-col items-center justify-center gap-3 text-base border-2 border-dashed border-border rounded-lg bg-background hover:bg-accent transition-all duration-200 hover:scale-105 active:scale-95">
+                  <Upload className="h-10 w-10 text-muted-foreground" />
+                  <span className="text-muted-foreground font-medium">Upload Image</span>
+                </div>
+                <input
+                  id="file-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                />
+              </label>
+            </div>
           </div>
         )}
 
@@ -266,7 +252,7 @@ const Index = () => {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="w-full text-muted-foreground"
+                  className="w-full text-muted-foreground transition-transform duration-200 active:scale-95 hover:scale-105"
                   onClick={() => setShowReport(true)}
                 >
                   <Flag className="h-4 w-4 mr-2" />
@@ -281,7 +267,7 @@ const Index = () => {
                 setResult(null);
               }}
               variant="outline"
-              className="w-full h-12"
+              className="w-full h-12 transition-transform duration-200 active:scale-95 hover:scale-105"
             >
               Identify Another
             </Button>
@@ -316,10 +302,10 @@ const Index = () => {
               className="min-h-[100px]"
             />
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setShowReport(false)}>
+              <Button variant="outline" className="flex-1 transition-transform duration-200 active:scale-95 hover:scale-105" onClick={() => setShowReport(false)}>
                 Cancel
               </Button>
-              <Button className="flex-1" onClick={handleReport}>
+              <Button className="flex-1 transition-transform duration-200 active:scale-95 hover:scale-105" onClick={handleReport}>
                 Submit Report
               </Button>
             </div>
