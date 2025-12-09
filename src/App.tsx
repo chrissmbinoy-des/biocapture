@@ -24,6 +24,8 @@ const Birds = lazy(() => import("./pages/Birds"));
 const Reptiles = lazy(() => import("./pages/Reptiles"));
 const Fishes = lazy(() => import("./pages/Fishes"));
 const Amphibians = lazy(() => import("./pages/Amphibians"));
+const Leaderboard = lazy(() => import("./pages/Leaderboard"));
+const LoginStreak = lazy(() => import("./pages/LoginStreak"));
 const OtherOrganisms = lazy(() => import("./pages/OtherOrganisms"));
 
 // Optimized QueryClient with stale time to reduce refetches
@@ -71,6 +73,8 @@ const App = () => (
               <Route path="/badges" element={<Badges />} />
               <Route path="/easter-eggs" element={<EasterEggs />} />
               <Route path="/collection" element={<Collection />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/login-streak" element={<LoginStreak />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

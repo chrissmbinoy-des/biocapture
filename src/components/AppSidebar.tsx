@@ -1,4 +1,4 @@
-import { Home, Camera, MapPin, Award, Sparkles, Leaf, Cat, Bug, Bird, Fish, Microscope, ChevronDown, Target, LogOut } from "lucide-react";
+import { Home, Camera, MapPin, Award, Sparkles, Leaf, Cat, Bug, Bird, Fish, Microscope, ChevronDown, Target, LogOut, Trophy, Flame } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -46,6 +46,8 @@ const bottomItems = [
   { title: "Locations", url: "/locations", icon: MapPin },
   { title: "Badges", url: "/badges", icon: Award },
   { title: "Easter Eggs", url: "/easter-eggs", icon: Sparkles },
+  { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
+  { title: "Login Streak", url: "/login-streak", icon: Flame },
 ];
 
 export function AppSidebar() {

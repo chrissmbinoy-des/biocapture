@@ -146,6 +146,36 @@ export type Database = {
         }
         Relationships: []
       }
+      login_streaks: {
+        Row: {
+          created_at: string
+          current_streak: number
+          id: string
+          last_login_date: string | null
+          longest_streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_login_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number
+          id?: string
+          last_login_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       species_identifications: {
         Row: {
           confidence: number | null
@@ -185,6 +215,30 @@ export type Database = {
           scientific_name?: string | null
           species_name?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      streak_rewards: {
+        Row: {
+          coin_reward: number
+          created_at: string
+          description: string
+          id: string
+          streak_days: number
+        }
+        Insert: {
+          coin_reward?: number
+          created_at?: string
+          description: string
+          id?: string
+          streak_days: number
+        }
+        Update: {
+          coin_reward?: number
+          created_at?: string
+          description?: string
+          id?: string
+          streak_days?: number
         }
         Relationships: []
       }

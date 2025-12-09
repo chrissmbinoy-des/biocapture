@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope } from "lucide-react";
+import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope, ChevronDown, ChevronRight, Image as ImageIcon } from "lucide-react";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
 import { IconBadge, getKingdomVariant, IconComponent } from "@/components/IconBadge";
@@ -16,6 +16,11 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface Finding {
   id: string;
@@ -27,6 +32,14 @@ interface Finding {
   image_url: string | null;
   example_images: string[] | null;
   identified_at: string;
+}
+
+interface GroupedSpecies {
+  species_name: string;
+  scientific_name: string | null;
+  findings: Finding[];
+  avgConfidence: number;
+  latestDate: string;
 }
 
 const KINGDOM_LABELS: { [key: string]: string } = {
@@ -61,6 +74,7 @@ export function KingdomCollection({ kingdom }: KingdomCollectionProps) {
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportingId, setReportingId] = useState<string | null>(null);
+  const [expandedSpecies, setExpandedSpecies] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   useEffect(() => {
@@ -107,6 +121,39 @@ export function KingdomCollection({ kingdom }: KingdomCollectionProps) {
       setLoading(false);
     }
   };
+
+  // Group findings by species name
+  const groupedSpecies = useMemo(() => {
+    const groups: { [key: string]: GroupedSpecies } = {};
+    
+    findings.forEach((finding) => {
+      const key = finding.species_name.toLowerCase();
+      if (!groups[key]) {
+        groups[key] = {
+          species_name: finding.species_name,
+          scientific_name: finding.scientific_name,
+          findings: [],
+          avgConfidence: 0,
+          latestDate: finding.identified_at,
+        };
+      }
+      groups[key].findings.push(finding);
+      if (new Date(finding.identified_at) > new Date(groups[key].latestDate)) {
+        groups[key].latestDate = finding.identified_at;
+      }
+    });
+
+    // Calculate average confidence for each group
+    Object.values(groups).forEach((group) => {
+      const sum = group.findings.reduce((acc, f) => acc + (f.confidence || 0), 0);
+      group.avgConfidence = Math.round(sum / group.findings.length);
+    });
+
+    // Sort by latest finding date
+    return Object.values(groups).sort(
+      (a, b) => new Date(b.latestDate).getTime() - new Date(a.latestDate).getTime()
+    );
+  }, [findings]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -160,6 +207,18 @@ export function KingdomCollection({ kingdom }: KingdomCollectionProps) {
     setReportingId(null);
   };
 
+  const toggleExpanded = (speciesName: string) => {
+    setExpandedSpecies((prev) => {
+      const next = new Set(prev);
+      if (next.has(speciesName)) {
+        next.delete(speciesName);
+      } else {
+        next.add(speciesName);
+      }
+      return next;
+    });
+  };
+
   const KingdomIcon = KINGDOM_ICONS[kingdom] || Search;
   const kingdomLabel = KINGDOM_LABELS[kingdom] || kingdom;
 
@@ -179,10 +238,14 @@ export function KingdomCollection({ kingdom }: KingdomCollectionProps) {
       </div>
       
       {/* Stats overview */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-3 gap-3 mb-4">
         <Card className="p-3 bg-gradient-to-br from-primary/10 to-primary/5">
-          <div className="text-2xl font-bold text-primary">{findings.length}</div>
-          <div className="text-xs text-muted-foreground">Total {kingdomLabel}</div>
+          <div className="text-2xl font-bold text-primary">{groupedSpecies.length}</div>
+          <div className="text-xs text-muted-foreground">Unique Species</div>
+        </Card>
+        <Card className="p-3 bg-gradient-to-br from-muted/30 to-muted/10">
+          <div className="text-2xl font-bold text-foreground">{findings.length}</div>
+          <div className="text-xs text-muted-foreground">Total Sightings</div>
         </Card>
         <Card className="p-3 bg-gradient-to-br from-muted/30 to-muted/10">
           <div className="text-2xl font-bold text-foreground">{avgConfidence}%</div>
@@ -190,7 +253,7 @@ export function KingdomCollection({ kingdom }: KingdomCollectionProps) {
         </Card>
       </div>
 
-      {findings.length === 0 ? (
+      {groupedSpecies.length === 0 ? (
         <Card className="p-8 text-center">
           <div className="flex justify-center mb-3">
             <IconBadge icon={KingdomIcon} size="xl" variant={getKingdomVariant(kingdom)} withGlow />
@@ -202,71 +265,129 @@ export function KingdomCollection({ kingdom }: KingdomCollectionProps) {
         </Card>
       ) : (
         <div className="space-y-3">
-          {findings.map((finding) => (
-            <Card key={finding.id} className="overflow-hidden">
-              <div className="flex gap-3 p-3">
-                <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-muted">
-                  {finding.image_url ? (
-                    <img
-                      src={finding.image_url}
-                      alt={finding.species_name}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <IconBadge icon={KingdomIcon} size="lg" variant={getKingdomVariant(kingdom)} withGlow />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="font-bold text-base truncate">{finding.species_name}</h3>
-                      {finding.scientific_name && (
-                        <p className="text-xs italic text-muted-foreground truncate">
-                          {finding.scientific_name}
+          {groupedSpecies.map((group) => {
+            const isExpanded = expandedSpecies.has(group.species_name);
+            const primaryFinding = group.findings[0];
+            const hasMultiple = group.findings.length > 1;
+
+            return (
+              <Card key={group.species_name} className="overflow-hidden">
+                <Collapsible open={isExpanded} onOpenChange={() => toggleExpanded(group.species_name)}>
+                  <CollapsibleTrigger asChild>
+                    <div className="flex gap-3 p-3 cursor-pointer hover:bg-muted/50 transition-colors">
+                      <div className="w-20 h-20 rounded-lg overflow-hidden shrink-0 bg-muted relative">
+                        {primaryFinding.image_url ? (
+                          <img
+                            src={primaryFinding.image_url}
+                            alt={group.species_name}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <IconBadge icon={KingdomIcon} size="lg" variant={getKingdomVariant(kingdom)} withGlow />
+                          </div>
+                        )}
+                        {hasMultiple && (
+                          <div className="absolute bottom-1 right-1 bg-background/90 rounded-full px-1.5 py-0.5 flex items-center gap-0.5">
+                            <ImageIcon className="h-3 w-3" />
+                            <span className="text-xs font-medium">{group.findings.length}</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <h3 className="font-bold text-base truncate">{group.species_name}</h3>
+                            {group.scientific_name && (
+                              <p className="text-xs italic text-muted-foreground truncate">
+                                {group.scientific_name}
+                              </p>
+                            )}
+                          </div>
+                          {hasMultiple && (
+                            isExpanded ? 
+                              <ChevronDown className="h-5 w-5 text-muted-foreground shrink-0" /> : 
+                              <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0" />
+                          )}
+                        </div>
+                        <div className="flex gap-1.5 mt-1.5 flex-wrap">
+                          <Badge variant="secondary" className="text-xs flex items-center gap-1">
+                            <IconBadge icon={KingdomIcon} size="xs" variant={getKingdomVariant(kingdom)} withBackground={false} />
+                            {kingdomLabel}
+                          </Badge>
+                          <Badge variant={group.avgConfidence > 80 ? "default" : "outline"} className="text-xs">
+                            {group.avgConfidence}%
+                          </Badge>
+                          {hasMultiple && (
+                            <Badge variant="outline" className="text-xs">
+                              {group.findings.length} sightings
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {new Date(group.latestDate).toLocaleDateString()}
                         </p>
-                      )}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex gap-1.5 mt-1.5 flex-wrap">
-                    <Badge variant="secondary" className="text-xs flex items-center gap-1">
-                      <IconBadge icon={KingdomIcon} size="xs" variant={getKingdomVariant(kingdom)} withBackground={false} />
-                      {kingdomLabel}
-                    </Badge>
-                    {finding.confidence && (
-                      <Badge variant={finding.confidence > 80 ? "default" : "outline"} className="text-xs">
-                        {finding.confidence}%
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 mt-2">
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(finding.identified_at).toLocaleDateString()}
-                    </p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-xs text-muted-foreground"
-                      onClick={() => handleReport(finding.id)}
-                    >
-                      <Flag className="h-3 w-3 mr-1" />
-                      Report
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 px-2 text-destructive"
-                      onClick={() => handleDelete(finding.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          ))}
+                  </CollapsibleTrigger>
+                  
+                  <CollapsibleContent>
+                    <div className="border-t bg-muted/30 p-3 space-y-3">
+                      <p className="text-xs text-muted-foreground font-medium">All Sightings</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {group.findings.map((finding) => (
+                          <div key={finding.id} className="relative group">
+                            <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                              {finding.image_url ? (
+                                <img
+                                  src={finding.image_url}
+                                  alt={finding.species_name}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <IconBadge icon={KingdomIcon} size="sm" variant={getKingdomVariant(kingdom)} />
+                                </div>
+                              )}
+                            </div>
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-white hover:text-white hover:bg-white/20"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleReport(finding.id);
+                                }}
+                              >
+                                <Flag className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/20"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDelete(finding.id);
+                                }}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <p className="text-xs text-center text-muted-foreground mt-1">
+                              {new Date(finding.identified_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </CollapsibleContent>
+                </Collapsible>
+              </Card>
+            );
+          })}
         </div>
       )}
 
