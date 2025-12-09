@@ -116,7 +116,7 @@ function SightingsCarousel({
           </Button>
         )}
         
-        <div className="flex-1 relative">
+        <div className="flex-1 relative max-w-[50%]">
           <div className="aspect-[4/3] rounded-lg overflow-hidden bg-muted relative group">
             {currentFinding.image_url ? (
               <img
