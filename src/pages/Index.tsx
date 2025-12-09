@@ -15,6 +15,8 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -156,17 +158,20 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 safe-area-inset">
-      {/* Mobile-first header */}
-      <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b px-4 py-3">
-        <div className="flex justify-between items-center">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/species")}>
-            <Menu className="h-5 w-5" />
-          </Button>
-          <h1 className="text-lg font-bold">Species Identifier</h1>
-          <div className="w-9" /> {/* Spacer for centering */}
-        </div>
-      </header>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        <div className="flex-1 flex flex-col bg-gradient-to-br from-background to-accent/20 safe-area-inset">
+          {/* Mobile-first header */}
+          <header className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b px-4 py-3">
+            <div className="flex justify-between items-center">
+              <SidebarTrigger>
+                <Menu className="h-5 w-5" />
+              </SidebarTrigger>
+              <h1 className="text-lg font-bold">Species Identifier</h1>
+              <div className="w-9" /> {/* Spacer for centering */}
+            </div>
+          </header>
 
       <div className="px-4 py-4 pb-20 space-y-4">
         {!selectedImage && (
@@ -320,8 +325,10 @@ const Index = () => {
             </div>
           </div>
         </DialogContent>
-      </Dialog>
-    </div>
+        </Dialog>
+        </div>
+      </div>
+    </SidebarProvider>
   );
 };
 
