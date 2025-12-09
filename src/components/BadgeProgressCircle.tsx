@@ -42,9 +42,9 @@ export function BadgeProgressCircle({
           cy={config.container / 2}
           r={config.radius}
           fill="none"
-          stroke="currentColor"
+          stroke="hsl(142, 71%, 45%)"
           strokeWidth={config.stroke}
-          className="text-muted/30"
+          opacity={0.2}
         />
         {/* Progress circle */}
         <circle
@@ -52,15 +52,13 @@ export function BadgeProgressCircle({
           cy={config.container / 2}
           r={config.radius}
           fill="none"
-          stroke="currentColor"
+          stroke="hsl(142, 71%, 45%)"
           strokeWidth={config.stroke}
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
-          className={cn(
-            "transition-all duration-500 ease-out",
-            isEarned ? "text-primary" : "text-primary/60"
-          )}
+          opacity={isEarned ? 1 : 0.6}
+          className="transition-all duration-500 ease-out"
           style={{
             transform: "rotate(-90deg)",
             transformOrigin: "center",
@@ -72,8 +70,8 @@ export function BadgeProgressCircle({
         className={cn(
           "relative z-10 flex items-center justify-center rounded-full",
           isEarned
-            ? "text-primary"
-            : "text-muted-foreground/50"
+            ? "text-species-plant"
+            : "text-species-plant/50"
         )}
       >
         <Icon size={config.iconSize} strokeWidth={1.5} />
@@ -81,7 +79,7 @@ export function BadgeProgressCircle({
       {/* Glow effect for earned badges */}
       {isEarned && (
         <div
-          className="absolute inset-0 rounded-full bg-primary/20 blur-md -z-10"
+          className="absolute inset-0 rounded-full bg-species-plant/20 blur-md -z-10"
           style={{ width: config.container, height: config.container }}
         />
       )}
