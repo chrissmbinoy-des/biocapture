@@ -176,6 +176,42 @@ export type Database = {
         }
         Relationships: []
       }
+      shop_items: {
+        Row: {
+          category: string
+          created_at: string
+          description: string
+          icon: string
+          id: string
+          is_active: boolean | null
+          metadata: Json | null
+          name: string
+          price: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description: string
+          icon: string
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name: string
+          price: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string
+          icon?: string
+          id?: string
+          is_active?: boolean | null
+          metadata?: Json | null
+          name?: string
+          price?: number
+        }
+        Relationships: []
+      }
       species_identifications: {
         Row: {
           confidence: number | null
@@ -339,6 +375,41 @@ export type Database = {
           },
         ]
       }
+      user_purchases: {
+        Row: {
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          item_id: string
+          purchased_at: string
+          user_id: string
+        }
+        Insert: {
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          item_id: string
+          purchased_at?: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          item_id?: string
+          purchased_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_purchases_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "shop_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -352,9 +423,29 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_country_leaderboard_timeframe: {
+        Args: {
+          country_filter: string
+          days_back?: number
+          limit_count?: number
+        }
+        Returns: {
+          rank: number
+          species_count: number
+          user_id: string
+        }[]
+      }
       get_user_country: { Args: { target_user_id: string }; Returns: string }
       get_worldwide_leaderboard: {
         Args: { limit_count?: number }
+        Returns: {
+          rank: number
+          species_count: number
+          user_id: string
+        }[]
+      }
+      get_worldwide_leaderboard_timeframe: {
+        Args: { days_back?: number; limit_count?: number }
         Returns: {
           rank: number
           species_count: number

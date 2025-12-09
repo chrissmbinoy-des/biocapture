@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Trophy, Medal, Award, Crown, Globe, MapPin } from "lucide-react";
+import { Loader2, Trophy, Medal, Award, Crown, Globe, MapPin, Calendar, CalendarDays, CalendarRange } from "lucide-react";
 
 interface LeaderboardEntry {
   user_id: string;
@@ -11,54 +11,74 @@ interface LeaderboardEntry {
   rank: number;
 }
 
+type TimeFilter = "all" | "monthly" | "weekly";
+type GeoFilter = "worldwide" | "country";
+
 export default function Leaderboard() {
-  const [worldwideEntries, setWorldwideEntries] = useState<LeaderboardEntry[]>([]);
-  const [countryEntries, setCountryEntries] = useState<LeaderboardEntry[]>([]);
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [userCountry, setUserCountry] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("worldwide");
+  const [geoFilter, setGeoFilter] = useState<GeoFilter>("worldwide");
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
 
   useEffect(() => {
-    fetchLeaderboard();
+    fetchUserData();
   }, []);
 
-  const fetchLeaderboard = async () => {
+  useEffect(() => {
+    if (currentUserId !== null) {
+      fetchLeaderboard();
+    }
+  }, [geoFilter, timeFilter, currentUserId, userCountry]);
+
+  const fetchUserData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       setCurrentUserId(user?.id || null);
 
-      // Fetch worldwide leaderboard using the database function
-      const { data: worldwideData, error: worldwideError } = await supabase
-        .rpc('get_worldwide_leaderboard', { limit_count: 50 });
-
-      if (worldwideError) {
-        console.error("Worldwide leaderboard error:", worldwideError);
-      } else {
-        setWorldwideEntries(worldwideData || []);
-      }
-
-      // Get user's country
       if (user) {
         const { data: countryData } = await supabase
           .rpc('get_user_country', { target_user_id: user.id });
-        
-        if (countryData) {
-          setUserCountry(countryData);
-          
-          // Fetch country leaderboard
-          const { data: countryLeaderboard, error: countryError } = await supabase
-            .rpc('get_country_leaderboard', { 
-              country_filter: countryData, 
-              limit_count: 50 
-            });
+        setUserCountry(countryData || null);
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+    }
+  };
 
-          if (countryError) {
-            console.error("Country leaderboard error:", countryError);
-          } else {
-            setCountryEntries(countryLeaderboard || []);
-          }
+  const fetchLeaderboard = async () => {
+    setLoading(true);
+    try {
+      const daysBack = timeFilter === "weekly" ? 7 : timeFilter === "monthly" ? 30 : null;
+
+      if (geoFilter === "worldwide") {
+        const { data, error } = await supabase
+          .rpc('get_worldwide_leaderboard_timeframe', { 
+            limit_count: 50,
+            days_back: daysBack
+          });
+
+        if (error) {
+          console.error("Worldwide leaderboard error:", error);
+        } else {
+          setEntries(data || []);
         }
+      } else if (userCountry) {
+        const { data, error } = await supabase
+          .rpc('get_country_leaderboard_timeframe', { 
+            country_filter: userCountry,
+            limit_count: 50,
+            days_back: daysBack
+          });
+
+        if (error) {
+          console.error("Country leaderboard error:", error);
+        } else {
+          setEntries(data || []);
+        }
+      } else {
+        setEntries([]);
       }
     } catch (error) {
       console.error("Error fetching leaderboard:", error);
@@ -93,78 +113,18 @@ export default function Leaderboard() {
     }
   };
 
-  const renderLeaderboardList = (entries: LeaderboardEntry[]) => {
-    if (entries.length === 0) {
-      return (
-        <Card className="p-8 text-center">
-          <Trophy className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-          <h3 className="text-lg font-semibold mb-1">No entries yet</h3>
-          <p className="text-sm text-muted-foreground">
-            Start identifying species to climb the leaderboard!
-          </p>
-        </Card>
-      );
+  const getTimeLabel = () => {
+    switch (timeFilter) {
+      case "weekly":
+        return "This Week";
+      case "monthly":
+        return "This Month";
+      default:
+        return "All Time";
     }
-
-    const currentUserEntry = entries.find((e) => e.user_id === currentUserId);
-
-    return (
-      <>
-        {currentUserEntry && (
-          <Card className="p-4 mb-4 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Award className="h-5 w-5 text-primary" />
-                <div>
-                  <p className="text-sm text-muted-foreground">Your Rank</p>
-                  <p className="text-xl font-bold">#{currentUserEntry.rank}</p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Species Found</p>
-                <p className="text-xl font-bold text-primary">{currentUserEntry.species_count}</p>
-              </div>
-            </div>
-          </Card>
-        )}
-
-        <div className="space-y-2">
-          {entries.map((entry) => (
-            <Card
-              key={entry.user_id}
-              className={`p-3 flex items-center justify-between ${getRankStyle(Number(entry.rank))} ${
-                entry.user_id === currentUserId ? "ring-2 ring-primary" : ""
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-8 flex justify-center">{getRankIcon(Number(entry.rank))}</div>
-                <div>
-                  <p className="font-medium text-sm">
-                    {entry.user_id === currentUserId ? "You" : `Explorer #${entry.rank}`}
-                  </p>
-                  {entry.user_id === currentUserId && (
-                    <Badge variant="secondary" className="text-xs">Your Profile</Badge>
-                  )}
-                </div>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-primary">{entry.species_count}</p>
-                <p className="text-xs text-muted-foreground">species</p>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </>
-    );
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+  const currentUserEntry = entries.find((e) => e.user_id === currentUserId);
 
   return (
     <div className="p-4 pb-20">
@@ -175,8 +135,9 @@ export default function Leaderboard() {
         <h1 className="text-2xl font-bold">Leaderboard</h1>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-4">
+      {/* Geographic Filter */}
+      <Tabs value={geoFilter} onValueChange={(v) => setGeoFilter(v as GeoFilter)} className="w-full mb-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="worldwide" className="flex items-center gap-2">
             <Globe className="h-4 w-4" />
             Worldwide
@@ -186,25 +147,96 @@ export default function Leaderboard() {
             {userCountry || "Country"}
           </TabsTrigger>
         </TabsList>
+      </Tabs>
 
-        <TabsContent value="worldwide">
-          {renderLeaderboardList(worldwideEntries)}
-        </TabsContent>
+      {/* Time Filter */}
+      <Tabs value={timeFilter} onValueChange={(v) => setTimeFilter(v as TimeFilter)} className="w-full mb-4">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="all" className="flex items-center gap-1.5 text-xs">
+            <Calendar className="h-3.5 w-3.5" />
+            All Time
+          </TabsTrigger>
+          <TabsTrigger value="monthly" className="flex items-center gap-1.5 text-xs">
+            <CalendarRange className="h-3.5 w-3.5" />
+            Monthly
+          </TabsTrigger>
+          <TabsTrigger value="weekly" className="flex items-center gap-1.5 text-xs">
+            <CalendarDays className="h-3.5 w-3.5" />
+            Weekly
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
-        <TabsContent value="country">
-          {userCountry ? (
-            renderLeaderboardList(countryEntries)
-          ) : (
-            <Card className="p-8 text-center">
-              <MapPin className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-              <h3 className="text-lg font-semibold mb-1">No country data</h3>
-              <p className="text-sm text-muted-foreground">
-                Identify species with location enabled to see your country leaderboard.
-              </p>
+      {loading ? (
+        <div className="flex items-center justify-center min-h-[30vh]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : geoFilter === "country" && !userCountry ? (
+        <Card className="p-8 text-center">
+          <MapPin className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+          <h3 className="text-lg font-semibold mb-1">No country data</h3>
+          <p className="text-sm text-muted-foreground">
+            Identify species with location enabled to see your country leaderboard.
+          </p>
+        </Card>
+      ) : entries.length === 0 ? (
+        <Card className="p-8 text-center">
+          <Trophy className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+          <h3 className="text-lg font-semibold mb-1">No entries yet</h3>
+          <p className="text-sm text-muted-foreground">
+            {timeFilter !== "all" 
+              ? `No species identified ${getTimeLabel().toLowerCase()}. Be the first!`
+              : "Start identifying species to climb the leaderboard!"}
+          </p>
+        </Card>
+      ) : (
+        <>
+          {currentUserEntry && (
+            <Card className="p-4 mb-4 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Award className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="text-sm text-muted-foreground">Your Rank ({getTimeLabel()})</p>
+                    <p className="text-xl font-bold">#{currentUserEntry.rank}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-muted-foreground">Species Found</p>
+                  <p className="text-xl font-bold text-primary">{currentUserEntry.species_count}</p>
+                </div>
+              </div>
             </Card>
           )}
-        </TabsContent>
-      </Tabs>
+
+          <div className="space-y-2">
+            {entries.map((entry) => (
+              <Card
+                key={entry.user_id}
+                className={`p-3 flex items-center justify-between ${getRankStyle(Number(entry.rank))} ${
+                  entry.user_id === currentUserId ? "ring-2 ring-primary" : ""
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 flex justify-center">{getRankIcon(Number(entry.rank))}</div>
+                  <div>
+                    <p className="font-medium text-sm">
+                      {entry.user_id === currentUserId ? "You" : `Explorer #${entry.rank}`}
+                    </p>
+                    {entry.user_id === currentUserId && (
+                      <Badge variant="secondary" className="text-xs">Your Profile</Badge>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-primary">{entry.species_count}</p>
+                  <p className="text-xs text-muted-foreground">species</p>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
