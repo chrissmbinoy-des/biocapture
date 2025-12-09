@@ -14,9 +14,9 @@ export function FloatingCameraButton() {
     <Link to="/" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
       <Button
         size="lg"
-        className="h-14 w-14 rounded-full bg-species-plant hover:bg-species-plant/90 shadow-lg shadow-species-plant/30"
+        className="h-16 w-16 rounded-full bg-species-plant hover:bg-species-plant/90 shadow-lg shadow-species-plant/30"
       >
-        <Camera className="h-6 w-6 text-white" />
+        <Camera className="h-7 w-7 text-white" />
       </Button>
     </Link>
   );
