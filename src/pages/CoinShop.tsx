@@ -4,6 +4,16 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -15,7 +25,6 @@ import {
   Trophy,
   Star,
   Feather,
-  Coins,
   Shield,
   PlusCircle,
   Sparkles,
@@ -23,6 +32,7 @@ import {
   Zap,
   Check,
 } from "lucide-react";
+import CoinIcon from "@/components/icons/CoinIcon";
 import type { Json } from "@/integrations/supabase/types";
 
 interface ShopItem {
@@ -53,7 +63,7 @@ const iconMap: Record<string, React.ReactNode> = {
   butterfly: <Sparkles className="h-6 w-6" />,
   star: <Star className="h-6 w-6" />,
   feather: <Feather className="h-6 w-6" />,
-  coins: <Coins className="h-6 w-6" />,
+  coins: <CoinIcon className="h-6 w-6" />,
   shield: <Shield className="h-6 w-6" />,
   "plus-circle": <PlusCircle className="h-6 w-6" />,
 };
@@ -84,6 +94,7 @@ export default function CoinShop() {
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("profile");
+  const [confirmPurchase, setConfirmPurchase] = useState<ShopItem | null>(null);
 
   useEffect(() => {
     fetchShopData();
@@ -128,12 +139,16 @@ export default function CoinShop() {
     }
   };
 
-  const handlePurchase = async (item: ShopItem) => {
+  const inititatePurchase = (item: ShopItem) => {
     if (coinBalance < item.price) {
       toast.error("Not enough coins!");
       return;
     }
+    setConfirmPurchase(item);
+  };
 
+  const handlePurchase = async (item: ShopItem) => {
+    setConfirmPurchase(null);
     setPurchasing(item.id);
 
     try {
@@ -250,7 +265,7 @@ export default function CoinShop() {
             </p>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <Coins className="h-4 w-4 text-yellow-500" />
+                <CoinIcon className="h-4 w-4 text-yellow-500" />
                 <span className="font-bold text-sm">{item.price}</span>
               </div>
               {owned ? (
@@ -262,7 +277,7 @@ export default function CoinShop() {
                 <Button
                   size="sm"
                   disabled={!canAfford || purchasing === item.id}
-                  onClick={() => handlePurchase(item)}
+                  onClick={() => inititatePurchase(item)}
                   className="h-8"
                 >
                   {purchasing === item.id ? (
@@ -299,7 +314,7 @@ export default function CoinShop() {
       <Card className="p-4 mb-4 bg-gradient-to-br from-yellow-500/10 to-amber-500/5 border-yellow-500/20">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Coins className="h-6 w-6 text-yellow-500" />
+            <CoinIcon className="h-6 w-6 text-yellow-500" />
             <div>
               <p className="text-sm text-muted-foreground">Your Balance</p>
               <p className="text-2xl font-bold">{coinBalance.toLocaleString()}</p>
@@ -307,6 +322,36 @@ export default function CoinShop() {
           </div>
         </div>
       </Card>
+
+      {/* Purchase Confirmation Dialog */}
+      <AlertDialog open={!!confirmPurchase} onOpenChange={() => setConfirmPurchase(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Purchase</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmPurchase && (
+                <div className="space-y-2">
+                  <p>Are you sure you want to purchase <strong>{confirmPurchase.name}</strong>?</p>
+                  <div className="flex items-center gap-2 justify-center p-3 bg-muted rounded-lg">
+                    <CoinIcon className="h-5 w-5 text-yellow-500" />
+                    <span className="font-bold text-lg">{confirmPurchase.price}</span>
+                    <span className="text-muted-foreground">coins</span>
+                  </div>
+                  <p className="text-xs">
+                    Balance after purchase: {coinBalance - confirmPurchase.price} coins
+                  </p>
+                </div>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => confirmPurchase && handlePurchase(confirmPurchase)}>
+              Confirm Purchase
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full grid-cols-3 mb-4">

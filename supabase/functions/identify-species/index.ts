@@ -327,6 +327,82 @@ Return ONLY valid JSON in this exact format:
         console.error("Error saving species to database:", insertError);
       } else {
         console.log("Species identification saved to database");
+
+        const serviceSupabase = createClient(
+          Deno.env.get('SUPABASE_URL')!,
+          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+        );
+        
+        // Award coins based on kingdom
+        const coinRewards: Record<string, number> = {
+          plant: 5,
+          mammal: 10,
+          insect: 5,
+          bird: 50,
+          reptile: 20,
+          fish: 30,
+          amphibian: 20,
+          other: 15,
+        };
+        
+        let coinReward = coinRewards[kingdom] || 15;
+        
+        // Check for active double coins boost
+        try {
+          const now = new Date().toISOString();
+          const { data: activePurchases } = await serviceSupabase
+            .from('user_purchases')
+            .select('*, shop_items(*)')
+            .eq('user_id', user.id)
+            .eq('is_active', true);
+          
+          if (activePurchases) {
+            for (const purchase of activePurchases) {
+              if (purchase.shop_items?.category === 'boost') {
+                const metadata = purchase.shop_items.metadata as Record<string, unknown>;
+                if (metadata?.boost_type === 'double_coins') {
+                  // Check if not expired
+                  if (!purchase.expires_at || new Date(purchase.expires_at) > new Date(now)) {
+                    coinReward *= 2;
+                    console.log("Double coins boost applied! Reward:", coinReward);
+                    break;
+                  }
+                }
+              }
+            }
+          }
+        } catch (boostErr) {
+          console.error("Error checking boosts:", boostErr);
+        }
+        
+        // Award coins for discovery
+        try {
+          const { data: coinData } = await serviceSupabase
+            .from('user_coins')
+            .select('balance')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          
+          if (coinData) {
+            await serviceSupabase
+              .from('user_coins')
+              .update({ 
+                balance: coinData.balance + coinReward,
+                updated_at: new Date().toISOString()
+              })
+              .eq('user_id', user.id);
+          } else {
+            await serviceSupabase
+              .from('user_coins')
+              .insert({ 
+                user_id: user.id, 
+                balance: coinReward 
+              });
+          }
+          console.log(`Awarded ${coinReward} coins for discovering ${result.name} (${kingdom})`);
+        } catch (coinErr) {
+          console.error("Error awarding coins:", coinErr);
+        }
         
         // Check and complete daily challenges
         try {
@@ -378,11 +454,34 @@ Return ONLY valid JSON in this exact format:
                   })
                   .eq('id', challenge.id);
                 
-                // Award coins
-                const serviceSupabase = createClient(
-                  Deno.env.get('SUPABASE_URL')!,
-                  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-                );
+                // Award coins for challenge (also apply double coins if active)
+                let challengeReward = template.coin_reward;
+                
+                // Check for double coins boost again for challenge reward
+                try {
+                  const now = new Date().toISOString();
+                  const { data: activePurchases } = await serviceSupabase
+                    .from('user_purchases')
+                    .select('*, shop_items(*)')
+                    .eq('user_id', user.id)
+                    .eq('is_active', true);
+                  
+                  if (activePurchases) {
+                    for (const purchase of activePurchases) {
+                      if (purchase.shop_items?.category === 'boost') {
+                        const metadata = purchase.shop_items.metadata as Record<string, unknown>;
+                        if (metadata?.boost_type === 'double_coins') {
+                          if (!purchase.expires_at || new Date(purchase.expires_at) > new Date(now)) {
+                            challengeReward *= 2;
+                            break;
+                          }
+                        }
+                      }
+                    }
+                  }
+                } catch (boostErr) {
+                  console.error("Error checking boosts for challenge:", boostErr);
+                }
                 
                 // Get or create user coins record
                 const { data: coinData } = await serviceSupabase
@@ -395,7 +494,7 @@ Return ONLY valid JSON in this exact format:
                   await serviceSupabase
                     .from('user_coins')
                     .update({ 
-                      balance: coinData.balance + template.coin_reward,
+                      balance: coinData.balance + challengeReward,
                       updated_at: new Date().toISOString()
                     })
                     .eq('user_id', user.id);
@@ -404,11 +503,11 @@ Return ONLY valid JSON in this exact format:
                     .from('user_coins')
                     .insert({ 
                       user_id: user.id, 
-                      balance: template.coin_reward 
+                      balance: challengeReward 
                     });
                 }
                 
-                console.log(`Challenge completed: ${template.name}, awarded ${template.coin_reward} coins`);
+                console.log(`Challenge completed: ${template.name}, awarded ${challengeReward} coins`);
               }
             }
           }
