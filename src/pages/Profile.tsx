@@ -6,6 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -24,8 +33,15 @@ import {
   Check,
   Clock,
   Grid3X3,
-  Settings,
-  Users,
+  Edit2,
+  Share2,
+  Flame,
+  Globe,
+  MapPin,
+  Copy,
+  Twitter,
+  Facebook,
+  Medal,
 } from "lucide-react";
 import CoinIcon from "@/components/icons/CoinIcon";
 import type { Json } from "@/integrations/supabase/types";
@@ -57,6 +73,17 @@ interface EquippedItems {
   badge?: string;
 }
 
+interface UserBadge {
+  id: string;
+  badge_id: string;
+  badges: {
+    id: string;
+    name: string;
+    icon: string;
+    description: string;
+  };
+}
+
 const iconMap: Record<string, React.ReactNode> = {
   crown: <Crown className="h-5 w-5" />,
   leaf: <Leaf className="h-5 w-5" />,
@@ -71,12 +98,31 @@ const iconMap: Record<string, React.ReactNode> = {
   "plus-circle": <PlusCircle className="h-5 w-5" />,
 };
 
+const badgeIconMap: Record<string, React.ReactNode> = {
+  leaf: <Leaf className="h-3 w-3" />,
+  bug: <Sparkles className="h-3 w-3" />,
+  bird: <Feather className="h-3 w-3" />,
+  fish: <Waves className="h-3 w-3" />,
+  paw: <Award className="h-3 w-3" />,
+  microscope: <Star className="h-3 w-3" />,
+  crown: <Crown className="h-3 w-3" />,
+  trophy: <Trophy className="h-3 w-3" />,
+  star: <Star className="h-3 w-3" />,
+  award: <Award className="h-3 w-3" />,
+};
+
 export default function Profile() {
   const [purchases, setPurchases] = useState<UserPurchase[]>([]);
   const [equipped, setEquipped] = useState<EquippedItems>({});
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("items");
+  const [bio, setBio] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [editBio, setEditBio] = useState("");
+  const [editName, setEditName] = useState("");
 
   useEffect(() => {
     fetchProfileData();
@@ -113,17 +159,19 @@ export default function Profile() {
     enabled: !!userId,
   });
 
-  // Fetch badges earned
-  const { data: badgesEarned = 0 } = useQuery({
-    queryKey: ["badgesEarned", userId],
+  // Fetch badges earned with details
+  const { data: userBadges = [] } = useQuery({
+    queryKey: ["userBadgesDetails", userId],
     queryFn: async () => {
-      if (!userId) return 0;
-      const { count, error } = await supabase
+      if (!userId) return [];
+      const { data, error } = await supabase
         .from("user_badges")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", userId);
+        .select("*, badges(*)")
+        .eq("user_id", userId)
+        .order("earned_at", { ascending: false })
+        .limit(3);
       if (error) throw error;
-      return count || 0;
+      return (data as UserBadge[]) || [];
     },
     enabled: !!userId,
   });
@@ -144,9 +192,62 @@ export default function Profile() {
     enabled: !!userId,
   });
 
+  // Fetch login streak
+  const { data: streakData } = useQuery({
+    queryKey: ["loginStreak", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data, error } = await supabase
+        .from("login_streaks")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userId,
+  });
+
+  // Fetch global rank
+  const { data: globalRank } = useQuery({
+    queryKey: ["globalRank", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data, error } = await supabase.rpc("get_worldwide_leaderboard", {
+        limit_count: 100,
+      });
+      if (error) throw error;
+      const userEntry = data?.find((e: { user_id: string }) => e.user_id === userId);
+      return userEntry?.rank || null;
+    },
+    enabled: !!userId,
+  });
+
+  // Fetch country and country rank
+  const { data: countryData } = useQuery({
+    queryKey: ["countryRank", userId],
+    queryFn: async () => {
+      if (!userId) return { country: null, rank: null };
+      const { data: country } = await supabase.rpc("get_user_country", {
+        target_user_id: userId,
+      });
+      if (!country) return { country: null, rank: null };
+
+      const { data: leaderboard } = await supabase.rpc("get_country_leaderboard", {
+        country_filter: country,
+        limit_count: 100,
+      });
+      const userEntry = leaderboard?.find((e: { user_id: string }) => e.user_id === userId);
+      return { country, rank: userEntry?.rank || null };
+    },
+    enabled: !!userId,
+  });
+
   const fetchProfileData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) return;
       setUserId(user.id);
 
@@ -160,10 +261,17 @@ export default function Profile() {
       if (error) throw error;
       setPurchases(purchasesData || []);
 
-      // Load equipped items from localStorage
+      // Load equipped items and profile data from localStorage
       const savedEquipped = localStorage.getItem(`equipped_${user.id}`);
       if (savedEquipped) {
         setEquipped(JSON.parse(savedEquipped));
+      }
+
+      const savedProfile = localStorage.getItem(`profile_${user.id}`);
+      if (savedProfile) {
+        const profileData = JSON.parse(savedProfile);
+        setBio(profileData.bio || "");
+        setDisplayName(profileData.displayName || "");
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -198,6 +306,25 @@ export default function Profile() {
     toast.success("Item unequipped");
   };
 
+  const handleSaveProfile = () => {
+    if (userId) {
+      localStorage.setItem(
+        `profile_${userId}`,
+        JSON.stringify({ bio: editBio, displayName: editName })
+      );
+      setBio(editBio);
+      setDisplayName(editName);
+      setIsEditDialogOpen(false);
+      toast.success("Profile updated!");
+    }
+  };
+
+  const openEditDialog = () => {
+    setEditBio(bio);
+    setEditName(displayName);
+    setIsEditDialogOpen(true);
+  };
+
   const isEquipped = (itemId: string) => {
     return Object.values(equipped).includes(itemId);
   };
@@ -227,19 +354,75 @@ export default function Profile() {
     return null;
   };
 
-  const getEquippedBadgeDisplay = () => {
-    if (equipped.badge) {
-      const purchase = purchases.find((p) => p.item_id === equipped.badge);
-      if (purchase?.shop_items) {
-        return iconMap[purchase.shop_items.icon] || <Award className="h-5 w-5" />;
-      }
-    }
-    return null;
+  const getExplorerName = () => {
+    if (displayName) return displayName;
+    if (!userId) return "Explorer #0000";
+    return `Explorer #${userId.slice(-4).toUpperCase()}`;
   };
 
-  const getExplorerNumber = () => {
-    if (!userId) return "0000";
-    return userId.slice(-4).toUpperCase();
+  const getRankBadge = (rank: number | null, type: "global" | "country") => {
+    if (!rank || rank > 100) return null;
+
+    let color = "bg-muted text-muted-foreground";
+    let icon = null;
+    let label = "";
+
+    if (rank === 1) {
+      color = "bg-yellow-500 text-white";
+      icon = <Crown className="h-3 w-3" />;
+      label = "1st";
+    } else if (rank === 2) {
+      color = "bg-gray-400 text-white";
+      icon = <Medal className="h-3 w-3" />;
+      label = "2nd";
+    } else if (rank === 3) {
+      color = "bg-amber-600 text-white";
+      icon = <Medal className="h-3 w-3" />;
+      label = "3rd";
+    } else if (rank <= 50) {
+      color = "bg-primary/80 text-primary-foreground";
+      label = `Top 50`;
+    } else {
+      color = "bg-secondary text-secondary-foreground";
+      label = `Top 100`;
+    }
+
+    return (
+      <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${color}`}>
+        {icon}
+        {type === "global" ? <Globe className="h-2.5 w-2.5" /> : <MapPin className="h-2.5 w-2.5" />}
+        <span>{label}</span>
+      </div>
+    );
+  };
+
+  const getProfileShareUrl = () => {
+    return `${window.location.origin}/profile?share=${userId?.slice(-8)}`;
+  };
+
+  const shareProfile = (platform: "twitter" | "facebook" | "copy") => {
+    const shareText = `Check out my nature explorer profile! I've discovered ${uniqueSpeciesCount} unique species! 🌿`;
+    const shareUrl = getProfileShareUrl();
+
+    switch (platform) {
+      case "twitter":
+        window.open(
+          `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
+          "_blank"
+        );
+        break;
+      case "facebook":
+        window.open(
+          `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`,
+          "_blank"
+        );
+        break;
+      case "copy":
+        navigator.clipboard.writeText(shareUrl);
+        toast.success("Profile link copied!");
+        break;
+    }
+    setIsShareDialogOpen(false);
   };
 
   if (loading) {
@@ -252,64 +435,179 @@ export default function Profile() {
 
   return (
     <div className="pb-20">
-      {/* Instagram-style Profile Header */}
+      {/* Profile Header */}
       <div className="bg-gradient-to-br from-primary/5 to-accent/10 px-4 pt-6 pb-4">
         <div className="flex items-start gap-4">
-          {/* Profile Picture */}
+          {/* Profile Picture with Rank Badges */}
           <div className="relative">
             <Avatar className="h-20 w-20 border-2 border-primary">
               <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">
-                {getExplorerNumber().slice(0, 2)}
+                {getExplorerName().slice(0, 2).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-            {getEquippedBadgeDisplay() && (
-              <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center text-white">
-                {getEquippedBadgeDisplay()}
-              </div>
-            )}
+            {/* Rank indicators on profile picture */}
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex gap-0.5">
+              {getRankBadge(globalRank ?? null, "global")}
+            </div>
           </div>
 
-          {/* Stats */}
+          {/* User Info */}
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-lg font-bold">Explorer #{getExplorerNumber()}</h1>
-              <Settings className="h-4 w-4 text-muted-foreground" />
+              <h1 className="text-lg font-bold">{getExplorerName()}</h1>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={openEditDialog}>
+                <Edit2 className="h-3.5 w-3.5" />
+              </Button>
             </div>
-            {getEquippedTitle() && (
-              <Badge variant="secondary" className="mb-2 text-xs">
-                {getEquippedTitle()}
-              </Badge>
-            )}
-            <div className="grid grid-cols-3 gap-2 mt-3">
-              <div className="text-center">
-                <p className="text-xl font-bold">{speciesCount}</p>
-                <p className="text-xs text-muted-foreground">Sightings</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xl font-bold">{uniqueSpeciesCount}</p>
-                <p className="text-xs text-muted-foreground">Species</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xl font-bold">{badgesEarned}</p>
-                <p className="text-xs text-muted-foreground">Badges</p>
-              </div>
+
+            {/* Title and Streak */}
+            <div className="flex items-center gap-2 flex-wrap mb-2">
+              {getEquippedTitle() && (
+                <Badge variant="secondary" className="text-xs">
+                  {getEquippedTitle()}
+                </Badge>
+              )}
+              {streakData && streakData.current_streak > 0 && (
+                <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/30">
+                  <Flame className="h-3 w-3 mr-1" />
+                  {streakData.current_streak} day streak
+                </Badge>
+              )}
+              {countryData?.rank && getRankBadge(countryData.rank, "country")}
+            </div>
+
+            {/* 3 Badge Squares */}
+            <div className="flex gap-1.5 mt-2">
+              {userBadges.slice(0, 3).map((ub) => (
+                <div
+                  key={ub.id}
+                  className="w-8 h-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center"
+                  title={ub.badges.name}
+                >
+                  {badgeIconMap[ub.badges.icon] || <Award className="h-3.5 w-3.5 text-primary" />}
+                </div>
+              ))}
+              {Array.from({ length: Math.max(0, 3 - userBadges.length) }).map((_, i) => (
+                <div
+                  key={`empty-${i}`}
+                  className="w-8 h-8 rounded-md bg-muted/50 border border-dashed border-muted-foreground/20 flex items-center justify-center"
+                >
+                  <Award className="h-3 w-3 text-muted-foreground/30" />
+                </div>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Coin Balance */}
-        <div className="mt-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 bg-yellow-500/15 border border-yellow-500/30 rounded-full px-4 py-2">
-            <CoinIcon className="w-5 h-5 text-yellow-500" />
-            <span className="font-bold text-yellow-600 dark:text-yellow-400">{coinBalance.toLocaleString()}</span>
-            <span className="text-xs text-muted-foreground">coins</span>
+        {/* Bio */}
+        {bio && (
+          <p className="text-sm text-muted-foreground mt-3 px-1">{bio}</p>
+        )}
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-4 gap-2 mt-4 bg-background/50 rounded-xl p-3">
+          <div className="text-center">
+            <p className="text-xl font-bold">{speciesCount}</p>
+            <p className="text-[10px] text-muted-foreground">Sightings</p>
           </div>
-          <Button variant="outline" size="sm">
-            <Users className="h-4 w-4 mr-2" />
-            Share Profile
+          <div className="text-center">
+            <p className="text-xl font-bold">{uniqueSpeciesCount}</p>
+            <p className="text-[10px] text-muted-foreground">Species</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xl font-bold">{userBadges.length}</p>
+            <p className="text-[10px] text-muted-foreground">Badges</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xl font-bold flex items-center justify-center gap-1">
+              <CoinIcon className="w-4 h-4 text-yellow-500" />
+              {coinBalance.toLocaleString()}
+            </p>
+            <p className="text-[10px] text-muted-foreground">Coins</p>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-2 mt-4">
+          <Button variant="outline" size="sm" className="flex-1" onClick={openEditDialog}>
+            <Edit2 className="h-4 w-4 mr-2" />
+            Edit Profile
           </Button>
+          <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="default" size="sm" className="flex-1">
+                <Share2 className="h-4 w-4 mr-2" />
+                Share Profile
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Share Your Profile</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 pt-4">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => shareProfile("twitter")}
+                >
+                  <Twitter className="h-5 w-5 mr-3 text-[#1DA1F2]" />
+                  Share on Twitter
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => shareProfile("facebook")}
+                >
+                  <Facebook className="h-5 w-5 mr-3 text-[#4267B2]" />
+                  Share on Facebook
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => shareProfile("copy")}
+                >
+                  <Copy className="h-5 w-5 mr-3" />
+                  Copy Profile Link
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
+
+      {/* Edit Profile Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div>
+              <label className="text-sm font-medium mb-2 block">Display Name</label>
+              <Input
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                placeholder="Enter your display name"
+                maxLength={30}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-2 block">Bio</label>
+              <Textarea
+                value={editBio}
+                onChange={(e) => setEditBio(e.target.value)}
+                placeholder="Tell others about yourself..."
+                maxLength={150}
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground mt-1">{editBio.length}/150</p>
+            </div>
+            <Button onClick={handleSaveProfile} className="w-full">
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
