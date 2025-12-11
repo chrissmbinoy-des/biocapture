@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Camera, Upload, Loader2, Menu, Flag } from "lucide-react";
+import { Camera, Upload, Loader2, Menu, Flag, Leaf, Cat, Bug, Bird, Fish, Microscope } from "lucide-react";
 import { CameraCapture } from "@/components/CameraCapture";
 import { useToast } from "@/hooks/use-toast";
 import { Session } from "@supabase/supabase-js";
@@ -17,14 +17,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import PlantIcon from "@/components/icons/PlantIcon";
-import MammalIcon from "@/components/icons/MammalIcon";
-import BirdIcon from "@/components/icons/BirdIcon";
-import InsectIcon from "@/components/icons/InsectIcon";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
-import FishIcon from "@/components/icons/FishIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
-import OtherIcon from "@/components/icons/OtherIcon";
 
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -265,25 +259,25 @@ const Index = () => {
               <div className="grid grid-cols-4 gap-3 mb-3">
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-plant/20 flex items-center justify-center">
-                    <PlantIcon className="w-5 h-5 text-species-plant" />
+                    <Leaf className="w-5 h-5 text-species-plant" />
                   </div>
                   <span className="text-xs text-muted-foreground">Plants</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-mammal/20 flex items-center justify-center">
-                    <MammalIcon className="w-5 h-5 text-species-mammal" />
+                    <Cat className="w-5 h-5 text-species-mammal" />
                   </div>
                   <span className="text-xs text-muted-foreground">Mammals</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-bird/20 flex items-center justify-center">
-                    <BirdIcon className="w-5 h-5 text-species-bird" />
+                    <Bird className="w-5 h-5 text-species-bird" />
                   </div>
                   <span className="text-xs text-muted-foreground">Birds</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-insect/20 flex items-center justify-center">
-                    <InsectIcon className="w-5 h-5 text-species-insect" />
+                    <Bug className="w-5 h-5 text-species-insect" />
                   </div>
                   <span className="text-xs text-muted-foreground">Insects</span>
                 </div>
@@ -297,7 +291,7 @@ const Index = () => {
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-fish/20 flex items-center justify-center">
-                    <FishIcon className="w-5 h-5 text-species-fish" />
+                    <Fish className="w-5 h-5 text-species-fish" />
                   </div>
                   <span className="text-xs text-muted-foreground">Fish</span>
                 </div>
@@ -309,7 +303,7 @@ const Index = () => {
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-other/20 flex items-center justify-center">
-                    <OtherIcon className="w-5 h-5 text-species-other" />
+                    <Microscope className="w-5 h-5 text-species-other" />
                   </div>
                   <span className="text-xs text-muted-foreground">Others</span>
                 </div>
