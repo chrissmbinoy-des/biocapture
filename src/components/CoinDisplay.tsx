@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Coins } from "lucide-react";
+import CoinIcon from "@/components/icons/CoinIcon";
 
 export const CoinDisplay = () => {
   const [userId, setUserId] = useState<string | null>(null);
@@ -32,7 +32,7 @@ export const CoinDisplay = () => {
 
   return (
     <div className="flex items-center gap-1.5 bg-yellow-500/15 border border-yellow-500/30 rounded-full px-3 py-1">
-      <Coins className="w-4 h-4 text-yellow-500" />
+      <CoinIcon className="w-4 h-4 text-yellow-500" />
       <span className="font-semibold text-sm text-yellow-600 dark:text-yellow-400">
         {coinBalance}
       </span>

@@ -17,6 +17,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import PlantIcon from "@/components/icons/PlantIcon";
+import MammalIcon from "@/components/icons/MammalIcon";
+import BirdIcon from "@/components/icons/BirdIcon";
+import InsectIcon from "@/components/icons/InsectIcon";
+import CrocodileIcon from "@/components/icons/CrocodileIcon";
+import FishIcon from "@/components/icons/FishIcon";
+import FrogIcon from "@/components/icons/FrogIcon";
+import OtherIcon from "@/components/icons/OtherIcon";
 
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -252,31 +260,30 @@ const Index = () => {
             {/* Visual tips info card */}
             <Card className="w-full max-w-sm mt-8 p-4 bg-gradient-to-br from-primary/5 to-accent/10 border-primary/20">
               <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                <span className="text-lg">🔍</span>
                 What can I identify?
               </h3>
               <div className="grid grid-cols-4 gap-3 mb-3">
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-plant/20 flex items-center justify-center">
-                    <span className="text-lg">🌿</span>
+                    <PlantIcon className="w-5 h-5 text-species-plant" />
                   </div>
                   <span className="text-xs text-muted-foreground">Plants</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-mammal/20 flex items-center justify-center">
-                    <span className="text-lg">🐾</span>
+                    <MammalIcon className="w-5 h-5 text-species-mammal" />
                   </div>
                   <span className="text-xs text-muted-foreground">Mammals</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-bird/20 flex items-center justify-center">
-                    <span className="text-lg">🐦</span>
+                    <BirdIcon className="w-5 h-5 text-species-bird" />
                   </div>
                   <span className="text-xs text-muted-foreground">Birds</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-insect/20 flex items-center justify-center">
-                    <span className="text-lg">🦋</span>
+                    <InsectIcon className="w-5 h-5 text-species-insect" />
                   </div>
                   <span className="text-xs text-muted-foreground">Insects</span>
                 </div>
@@ -284,25 +291,25 @@ const Index = () => {
               <div className="grid grid-cols-4 gap-3 mb-4">
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-reptile/20 flex items-center justify-center">
-                    <span className="text-lg">🦎</span>
+                    <CrocodileIcon className="w-5 h-5 text-species-reptile" />
                   </div>
                   <span className="text-xs text-muted-foreground">Reptiles</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-fish/20 flex items-center justify-center">
-                    <span className="text-lg">🐟</span>
+                    <FishIcon className="w-5 h-5 text-species-fish" />
                   </div>
                   <span className="text-xs text-muted-foreground">Fish</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-amphibian/20 flex items-center justify-center">
-                    <span className="text-lg">🐸</span>
+                    <FrogIcon className="w-5 h-5 text-species-amphibian" />
                   </div>
                   <span className="text-xs text-muted-foreground">Amphibians</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-other/20 flex items-center justify-center">
-                    <span className="text-lg">🔬</span>
+                    <OtherIcon className="w-5 h-5 text-species-other" />
                   </div>
                   <span className="text-xs text-muted-foreground">Others</span>
                 </div>
