@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
+import { AuthGuard } from "./components/AuthGuard";
 
 // Lazy load all pages for better initial load performance
 const Index = lazy(() => import("./pages/Index"));
@@ -57,10 +58,14 @@ const App = () => (
       <BrowserRouter>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route path="/" element={<Index />} />
+            {/* Public route - Auth */}
             <Route path="/auth" element={<Auth />} />
             <Route path="/install" element={<Install />} />
-            <Route element={<Layout />}>
+            
+            {/* Protected routes */}
+            <Route path="/" element={<AuthGuard><Index /></AuthGuard>} />
+            <Route element={<AuthGuard><Layout /></AuthGuard>}>
+              <Route path="/profile" element={<Profile />} />
               <Route path="/species" element={<Species />} />
               <Route path="/plants" element={<Plants />} />
               <Route path="/mammals" element={<Mammals />} />
@@ -70,15 +75,14 @@ const App = () => (
               <Route path="/fish" element={<Fishes />} />
               <Route path="/amphibians" element={<Amphibians />} />
               <Route path="/other-organisms" element={<OtherOrganisms />} />
-            <Route path="/locations" element={<Locations />} />
-            <Route path="/daily-challenges" element={<DailyChallenges />} />
+              <Route path="/locations" element={<Locations />} />
+              <Route path="/daily-challenges" element={<DailyChallenges />} />
               <Route path="/badges" element={<Badges />} />
               <Route path="/easter-eggs" element={<EasterEggs />} />
               <Route path="/collection" element={<Collection />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/login-streak" element={<LoginStreak />} />
               <Route path="/coin-shop" element={<CoinShop />} />
-              <Route path="/profile" element={<Profile />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
