@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Camera, Upload, Loader2, Menu, Flag, Leaf, Cat, Bug, Bird, Fish, Microscope } from "lucide-react";
+import { Camera, Upload, Loader2, Menu, Flag } from "lucide-react";
 import { CameraCapture } from "@/components/CameraCapture";
 import { useToast } from "@/hooks/use-toast";
+import { Session } from "@supabase/supabase-js";
 import {
   Dialog,
   DialogContent,
@@ -15,10 +17,17 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
+import PlantIcon from "@/components/icons/PlantIcon";
+import MammalIcon from "@/components/icons/MammalIcon";
+import BirdIcon from "@/components/icons/BirdIcon";
+import InsectIcon from "@/components/icons/InsectIcon";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
+import FishIcon from "@/components/icons/FishIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
+import OtherIcon from "@/components/icons/OtherIcon";
 
 const Index = () => {
+  const [session, setSession] = useState<Session | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isIdentifying, setIsIdentifying] = useState(false);
@@ -26,9 +35,25 @@ const Index = () => {
   const [coordinates, setCoordinates] = useState<{latitude: number, longitude: number} | null>(null);
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState("");
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
+    // Set up auth listener
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
     // Get user's location
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -43,7 +68,9 @@ const Index = () => {
         }
       );
     }
-  }, []);
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -177,6 +204,9 @@ const Index = () => {
     setReportReason("");
   };
 
+  if (!session) {
+    return null;
+  }
 
   return (
     <SidebarProvider>
@@ -235,25 +265,25 @@ const Index = () => {
               <div className="grid grid-cols-4 gap-3 mb-3">
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-plant/20 flex items-center justify-center">
-                    <Leaf className="w-5 h-5 text-species-plant" />
+                    <PlantIcon className="w-5 h-5 text-species-plant" />
                   </div>
                   <span className="text-xs text-muted-foreground">Plants</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-mammal/20 flex items-center justify-center">
-                    <Cat className="w-5 h-5 text-species-mammal" />
+                    <MammalIcon className="w-5 h-5 text-species-mammal" />
                   </div>
                   <span className="text-xs text-muted-foreground">Mammals</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-bird/20 flex items-center justify-center">
-                    <Bird className="w-5 h-5 text-species-bird" />
+                    <BirdIcon className="w-5 h-5 text-species-bird" />
                   </div>
                   <span className="text-xs text-muted-foreground">Birds</span>
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-insect/20 flex items-center justify-center">
-                    <Bug className="w-5 h-5 text-species-insect" />
+                    <InsectIcon className="w-5 h-5 text-species-insect" />
                   </div>
                   <span className="text-xs text-muted-foreground">Insects</span>
                 </div>
@@ -267,7 +297,7 @@ const Index = () => {
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-fish/20 flex items-center justify-center">
-                    <Fish className="w-5 h-5 text-species-fish" />
+                    <FishIcon className="w-5 h-5 text-species-fish" />
                   </div>
                   <span className="text-xs text-muted-foreground">Fish</span>
                 </div>
@@ -279,7 +309,7 @@ const Index = () => {
                 </div>
                 <div className="flex flex-col items-center gap-1">
                   <div className="w-10 h-10 rounded-full bg-species-other/20 flex items-center justify-center">
-                    <Microscope className="w-5 h-5 text-species-other" />
+                    <OtherIcon className="w-5 h-5 text-species-other" />
                   </div>
                   <span className="text-xs text-muted-foreground">Others</span>
                 </div>
