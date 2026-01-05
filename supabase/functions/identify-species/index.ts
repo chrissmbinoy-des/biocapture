@@ -24,6 +24,7 @@ serve(async (req) => {
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     
     if (userError || !user) {
+      console.error("Auth error:", userError);
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -39,6 +40,7 @@ serve(async (req) => {
       );
     }
 
+    console.log("User ID:", user.id);
     console.log("Coordinates received:", coordinates);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -63,19 +65,21 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an expert biologist and species identification specialist. Analyze images and identify ONLY living organisms with extreme precision.
+            content: `You are an expert biologist and species identification specialist. Analyze images and identify living organisms with precision.
 
-You can ONLY identify living organisms: animals, plants, fungi, bacteria, protists, algae, lichens, and other life forms.
+You can identify living organisms: animals, plants, fungi, bacteria, protists, algae, lichens, and other life forms.
 
-If the image does NOT contain a living organism (e.g., rocks, objects, structures, man-made items, fossils), you MUST respond with:
+If the image clearly does NOT contain any living organism (e.g., empty background, just rocks, man-made objects only, fossils without life), respond with:
 {"error": "NO_LIVING_ORGANISM", "message": "No living organism detected in this image."}
+
+However, if you can see ANY living thing, even partially or with low confidence, try to identify it. Be generous in detection - if there's a plant, animal, insect, or any organism visible, identify it.
 
 For living organisms, provide:
 1. Common name (e.g., "Bengal Tiger", "Oak Tree", "Monarch Butterfly")
 2. Scientific name (e.g., "Panthera tigris tigris")
 3. Category: one of [plant, mammal, insect, bird, reptile, fish, amphibian, other]
    - Use "other" for: fungi, bacteria, protists, microscopic organisms, slime molds, lichens, algae, and any other living organisms that don't fit the main categories
-4. Confidence percentage (0-100)
+4. Confidence percentage (0-100) - be realistic but not overly conservative
 5. Brief description (2-3 sentences about the species)
 
 Return ONLY valid JSON in this exact format:
@@ -83,7 +87,7 @@ Return ONLY valid JSON in this exact format:
   "name": "Common Name",
   "scientificName": "Scientific name",
   "category": "category",
-  "confidence": 95,
+  "confidence": 85,
   "description": "Brief description of the species."
 }`
           },
@@ -92,7 +96,7 @@ Return ONLY valid JSON in this exact format:
             content: [
               {
                 type: "text",
-                text: "Identify this living organism. If this is not a living organism, respond with the error format."
+                text: "Identify the living organism in this image. If you can see any plant, animal, fungus, or other living thing, identify it. Only return the NO_LIVING_ORGANISM error if the image truly contains no life forms at all."
               },
               {
                 type: "image_url",
@@ -125,7 +129,7 @@ Return ONLY valid JSON in this exact format:
       }
       
       return new Response(
-        JSON.stringify({ error: "Failed to identify species" }),
+        JSON.stringify({ error: "Failed to identify species. Please try again." }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -134,10 +138,12 @@ Return ONLY valid JSON in this exact format:
     console.log("Lovable AI response received");
     
     const aiResponse = data.choices?.[0]?.message?.content;
+    console.log("AI raw response:", aiResponse);
+    
     if (!aiResponse) {
       console.error("No content in AI response");
       return new Response(
-        JSON.stringify({ error: "Invalid AI response" }),
+        JSON.stringify({ error: "Invalid AI response. Please try again." }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -147,12 +153,14 @@ Return ONLY valid JSON in this exact format:
     try {
       // Try to extract JSON from markdown code blocks if present
       const jsonMatch = aiResponse.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-      const jsonStr = jsonMatch ? jsonMatch[1] : aiResponse;
+      const jsonStr = jsonMatch ? jsonMatch[1] : aiResponse.trim();
       result = JSON.parse(jsonStr);
+      console.log("Parsed result:", result);
     } catch (parseError) {
       console.error("Failed to parse AI response as JSON:", parseError);
+      console.error("Raw response was:", aiResponse);
       return new Response(
-        JSON.stringify({ error: "Failed to parse identification result" }),
+        JSON.stringify({ error: "Failed to parse identification result. Please try again." }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -166,7 +174,16 @@ Return ONLY valid JSON in this exact format:
       );
     }
 
-    console.log("Identified:", result.name);
+    // Validate required fields
+    if (!result.name || !result.category) {
+      console.error("Missing required fields in result:", result);
+      return new Response(
+        JSON.stringify({ error: "Incomplete identification result. Please try again." }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log("Identified:", result.name, "Category:", result.category);
 
     // Get place name and country from coordinates using reverse geocoding
     let placeName = null;
@@ -205,17 +222,35 @@ Return ONLY valid JSON in this exact format:
     };
     const kingdom = kingdomMap[result.category.toLowerCase()] || "other";
 
+    // Create service client for operations that need elevated privileges
+    const serviceSupabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    // Check if this species has already been identified by this user
+    const speciesNameLower = result.name.toLowerCase().trim();
+    const { data: existingSpecies, error: existingError } = await serviceSupabase
+      .from('species_identifications')
+      .select('id, species_name')
+      .eq('user_id', user.id);
+    
+    if (existingError) {
+      console.error("Error checking existing species:", existingError);
+    }
+
+    const isNewSpecies = !existingSpecies?.some(
+      (s) => s.species_name.toLowerCase().trim() === speciesNameLower
+    );
+    
+    console.log("Is new species:", isNewSpecies, "Existing count:", existingSpecies?.length || 0);
+
     // Upload user's image to storage
     let imageUrl = imageData;
     try {
       const base64Data = imageData.replace(/^data:image\/\w+;base64,/, '');
       const imageBuffer = base64Decode(base64Data);
       const fileName = `${user.id}/${Date.now()}.jpg`;
-      
-      const serviceSupabase = createClient(
-        Deno.env.get('SUPABASE_URL')!,
-        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-      );
       
       const { error: uploadError } = await serviceSupabase.storage
         .from('species-images')
@@ -251,7 +286,7 @@ Return ONLY valid JSON in this exact format:
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash-image-preview',
+            model: 'google/gemini-3-pro-image-preview',
             messages: [
               {
                 role: 'user',
@@ -272,11 +307,6 @@ Return ONLY valid JSON in this exact format:
               const exampleBase64 = generatedImageUrl.replace(/^data:image\/\w+;base64,/, '');
               const exampleBuffer = base64Decode(exampleBase64);
               const exampleFileName = `examples/${result.name.replace(/\s+/g, '_')}_${Date.now()}_${i}.jpg`;
-              
-              const serviceSupabase = createClient(
-                Deno.env.get('SUPABASE_URL')!,
-                Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-              );
               
               const { error: exampleUploadError } = await serviceSupabase.storage
                 .from('species-images')
@@ -328,80 +358,141 @@ Return ONLY valid JSON in this exact format:
       } else {
         console.log("Species identification saved to database");
 
-        const serviceSupabase = createClient(
-          Deno.env.get('SUPABASE_URL')!,
-          Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-        );
-        
-        // Award coins based on kingdom
-        const coinRewards: Record<string, number> = {
-          plant: 5,
-          mammal: 10,
-          insect: 5,
-          bird: 50,
-          reptile: 20,
-          fish: 30,
-          amphibian: 20,
-          other: 15,
-        };
-        
-        let coinReward = coinRewards[kingdom] || 15;
-        
-        // Check for active double coins boost
+        // Update login streak (sighting triggers streak)
         try {
-          const now = new Date().toISOString();
-          const { data: activePurchases } = await serviceSupabase
-            .from('user_purchases')
-            .select('*, shop_items(*)')
-            .eq('user_id', user.id)
-            .eq('is_active', true);
+          const today = new Date().toISOString().split("T")[0];
+          const { data: streakData } = await serviceSupabase
+            .from("login_streaks")
+            .select("*")
+            .eq("user_id", user.id)
+            .maybeSingle();
+
+          if (!streakData) {
+            // Create new streak record
+            await serviceSupabase
+              .from("login_streaks")
+              .insert({
+                user_id: user.id,
+                current_streak: 1,
+                longest_streak: 1,
+                last_login_date: today,
+              });
+            console.log("New login streak started");
+          } else {
+            const lastLogin = streakData.last_login_date;
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+            if (lastLogin !== today) {
+              if (lastLogin === yesterdayStr) {
+                // Consecutive day - increment streak
+                const newStreak = streakData.current_streak + 1;
+                const newLongest = Math.max(newStreak, streakData.longest_streak);
+                await serviceSupabase
+                  .from("login_streaks")
+                  .update({
+                    current_streak: newStreak,
+                    longest_streak: newLongest,
+                    last_login_date: today,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq("user_id", user.id);
+                console.log("Streak incremented to:", newStreak);
+              } else if (!lastLogin || streakData.current_streak === 0) {
+                // First login after reset or never logged in
+                await serviceSupabase
+                  .from("login_streaks")
+                  .update({
+                    current_streak: 1,
+                    last_login_date: today,
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq("user_id", user.id);
+                console.log("Streak started at 1");
+              }
+              // If lastLogin is more than a day ago and current_streak > 0, 
+              // the streak page will handle the reset on visit
+            }
+          }
+        } catch (streakErr) {
+          console.error("Error updating login streak:", streakErr);
+        }
+        
+        // Only award coins if this is a NEW species for this user
+        if (isNewSpecies) {
+          // Award coins based on kingdom
+          const coinRewards: Record<string, number> = {
+            plant: 5,
+            mammal: 10,
+            insect: 5,
+            bird: 50,
+            reptile: 20,
+            fish: 30,
+            amphibian: 20,
+            other: 15,
+          };
           
-          if (activePurchases) {
-            for (const purchase of activePurchases) {
-              if (purchase.shop_items?.category === 'boost') {
-                const metadata = purchase.shop_items.metadata as Record<string, unknown>;
-                if (metadata?.boost_type === 'double_coins') {
-                  // Check if not expired
-                  if (!purchase.expires_at || new Date(purchase.expires_at) > new Date(now)) {
-                    coinReward *= 2;
-                    console.log("Double coins boost applied! Reward:", coinReward);
-                    break;
+          let coinReward = coinRewards[kingdom] || 15;
+          
+          // Check for active double coins boost
+          try {
+            const now = new Date().toISOString();
+            const { data: activePurchases } = await serviceSupabase
+              .from('user_purchases')
+              .select('*, shop_items(*)')
+              .eq('user_id', user.id)
+              .eq('is_active', true);
+            
+            if (activePurchases) {
+              for (const purchase of activePurchases) {
+                if (purchase.shop_items?.category === 'boost') {
+                  const metadata = purchase.shop_items.metadata as Record<string, unknown>;
+                  if (metadata?.boost_type === 'double_coins') {
+                    // Check if not expired
+                    if (!purchase.expires_at || new Date(purchase.expires_at) > new Date(now)) {
+                      coinReward *= 2;
+                      console.log("Double coins boost applied! Reward:", coinReward);
+                      break;
+                    }
                   }
                 }
               }
             }
+          } catch (boostErr) {
+            console.error("Error checking boosts:", boostErr);
           }
-        } catch (boostErr) {
-          console.error("Error checking boosts:", boostErr);
-        }
-        
-        // Award coins for discovery
-        try {
-          const { data: coinData } = await serviceSupabase
-            .from('user_coins')
-            .select('balance')
-            .eq('user_id', user.id)
-            .maybeSingle();
           
-          if (coinData) {
-            await serviceSupabase
+          // Award coins for discovery
+          try {
+            const { data: coinData } = await serviceSupabase
               .from('user_coins')
-              .update({ 
-                balance: coinData.balance + coinReward,
-                updated_at: new Date().toISOString()
-              })
-              .eq('user_id', user.id);
-          } else {
-            await serviceSupabase
-              .from('user_coins')
-              .insert({ 
-                user_id: user.id, 
-                balance: coinReward 
-              });
+              .select('balance')
+              .eq('user_id', user.id)
+              .maybeSingle();
+            
+            if (coinData) {
+              await serviceSupabase
+                .from('user_coins')
+                .update({ 
+                  balance: coinData.balance + coinReward,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('user_id', user.id);
+            } else {
+              await serviceSupabase
+                .from('user_coins')
+                .insert({ 
+                  user_id: user.id, 
+                  balance: coinReward 
+                });
+            }
+            console.log(`Awarded ${coinReward} coins for discovering NEW species ${result.name} (${kingdom})`);
+          } catch (coinErr) {
+            console.error("Error awarding coins:", coinErr);
           }
-          console.log(`Awarded ${coinReward} coins for discovering ${result.name} (${kingdom})`);
-        } catch (coinErr) {
-          console.error("Error awarding coins:", coinErr);
+        } else {
+          console.log(`No coins awarded - ${result.name} was already identified by this user`);
         }
         
         // Check and complete daily challenges
@@ -431,17 +522,31 @@ Return ONLY valid JSON in this exact format:
             for (const challenge of userChallenges) {
               const template = challenge.daily_challenge_templates;
               let shouldComplete = false;
+              let currentProgress = 0;
+              const targetValue = parseInt(template.target_value || '1');
               
               if (template.challenge_type === 'identify_kingdom') {
                 // Check if identified a species of the required kingdom
+                const kingdomCount = todaySpecies?.filter(s => s.kingdom === template.target_value).length || 0;
+                currentProgress = kingdomCount;
                 shouldComplete = kingdom === template.target_value;
               } else if (template.challenge_type === 'identify_count') {
                 // Check if reached the count target
-                shouldComplete = todayCount >= parseInt(template.target_value || '1');
+                currentProgress = todayCount;
+                shouldComplete = todayCount >= targetValue;
               } else if (template.challenge_type === 'kingdom_diversity') {
                 // Check if identified species from multiple kingdoms
-                shouldComplete = todayKingdoms.size >= parseInt(template.target_value || '2');
+                currentProgress = todayKingdoms.size;
+                shouldComplete = todayKingdoms.size >= targetValue;
               }
+              
+              // Update progress
+              await supabase
+                .from('user_daily_challenges')
+                .update({ 
+                  progress: currentProgress
+                })
+                .eq('id', challenge.id);
               
               if (shouldComplete) {
                 // Mark challenge as completed
@@ -450,7 +555,7 @@ Return ONLY valid JSON in this exact format:
                   .update({ 
                     is_completed: true, 
                     completed_at: new Date().toISOString(),
-                    progress: 1
+                    progress: targetValue
                   })
                   .eq('id', challenge.id);
                 
@@ -543,14 +648,15 @@ Return ONLY valid JSON in this exact format:
       console.error("Database error:", dbError);
     }
 
+    // Return result with isNewSpecies flag
     return new Response(
-      JSON.stringify(result),
+      JSON.stringify({ ...result, isNewSpecies }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
     console.error("Error in identify-species function:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
+      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error occurred" }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

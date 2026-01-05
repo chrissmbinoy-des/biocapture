@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,8 +22,37 @@ import {
   Zap,
   Check,
   Clock,
+  Cat,
+  Bug,
+  Bird,
+  Fish,
+  Microscope,
+  Target,
+  Flame,
+  Sun,
+  Moon,
+  Mountain,
+  Trees,
+  Wind,
+  Cloud,
+  Snowflake,
+  Medal,
+  Heart,
+  Compass,
+  Rainbow,
+  Earth,
+  Globe,
+  Map,
+  Calendar,
+  CalendarDays,
+  CalendarCheck,
+  Dumbbell,
+  LucideIcon,
 } from "lucide-react";
 import CoinIcon from "@/components/icons/CoinIcon";
+import CrocodileIcon from "@/components/icons/CrocodileIcon";
+import FrogIcon from "@/components/icons/FrogIcon";
+import { BadgeProgressCircle } from "@/components/BadgeProgressCircle";
 import type { Json } from "@/integrations/supabase/types";
 
 interface ShopItem {
@@ -44,12 +74,71 @@ interface UserPurchase {
   shop_items: ShopItem;
 }
 
+interface UserBadge {
+  id: string;
+  badge_id: string;
+  earned_at: string;
+  badges: {
+    id: string;
+    name: string;
+    description: string;
+    icon: string;
+    requirement_type: string;
+    requirement_value: string | null;
+  };
+}
+
 interface EquippedItems {
   avatar?: string;
   frame?: string;
   theme?: string;
   title?: string;
 }
+
+const BADGE_ICON_MAP: { [key: string]: LucideIcon } = {
+  "🌿": Leaf,
+  "🦁": Cat,
+  "🦋": Bug,
+  "🦅": Bird,
+  "🐟": Fish,
+  "🦎": CrocodileIcon as unknown as LucideIcon,
+  "🐸": FrogIcon as unknown as LucideIcon,
+  "🦠": Microscope,
+  "⭐": Star,
+  "🌟": Star,
+  "🏆": Trophy,
+  "🎯": Target,
+  "⚡": Zap,
+  "👑": Crown,
+  "🥇": Medal,
+  "🏅": Medal,
+  "🎖️": Medal,
+  "🛡️": Shield,
+  "❤️": Heart,
+  "🔥": Flame,
+  "☀️": Sun,
+  "🌙": Moon,
+  "🏔️": Mountain,
+  "🌲": Trees,
+  "🌊": Waves,
+  "💨": Wind,
+  "☁️": Cloud,
+  "❄️": Snowflake,
+  "✨": Sparkles,
+  "🧭": Compass,
+  "🌈": Rainbow,
+  "🌍": Earth,
+  "🌏": Globe,
+  "🗺️": Map,
+  "📅": Calendar,
+  "🗓️": CalendarDays,
+  "📆": CalendarCheck,
+  "💪": Dumbbell,
+};
+
+const getBadgeIcon = (iconStr: string): LucideIcon => {
+  return BADGE_ICON_MAP[iconStr] || Award;
+};
 
 const iconMap: Record<string, React.ReactNode> = {
   crown: <Crown className="h-6 w-6" />,
@@ -66,36 +155,71 @@ const iconMap: Record<string, React.ReactNode> = {
 };
 
 export default function Profile() {
+  const { userId: urlUserId } = useParams<{ userId?: string }>();
   const [purchases, setPurchases] = useState<UserPurchase[]>([]);
+  const [earnedBadges, setEarnedBadges] = useState<UserBadge[]>([]);
   const [equipped, setEquipped] = useState<EquippedItems>({});
   const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [viewingUserId, setViewingUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("profile");
+  const [equippedTitle, setEquippedTitle] = useState<string | null>(null);
+  const [isOwnProfile, setIsOwnProfile] = useState(true);
 
   useEffect(() => {
     fetchProfileData();
-  }, []);
+  }, [urlUserId]);
 
   const fetchProfileData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      setUserId(user.id);
+      setCurrentUserId(user.id);
+      
+      // Determine which user's profile to view
+      const targetUserId = urlUserId || user.id;
+      setViewingUserId(targetUserId);
+      setIsOwnProfile(targetUserId === user.id);
 
       // Fetch user purchases with item details
       const { data: purchasesData, error } = await supabase
         .from("user_purchases")
         .select("*, shop_items(*)")
-        .eq("user_id", user.id)
+        .eq("user_id", targetUserId)
         .eq("is_active", true);
 
       if (error) throw error;
       setPurchases(purchasesData || []);
 
-      // Load equipped items from localStorage
-      const savedEquipped = localStorage.getItem(`equipped_${user.id}`);
-      if (savedEquipped) {
-        setEquipped(JSON.parse(savedEquipped));
+      // Fetch earned badges
+      const { data: badgesData, error: badgesError } = await supabase
+        .from("user_badges")
+        .select("*, badges(*)")
+        .eq("user_id", targetUserId)
+        .order("earned_at", { ascending: false });
+
+      if (badgesError) throw badgesError;
+      setEarnedBadges(badgesData || []);
+
+      // Load equipped items from localStorage (only for own profile)
+      if (targetUserId === user.id) {
+        const savedEquipped = localStorage.getItem(`equipped_${user.id}`);
+        if (savedEquipped) {
+          const parsedEquipped = JSON.parse(savedEquipped);
+          setEquipped(parsedEquipped);
+          
+          // Find equipped title
+          if (parsedEquipped.title) {
+            const titlePurchase = purchasesData?.find(p => p.item_id === parsedEquipped.title);
+            if (titlePurchase) {
+              setEquippedTitle(titlePurchase.shop_items?.name || null);
+            }
+          }
+        }
+      } else {
+        // For other users, try to load their equipped items from their localStorage key
+        // Since we can't access other users' localStorage, we'll just show their purchases
+        setEquipped({});
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -105,6 +229,8 @@ export default function Profile() {
   };
 
   const handleEquip = (item: ShopItem) => {
+    if (!isOwnProfile) return;
+    
     const metadata = item.metadata as Record<string, unknown>;
     const itemType = metadata?.item_type as string;
 
@@ -113,20 +239,32 @@ export default function Profile() {
     const newEquipped = { ...equipped, [itemType]: item.id };
     setEquipped(newEquipped);
 
-    if (userId) {
-      localStorage.setItem(`equipped_${userId}`, JSON.stringify(newEquipped));
+    if (currentUserId) {
+      localStorage.setItem(`equipped_${currentUserId}`, JSON.stringify(newEquipped));
+    }
+
+    // Update equipped title if it's a title
+    if (itemType === 'title') {
+      setEquippedTitle(item.name);
     }
 
     toast.success(`${item.name} equipped!`);
   };
 
   const handleUnequip = (itemType: string) => {
+    if (!isOwnProfile) return;
+    
     const newEquipped = { ...equipped };
     delete newEquipped[itemType as keyof EquippedItems];
     setEquipped(newEquipped);
 
-    if (userId) {
-      localStorage.setItem(`equipped_${userId}`, JSON.stringify(newEquipped));
+    if (currentUserId) {
+      localStorage.setItem(`equipped_${currentUserId}`, JSON.stringify(newEquipped));
+    }
+
+    // Clear equipped title if it's a title
+    if (itemType === 'title') {
+      setEquippedTitle(null);
     }
 
     toast.success("Item unequipped");
@@ -153,6 +291,14 @@ export default function Profile() {
     return purchases.filter((p) => p.shop_items?.category === category);
   };
 
+  // Get equipped titles for display
+  const getEquippedTitles = () => {
+    return filterByCategory("profile").filter(p => {
+      const metadata = p.shop_items?.metadata as Record<string, unknown>;
+      return metadata?.item_type === 'title' && isEquipped(p.item_id);
+    });
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -167,15 +313,26 @@ export default function Profile() {
         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
           <User className="h-5 w-5 text-primary" />
         </div>
-        <h1 className="text-2xl font-bold">My Profile</h1>
+        <div>
+          <h1 className="text-2xl font-bold">{isOwnProfile ? "My Profile" : "User Profile"}</h1>
+          {equippedTitle && (
+            <Badge variant="secondary" className="mt-1 bg-amber-500/20 text-amber-600 border-amber-500/30">
+              {equippedTitle}
+            </Badge>
+          )}
+        </div>
       </div>
 
-      {/* Current Equipped Preview */}
+      {/* Currently Equipped Preview */}
       <Card className="p-4 mb-6 bg-gradient-to-br from-primary/10 to-accent/10">
-        <h3 className="text-sm font-medium text-muted-foreground mb-3">Currently Equipped</h3>
+        <h3 className="text-sm font-medium text-muted-foreground mb-3">
+          {isOwnProfile ? "Currently Equipped" : "Equipped Items"}
+        </h3>
         <div className="flex flex-wrap gap-2">
           {Object.keys(equipped).length === 0 ? (
-            <p className="text-sm text-muted-foreground">No items equipped. Visit the shop to purchase items!</p>
+            <p className="text-sm text-muted-foreground">
+              {isOwnProfile ? "No items equipped. Visit the shop to purchase items!" : "No items equipped."}
+            </p>
           ) : (
             Object.entries(equipped).map(([type, itemId]) => {
               const purchase = purchases.find((p) => p.item_id === itemId);
@@ -212,16 +369,18 @@ export default function Profile() {
               <Card className="p-6 text-center">
                 <User className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
                 <p className="text-muted-foreground">No profile items yet</p>
-                <p className="text-sm text-muted-foreground">Visit the Coin Shop to purchase customizations!</p>
+                {isOwnProfile && (
+                  <p className="text-sm text-muted-foreground">Visit the Coin Shop to purchase customizations!</p>
+                )}
               </Card>
             ) : (
               filterByCategory("profile").map((purchase) => {
                 const item = purchase.shop_items;
-                const equipped = isEquipped(item.id);
+                const equippedItem = isEquipped(item.id);
                 const metadata = item.metadata as Record<string, unknown>;
 
                 return (
-                  <Card key={purchase.id} className={`p-4 ${equipped ? "border-primary" : ""}`}>
+                  <Card key={purchase.id} className={`p-4 ${equippedItem ? "border-primary" : ""}`}>
                     <div className="flex items-center gap-3">
                       <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500">
                         {iconMap[item.icon] || <Sparkles className="h-6 w-6" />}
@@ -230,13 +389,15 @@ export default function Profile() {
                         <h3 className="font-semibold">{item.name}</h3>
                         <p className="text-xs text-muted-foreground capitalize">{metadata?.item_type as string}</p>
                       </div>
-                      <Button
-                        size="sm"
-                        variant={equipped ? "outline" : "default"}
-                        onClick={() => equipped ? handleUnequip(metadata?.item_type as string) : handleEquip(item)}
-                      >
-                        {equipped ? "Unequip" : "Equip"}
-                      </Button>
+                      {isOwnProfile && (
+                        <Button
+                          size="sm"
+                          variant={equippedItem ? "outline" : "default"}
+                          onClick={() => equippedItem ? handleUnequip(metadata?.item_type as string) : handleEquip(item)}
+                        >
+                          {equippedItem ? "Unequip" : "Equip"}
+                        </Button>
+                      )}
                     </div>
                   </Card>
                 );
@@ -247,38 +408,33 @@ export default function Profile() {
 
         <TabsContent value="badges">
           <div className="space-y-3">
-            {filterByCategory("badge").length === 0 ? (
+            {earnedBadges.length === 0 ? (
               <Card className="p-6 text-center">
                 <Award className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                <p className="text-muted-foreground">No cosmetic badges yet</p>
-                <p className="text-sm text-muted-foreground">Visit the Coin Shop to purchase badges!</p>
+                <p className="text-muted-foreground">No badges earned yet</p>
+                {isOwnProfile && (
+                  <p className="text-sm text-muted-foreground">Keep exploring to earn badges!</p>
+                )}
               </Card>
             ) : (
-              filterByCategory("badge").map((purchase) => {
-                const item = purchase.shop_items;
-                const equipped = isEquipped(item.id);
-
-                return (
-                  <Card key={purchase.id} className={`p-4 ${equipped ? "border-amber-500" : ""}`}>
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">
-                        {iconMap[item.icon] || <Award className="h-6 w-6" />}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="font-semibold">{item.name}</h3>
-                        <p className="text-xs text-muted-foreground">{item.description}</p>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant={equipped ? "outline" : "default"}
-                        onClick={() => equipped ? handleUnequip("badge") : handleEquip(item)}
-                      >
-                        {equipped ? <Check className="h-4 w-4" /> : "Display"}
-                      </Button>
+              <div className="grid grid-cols-3 gap-3">
+                {earnedBadges.map((userBadge) => (
+                  <Card key={userBadge.id} className="p-3 text-center bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20">
+                    <div className="flex justify-center mb-2">
+                      <BadgeProgressCircle
+                        icon={getBadgeIcon(userBadge.badges.icon)}
+                        progress={1}
+                        isEarned={true}
+                        size="lg"
+                      />
                     </div>
+                    <h3 className="font-semibold text-xs truncate">{userBadge.badges.name}</h3>
+                    <p className="text-[10px] text-muted-foreground">
+                      {new Date(userBadge.earned_at).toLocaleDateString()}
+                    </p>
                   </Card>
-                );
-              })
+                ))}
+              </div>
             )}
           </div>
         </TabsContent>
@@ -289,7 +445,9 @@ export default function Profile() {
               <Card className="p-6 text-center">
                 <Zap className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
                 <p className="text-muted-foreground">No active boosts</p>
-                <p className="text-sm text-muted-foreground">Visit the Coin Shop to purchase boosts!</p>
+                {isOwnProfile && (
+                  <p className="text-sm text-muted-foreground">Visit the Coin Shop to purchase boosts!</p>
+                )}
               </Card>
             ) : (
               filterByCategory("boost").map((purchase) => {

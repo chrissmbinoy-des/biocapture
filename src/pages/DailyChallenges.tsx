@@ -244,9 +244,12 @@ const DailyChallenges = () => {
                       <div className="space-y-1">
                         <div className="flex justify-between text-xs text-muted-foreground">
                           <span>Progress</span>
-                          <span>{challenge.progress} / 1</span>
+                          <span>{challenge.progress} / {parseInt(template.target_value || '1')}</span>
                         </div>
-                        <Progress value={challenge.progress * 100} className="h-2 [&>div]:bg-species-plant" />
+                        <Progress 
+                          value={(challenge.progress / parseInt(template.target_value || '1')) * 100} 
+                          className="h-2 [&>div]:bg-species-plant" 
+                        />
                       </div>
                     )}
                     {isCompleted && (
