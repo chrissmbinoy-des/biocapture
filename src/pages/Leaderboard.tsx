@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Trophy, Medal, Award, Crown, Globe, MapPin, Calendar, CalendarDays, CalendarRange } from "lucide-react";
+import { Loader2, Trophy, Medal, Award, Crown, Globe, MapPin, Calendar, CalendarDays, CalendarRange, User } from "lucide-react";
 
 interface LeaderboardEntry {
   user_id: string;
@@ -223,8 +225,15 @@ export default function Leaderboard() {
                     <p className="font-medium text-sm">
                       {entry.user_id === currentUserId ? "You" : `Explorer #${entry.rank}`}
                     </p>
-                    {entry.user_id === currentUserId && (
+                    {entry.user_id === currentUserId ? (
                       <Badge variant="secondary" className="text-xs">Your Profile</Badge>
+                    ) : (
+                      <Link to={`/profile/${entry.user_id}`}>
+                        <Button variant="ghost" size="sm" className="h-5 px-1 text-xs text-primary">
+                          <User className="h-3 w-3 mr-1" />
+                          Visit Profile
+                        </Button>
+                      </Link>
                     )}
                   </div>
                 </div>

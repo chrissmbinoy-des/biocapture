@@ -79,6 +79,7 @@ const App = () => (
               <Route path="/login-streak" element={<LoginStreak />} />
               <Route path="/coin-shop" element={<CoinShop />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/profile/:userId" element={<Profile />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
