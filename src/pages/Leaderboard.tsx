@@ -220,10 +220,10 @@ export default function Leaderboard() {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 flex justify-center">{getRankIcon(Number(entry.rank))}</div>
+                  <div className="w-8 flex justify-center">{getRankIcon(entry.rank || 0)}</div>
                   <div>
                     <p className="font-medium text-sm">
-                      {entry.user_id === currentUserId ? "You" : `Explorer #${entry.rank}`}
+                      {entry.user_id === currentUserId ? "You" : `Explorer #${entry.rank || 0}`}
                     </p>
                     {entry.user_id === currentUserId ? (
                       <Badge variant="secondary" className="text-xs">Your Profile</Badge>
