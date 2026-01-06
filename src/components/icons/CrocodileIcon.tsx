@@ -25,8 +25,8 @@ const CrocodileIcon = forwardRef<SVGSVGElement, CrocodileIconProps>(
           <ellipse cx="12" cy="11" rx="3.5" ry="5" />
           {/* Head - rounded */}
           <ellipse cx="12" cy="4.5" rx="2.8" ry="2.2" />
-          {/* Tail - long and tapered */}
-          <path d="M12 16 Q12.5 19 13 22" strokeWidth="2" strokeLinecap="round" />
+          {/* Tail - elongated and bent to the left */}
+          <path d="M12 16 Q10 19 7 21 Q4 22 2 22" strokeWidth="2" strokeLinecap="round" />
           {/* Front left leg with toes */}
           <path d="M9 7 L5 4 M5 4 L4 3 M5 4 L5 2.5 M5 4 L6 2.5" strokeWidth="1.3" strokeLinecap="round" />
           {/* Front right leg with toes */}

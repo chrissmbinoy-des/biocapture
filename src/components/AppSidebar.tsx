@@ -28,6 +28,7 @@ import {
 
 const mainItems = [
   { title: "Camera", url: "/", icon: Camera },
+  { title: "My Profile", url: "/profile", icon: User },
 ];
 
 const kingdoms = [
@@ -48,7 +49,6 @@ const bottomItems = [
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
   { title: "Login Streak", url: "/login-streak", icon: Flame },
   { title: "Coin Shop", url: "/coin-shop", icon: ShoppingBag },
-  { title: "My Profile", url: "/profile", icon: User },
 ];
 
 export function AppSidebar() {
