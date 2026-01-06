@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope, MapPin } from "lucide-react";
+import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope, MapPin, Share2 } from "lucide-react";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
 import { IconBadge, getKingdomVariant, IconComponent } from "@/components/IconBadge";
@@ -199,6 +199,22 @@ export default function Species() {
     setReportingId(null);
   };
 
+  const handleShare = (finding: Finding) => {
+    const shareText = `I just discovered a ${finding.species_name}${finding.scientific_name ? ` (${finding.scientific_name})` : ''} using Species Identifier! 🌿`;
+    const shareUrl = window.location.origin;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: `Species Discovery: ${finding.species_name}`,
+        text: shareText,
+        url: shareUrl,
+      }).catch(() => {});
+    } else {
+      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+      window.open(twitterUrl, "_blank");
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -287,6 +303,15 @@ export default function Species() {
                     <p className="text-xs text-muted-foreground">
                       {new Date(finding.identified_at).toLocaleDateString()}
                     </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs text-primary"
+                      onClick={() => handleShare(finding)}
+                    >
+                      <Share2 className="h-3 w-3 mr-1" />
+                      Share
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
