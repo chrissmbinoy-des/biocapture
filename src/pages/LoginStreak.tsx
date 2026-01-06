@@ -143,25 +143,25 @@ export default function LoginStreak() {
             });
           }
         } else {
-          // Streak broken - reset to 0 (will become 1 on next sighting or app entry with action)
+          // Streak broken - reset to 1
           await supabase
             .from("login_streaks")
             .update({
-              current_streak: 0,
-              last_login_date: null,
+              current_streak: 1,
+              last_login_date: today,
               updated_at: new Date().toISOString(),
             })
             .eq("user_id", user.id);
 
           setUserStreak({
-            current_streak: 0,
+            current_streak: 1,
             longest_streak: streakData.longest_streak,
-            last_login_date: null,
+            last_login_date: today,
           });
 
           toast({
             title: "Streak Reset",
-            description: "Your streak was reset to 0 days. Start fresh with your next sighting!",
+            description: "Your streak was reset. Start fresh today!",
             variant: "destructive",
           });
         }

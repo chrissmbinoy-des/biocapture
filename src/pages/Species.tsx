@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope, MapPin, Share2 } from "lucide-react";
+import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope } from "lucide-react";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
 import { IconBadge, getKingdomVariant, IconComponent } from "@/components/IconBadge";
@@ -18,11 +18,6 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
-interface Coordinates {
-  latitude: number;
-  longitude: number;
-}
-
 interface Finding {
   id: string;
   species_name: string;
@@ -33,8 +28,6 @@ interface Finding {
   image_url: string | null;
   example_images: string[] | null;
   identified_at: string;
-  coordinates: Coordinates | null;
-  country: string | null;
 }
 
 interface Stats {
@@ -112,10 +105,7 @@ export default function Species() {
 
       if (error) throw error;
 
-      setFindings((data || []).map(d => ({
-        ...d,
-        coordinates: d.coordinates as unknown as Coordinates | null
-      })));
+      setFindings(data || []);
 
       const newStats: Stats = { total: data?.length || 0, kingdoms: {} };
       data?.forEach((finding) => {
@@ -197,22 +187,6 @@ export default function Species() {
     setShowReport(false);
     setReportReason("");
     setReportingId(null);
-  };
-
-  const handleShare = (finding: Finding) => {
-    const shareText = `I just discovered a ${finding.species_name}${finding.scientific_name ? ` (${finding.scientific_name})` : ''} using Species Identifier! 🌿`;
-    const shareUrl = window.location.origin;
-    
-    if (navigator.share) {
-      navigator.share({
-        title: `Species Discovery: ${finding.species_name}`,
-        text: shareText,
-        url: shareUrl,
-      }).catch(() => {});
-    } else {
-      const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
-      window.open(twitterUrl, "_blank");
-    }
   };
 
   if (loading) {
@@ -306,15 +280,6 @@ export default function Species() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 px-2 text-xs text-primary"
-                      onClick={() => handleShare(finding)}
-                    >
-                      <Share2 className="h-3 w-3 mr-1" />
-                      Share
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
                       className="h-6 px-2 text-xs text-muted-foreground"
                       onClick={() => handleReport(finding.id)}
                     >
@@ -330,15 +295,6 @@ export default function Species() {
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
-                  {finding.coordinates && (
-                    <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                      <MapPin className="h-3 w-3" />
-                      <span>
-                        {finding.coordinates.latitude.toFixed(4)}, {finding.coordinates.longitude.toFixed(4)}
-                        {finding.country && ` • ${finding.country}`}
-                      </span>
-                    </div>
-                  )}
                 </div>
               </div>
             </Card>

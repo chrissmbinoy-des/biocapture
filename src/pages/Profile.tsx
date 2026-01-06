@@ -1,20 +1,29 @@
-import { useState, useEffect } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { toast } from "sonner";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
+  DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
 import {
   Loader2,
   User,
@@ -31,48 +40,20 @@ import {
   Zap,
   Check,
   Clock,
-  Cat,
-  Bug,
-  Bird,
-  Fish,
-  Microscope,
-  Target,
-  Flame,
-  Sun,
-  Moon,
-  Mountain,
-  Trees,
-  Wind,
-  Cloud,
-  Snowflake,
-  Medal,
-  Heart,
-  Compass,
-  Rainbow,
-  Earth,
-  Globe,
-  Map,
-  Calendar,
-  CalendarDays,
-  CalendarCheck,
-  Dumbbell,
-  LucideIcon,
-  Settings,
-  Share2,
-  UserPlus,
-  UserMinus,
-  MapPin,
-  Edit2,
-  Camera,
   Grid3X3,
+  Edit2,
+  Share2,
+  Flame,
+  Globe,
+  MapPin,
+  Copy,
   Twitter,
   Facebook,
-  Copy,
+  Medal,
+  Camera,
+  Settings,
 } from "lucide-react";
 import CoinIcon from "@/components/icons/CoinIcon";
-import CrocodileIcon from "@/components/icons/CrocodileIcon";
-import FrogIcon from "@/components/icons/FrogIcon";
-import { BadgeProgressCircle } from "@/components/BadgeProgressCircle";
 import type { Json } from "@/integrations/supabase/types";
 
 interface ShopItem {
@@ -94,264 +75,252 @@ interface UserPurchase {
   shop_items: ShopItem;
 }
 
-interface UserBadge {
-  id: string;
-  badge_id: string;
-  earned_at: string;
-  badges: {
-    id: string;
-    name: string;
-    description: string;
-    icon: string;
-    requirement_type: string;
-    requirement_value: string | null;
-  };
-}
-
-interface UserProfile {
-  id: string;
-  user_id: string;
-  username: string | null;
-  display_name: string | null;
-  bio: string | null;
-  avatar_url: string | null;
-  country: string | null;
-  display_badges: string[] | null;
-}
-
 interface EquippedItems {
   avatar?: string;
   frame?: string;
   theme?: string;
   title?: string;
+  badge?: string;
 }
 
-const BADGE_ICON_MAP: { [key: string]: LucideIcon } = {
-  "🌿": Leaf,
-  "🦁": Cat,
-  "🦋": Bug,
-  "🦅": Bird,
-  "🐟": Fish,
-  "🦎": CrocodileIcon as unknown as LucideIcon,
-  "🐸": FrogIcon as unknown as LucideIcon,
-  "🦠": Microscope,
-  "⭐": Star,
-  "🌟": Star,
-  "🏆": Trophy,
-  "🎯": Target,
-  "⚡": Zap,
-  "👑": Crown,
-  "🥇": Medal,
-  "🏅": Medal,
-  "🎖️": Medal,
-  "🛡️": Shield,
-  "❤️": Heart,
-  "🔥": Flame,
-  "☀️": Sun,
-  "🌙": Moon,
-  "🏔️": Mountain,
-  "🌲": Trees,
-  "🌊": Waves,
-  "💨": Wind,
-  "☁️": Cloud,
-  "❄️": Snowflake,
-  "✨": Sparkles,
-  "🧭": Compass,
-  "🌈": Rainbow,
-  "🌍": Earth,
-  "🌏": Globe,
-  "🗺️": Map,
-  "📅": Calendar,
-  "🗓️": CalendarDays,
-  "📆": CalendarCheck,
-  "💪": Dumbbell,
-};
+interface UserBadge {
+  id: string;
+  badge_id: string;
+  badges: {
+    id: string;
+    name: string;
+    icon: string;
+    description: string;
+  };
+}
 
-const getBadgeIcon = (iconStr: string): LucideIcon => {
-  return BADGE_ICON_MAP[iconStr] || Award;
-};
+interface ProfileData {
+  bio: string;
+  displayName: string;
+  country: string;
+  profilePicture: string;
+  displayBadges: string[];
+}
+
+const COUNTRIES = [
+  "Afghanistan", "Albania", "Algeria", "Argentina", "Australia", "Austria", "Bangladesh",
+  "Belgium", "Brazil", "Canada", "Chile", "China", "Colombia", "Croatia", "Czech Republic",
+  "Denmark", "Egypt", "Finland", "France", "Germany", "Greece", "Hungary", "India",
+  "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Japan", "Kenya", "Malaysia",
+  "Mexico", "Morocco", "Nepal", "Netherlands", "New Zealand", "Nigeria", "Norway", "Pakistan",
+  "Peru", "Philippines", "Poland", "Portugal", "Romania", "Russia", "Saudi Arabia", "Singapore",
+  "South Africa", "South Korea", "Spain", "Sri Lanka", "Sweden", "Switzerland", "Taiwan",
+  "Thailand", "Turkey", "Ukraine", "United Arab Emirates", "United Kingdom", "United States",
+  "Venezuela", "Vietnam"
+];
 
 const iconMap: Record<string, React.ReactNode> = {
-  crown: <Crown className="h-6 w-6" />,
-  leaf: <Leaf className="h-6 w-6" />,
-  waves: <Waves className="h-6 w-6" />,
-  award: <Award className="h-6 w-6" />,
-  trophy: <Trophy className="h-6 w-6" />,
-  butterfly: <Sparkles className="h-6 w-6" />,
-  star: <Star className="h-6 w-6" />,
-  feather: <Feather className="h-6 w-6" />,
-  coins: <CoinIcon className="h-6 w-6" />,
-  shield: <Shield className="h-6 w-6" />,
-  "plus-circle": <PlusCircle className="h-6 w-6" />,
+  crown: <Crown className="h-5 w-5" />,
+  leaf: <Leaf className="h-5 w-5" />,
+  waves: <Waves className="h-5 w-5" />,
+  award: <Award className="h-5 w-5" />,
+  trophy: <Trophy className="h-5 w-5" />,
+  butterfly: <Sparkles className="h-5 w-5" />,
+  star: <Star className="h-5 w-5" />,
+  feather: <Feather className="h-5 w-5" />,
+  coins: <CoinIcon className="h-5 w-5" />,
+  shield: <Shield className="h-5 w-5" />,
+  "plus-circle": <PlusCircle className="h-5 w-5" />,
+};
+
+const badgeIconMap: Record<string, React.ReactNode> = {
+  leaf: <Leaf className="h-3 w-3" />,
+  bug: <Sparkles className="h-3 w-3" />,
+  bird: <Feather className="h-3 w-3" />,
+  fish: <Waves className="h-3 w-3" />,
+  paw: <Award className="h-3 w-3" />,
+  microscope: <Star className="h-3 w-3" />,
+  crown: <Crown className="h-3 w-3" />,
+  trophy: <Trophy className="h-3 w-3" />,
+  star: <Star className="h-3 w-3" />,
+  award: <Award className="h-3 w-3" />,
 };
 
 export default function Profile() {
-  const { userId: urlUserId } = useParams<{ userId?: string }>();
-  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [purchases, setPurchases] = useState<UserPurchase[]>([]);
-  const [earnedBadges, setEarnedBadges] = useState<UserBadge[]>([]);
   const [equipped, setEquipped] = useState<EquippedItems>({});
   const [loading, setLoading] = useState(true);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [viewingUserId, setViewingUserId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("discoveries");
-  const [equippedTitle, setEquippedTitle] = useState<string | null>(null);
-  const [isOwnProfile, setIsOwnProfile] = useState(true);
-  
-  // Stats
-  const [speciesCount, setSpeciesCount] = useState(0);
-  const [followersCount, setFollowersCount] = useState(0);
-  const [followingCount, setFollowingCount] = useState(0);
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [currentStreak, setCurrentStreak] = useState(0);
-  const [globalRank, setGlobalRank] = useState<number | null>(null);
-  const [countryRank, setCountryRank] = useState<number | null>(null);
-  
-  // Profile data
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [showEditProfile, setShowEditProfile] = useState(false);
-  const [showShareDialog, setShowShareDialog] = useState(false);
-  const [editForm, setEditForm] = useState({
-    username: "",
-    display_name: "",
+  const [userId, setUserId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("items");
+  const [profileData, setProfileData] = useState<ProfileData>({
     bio: "",
+    displayName: "",
     country: "",
+    profilePicture: "",
+    displayBadges: [],
   });
-  
-  // Display badges for profile
-  const [displayBadges, setDisplayBadges] = useState<string[]>([]);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
+  const [isBadgeSelectOpen, setIsBadgeSelectOpen] = useState(false);
+  const [editData, setEditData] = useState<ProfileData>({
+    bio: "",
+    displayName: "",
+    country: "",
+    profilePicture: "",
+    displayBadges: [],
+  });
+  const [uploadingPicture, setUploadingPicture] = useState(false);
 
   useEffect(() => {
     fetchProfileData();
-  }, [urlUserId]);
+  }, []);
+
+  // Fetch all earned badges
+  const { data: allUserBadges = [] } = useQuery({
+    queryKey: ["allUserBadges", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase
+        .from("user_badges")
+        .select("*, badges(*)")
+        .eq("user_id", userId)
+        .order("earned_at", { ascending: false });
+      if (error) throw error;
+      return (data as UserBadge[]) || [];
+    },
+    enabled: !!userId,
+  });
+
+  // Fetch species count
+  const { data: speciesCount = 0 } = useQuery({
+    queryKey: ["speciesCount", userId],
+    queryFn: async () => {
+      if (!userId) return 0;
+      const { count, error } = await supabase
+        .from("species_identifications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId);
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!userId,
+  });
+
+  // Fetch unique species count
+  const { data: uniqueSpeciesCount = 0 } = useQuery({
+    queryKey: ["uniqueSpeciesCount", userId],
+    queryFn: async () => {
+      if (!userId) return 0;
+      const { data, error } = await supabase
+        .from("species_identifications")
+        .select("species_name")
+        .eq("user_id", userId);
+      if (error) throw error;
+      const unique = new Set(data?.map((s) => s.species_name.toLowerCase()));
+      return unique.size;
+    },
+    enabled: !!userId,
+  });
+
+  // Fetch coin balance
+  const { data: coinBalance = 0 } = useQuery({
+    queryKey: ["userCoins", userId],
+    queryFn: async () => {
+      if (!userId) return 0;
+      const { data, error } = await supabase
+        .from("user_coins")
+        .select("balance")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (error) throw error;
+      return data?.balance || 0;
+    },
+    enabled: !!userId,
+  });
+
+  // Fetch login streak
+  const { data: streakData } = useQuery({
+    queryKey: ["loginStreak", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data, error } = await supabase
+        .from("login_streaks")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userId,
+  });
+
+  // Fetch global rank
+  const { data: globalRank } = useQuery({
+    queryKey: ["globalRank", userId],
+    queryFn: async () => {
+      if (!userId) return null;
+      const { data, error } = await supabase.rpc("get_worldwide_leaderboard", {
+        limit_count: 100,
+      });
+      if (error) throw error;
+      const userEntry = data?.find((e: { user_id: string }) => e.user_id === userId);
+      return userEntry?.rank || null;
+    },
+    enabled: !!userId,
+  });
+
+  // Fetch country and country rank
+  const { data: countryData } = useQuery({
+    queryKey: ["countryRank", userId],
+    queryFn: async () => {
+      if (!userId) return { country: null, rank: null };
+      const { data: country } = await supabase.rpc("get_user_country", {
+        target_user_id: userId,
+      });
+      if (!country) return { country: null, rank: null };
+
+      const { data: leaderboard } = await supabase.rpc("get_country_leaderboard", {
+        country_filter: country,
+        limit_count: 100,
+      });
+      const userEntry = leaderboard?.find((e: { user_id: string }) => e.user_id === userId);
+      return { country, rank: userEntry?.rank || null };
+    },
+    enabled: !!userId,
+  });
 
   const fetchProfileData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate("/auth");
-        return;
-      }
-      setCurrentUserId(user.id);
-      
-      const targetUserId = urlUserId || user.id;
-      setViewingUserId(targetUserId);
-      setIsOwnProfile(targetUserId === user.id);
-
-      // Fetch user profile
-      const { data: profileData } = await supabase
-        .from("user_profiles")
-        .select("*")
-        .eq("user_id", targetUserId)
-        .single();
-      
-      if (profileData) {
-        setProfile(profileData);
-        setDisplayBadges(profileData.display_badges || []);
-        setEditForm({
-          username: profileData.username || "",
-          display_name: profileData.display_name || "",
-          bio: profileData.bio || "",
-          country: profileData.country || "",
-        });
-      } else if (targetUserId === user.id) {
-        // Create profile for current user if it doesn't exist
-        const { data: newProfile } = await supabase
-          .from("user_profiles")
-          .insert({ user_id: user.id })
-          .select()
-          .single();
-        if (newProfile) {
-          setProfile(newProfile);
-        }
-      }
-
-      // Fetch species count
-      const { count: speciesCountData } = await supabase
-        .from("species_identifications")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", targetUserId);
-      setSpeciesCount(speciesCountData || 0);
-
-      // Fetch followers count
-      const { count: followersData } = await supabase
-        .from("user_followers")
-        .select("*", { count: "exact", head: true })
-        .eq("following_id", targetUserId);
-      setFollowersCount(followersData || 0);
-
-      // Fetch following count
-      const { count: followingData } = await supabase
-        .from("user_followers")
-        .select("*", { count: "exact", head: true })
-        .eq("follower_id", targetUserId);
-      setFollowingCount(followingData || 0);
-
-      // Check if current user follows this profile
-      if (targetUserId !== user.id) {
-        const { data: followData } = await supabase
-          .from("user_followers")
-          .select("id")
-          .eq("follower_id", user.id)
-          .eq("following_id", targetUserId)
-          .single();
-        setIsFollowing(!!followData);
-      }
-
-      // Fetch login streak
-      const { data: streakData } = await supabase
-        .from("login_streaks")
-        .select("current_streak")
-        .eq("user_id", targetUserId)
-        .single();
-      setCurrentStreak(streakData?.current_streak || 0);
-
-      // Fetch ranks
-      const { data: globalRankData } = await supabase
-        .rpc('get_worldwide_leaderboard', { limit_count: 100 });
-      const userGlobalRank = globalRankData?.find((e: any) => e.user_id === targetUserId);
-      setGlobalRank(userGlobalRank?.rank || null);
-
-      // Fetch country rank
-      const { data: userCountry } = await supabase
-        .rpc('get_user_country', { target_user_id: targetUserId });
-      if (userCountry) {
-        const { data: countryRankData } = await supabase
-          .rpc('get_country_leaderboard', { country_filter: userCountry, limit_count: 100 });
-        const userCountryRank = countryRankData?.find((e: any) => e.user_id === targetUserId);
-        setCountryRank(userCountryRank?.rank || null);
-      }
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      setUserId(user.id);
 
       // Fetch user purchases with item details
-      const { data: purchasesData } = await supabase
+      const { data: purchasesData, error } = await supabase
         .from("user_purchases")
         .select("*, shop_items(*)")
-        .eq("user_id", targetUserId)
+        .eq("user_id", user.id)
         .eq("is_active", true);
+
+      if (error) throw error;
       setPurchases(purchasesData || []);
 
-      // Fetch earned badges
-      const { data: badgesData } = await supabase
-        .from("user_badges")
-        .select("*, badges(*)")
-        .eq("user_id", targetUserId)
-        .order("earned_at", { ascending: false });
-      setEarnedBadges(badgesData || []);
+      // Load equipped items from localStorage
+      const savedEquipped = localStorage.getItem(`equipped_${user.id}`);
+      if (savedEquipped) {
+        setEquipped(JSON.parse(savedEquipped));
+      }
 
-      // Load equipped items from localStorage (only for own profile)
-      if (targetUserId === user.id) {
-        const savedEquipped = localStorage.getItem(`equipped_${user.id}`);
-        if (savedEquipped) {
-          const parsedEquipped = JSON.parse(savedEquipped);
-          setEquipped(parsedEquipped);
-          
-          if (parsedEquipped.title) {
-            const titlePurchase = purchasesData?.find(p => p.item_id === parsedEquipped.title);
-            if (titlePurchase) {
-              setEquippedTitle(titlePurchase.shop_items?.name || null);
-            }
-          }
-        }
+      // Load profile data from localStorage
+      const savedProfile = localStorage.getItem(`profile_${user.id}`);
+      if (savedProfile) {
+        const parsed = JSON.parse(savedProfile);
+        setProfileData({
+          bio: parsed.bio || "",
+          displayName: parsed.displayName || "",
+          country: parsed.country || "",
+          profilePicture: parsed.profilePicture || "",
+          displayBadges: parsed.displayBadges || [],
+        });
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -360,110 +329,100 @@ export default function Profile() {
     }
   };
 
-  const handleFollow = async () => {
-    if (!currentUserId || !viewingUserId) return;
-    
-    try {
-      if (isFollowing) {
-        await supabase
-          .from("user_followers")
-          .delete()
-          .eq("follower_id", currentUserId)
-          .eq("following_id", viewingUserId);
-        setIsFollowing(false);
-        setFollowersCount(prev => prev - 1);
-        toast.success("Unfollowed");
-      } else {
-        await supabase
-          .from("user_followers")
-          .insert({ follower_id: currentUserId, following_id: viewingUserId });
-        setIsFollowing(true);
-        setFollowersCount(prev => prev + 1);
-        toast.success("Following!");
-      }
-    } catch (error) {
-      toast.error("Failed to update follow status");
-    }
-  };
-
-  const handleSaveProfile = async () => {
-    if (!currentUserId) return;
-    
-    try {
-      const { error } = await supabase
-        .from("user_profiles")
-        .update({
-          username: editForm.username || null,
-          display_name: editForm.display_name || null,
-          bio: editForm.bio || null,
-          country: editForm.country || null,
-          display_badges: displayBadges,
-        })
-        .eq("user_id", currentUserId);
-
-      if (error) throw error;
-      
-      setProfile(prev => prev ? { ...prev, ...editForm, display_badges: displayBadges } : null);
-      setShowEditProfile(false);
-      toast.success("Profile updated!");
-    } catch (error) {
-      toast.error("Failed to update profile");
-    }
-  };
-
-  const toggleDisplayBadge = (badgeId: string) => {
-    setDisplayBadges(prev => {
-      if (prev.includes(badgeId)) {
-        return prev.filter(id => id !== badgeId);
-      }
-      if (prev.length >= 3) {
-        toast.error("Maximum 3 display badges allowed");
-        return prev;
-      }
-      return [...prev, badgeId];
-    });
-  };
-
   const handleEquip = (item: ShopItem) => {
-    if (!isOwnProfile) return;
-    
     const metadata = item.metadata as Record<string, unknown>;
-    const itemType = metadata?.item_type as string;
-    if (!itemType) return;
+    const itemType = (metadata?.item_type as string) || item.category;
 
     const newEquipped = { ...equipped, [itemType]: item.id };
     setEquipped(newEquipped);
 
-    if (currentUserId) {
-      localStorage.setItem(`equipped_${currentUserId}`, JSON.stringify(newEquipped));
-    }
-
-    if (itemType === 'title') {
-      setEquippedTitle(item.name);
+    if (userId) {
+      localStorage.setItem(`equipped_${userId}`, JSON.stringify(newEquipped));
     }
 
     toast.success(`${item.name} equipped!`);
   };
 
   const handleUnequip = (itemType: string) => {
-    if (!isOwnProfile) return;
-    
     const newEquipped = { ...equipped };
     delete newEquipped[itemType as keyof EquippedItems];
     setEquipped(newEquipped);
 
-    if (currentUserId) {
-      localStorage.setItem(`equipped_${currentUserId}`, JSON.stringify(newEquipped));
-    }
-
-    if (itemType === 'title') {
-      setEquippedTitle(null);
+    if (userId) {
+      localStorage.setItem(`equipped_${userId}`, JSON.stringify(newEquipped));
     }
 
     toast.success("Item unequipped");
   };
 
-  const isEquipped = (itemId: string) => Object.values(equipped).includes(itemId);
+  const handleSaveProfile = () => {
+    if (userId) {
+      localStorage.setItem(`profile_${userId}`, JSON.stringify(editData));
+      setProfileData(editData);
+      setIsEditDialogOpen(false);
+      toast.success("Profile updated!");
+    }
+  };
+
+  const handleSelectDisplayBadges = (badgeId: string) => {
+    const current = editData.displayBadges || [];
+    if (current.includes(badgeId)) {
+      setEditData({ ...editData, displayBadges: current.filter((id) => id !== badgeId) });
+    } else if (current.length < 3) {
+      setEditData({ ...editData, displayBadges: [...current, badgeId] });
+    } else {
+      toast.error("You can only display 3 badges");
+    }
+  };
+
+  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !userId) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please select an image file");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be less than 2MB");
+      return;
+    }
+
+    setUploadingPicture(true);
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${userId}/profile.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("species-images")
+        .upload(fileName, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from("species-images")
+        .getPublicUrl(fileName);
+
+      const imageUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+      setEditData({ ...editData, profilePicture: imageUrl });
+      toast.success("Profile picture uploaded!");
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      toast.error("Failed to upload picture");
+    } finally {
+      setUploadingPicture(false);
+    }
+  };
+
+  const openEditDialog = () => {
+    setEditData({ ...profileData });
+    setIsEditDialogOpen(true);
+  };
+
+  const isEquipped = (itemId: string) => {
+    return Object.values(equipped).includes(itemId);
+  };
 
   const isBoostActive = (purchase: UserPurchase) => {
     if (!purchase.expires_at) return true;
@@ -475,51 +434,97 @@ export default function Profile() {
     if (diff <= 0) return "Expired";
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    return `${hours}h ${minutes}m remaining`;
+    return `${hours}h ${minutes}m`;
   };
 
-  const filterByCategory = (category: string) => purchases.filter((p) => p.shop_items?.category === category);
+  const filterByCategory = (category: string) => {
+    return purchases.filter((p) => p.shop_items?.category === category);
+  };
 
-  const getRankBadge = () => {
-    const rank = globalRank || countryRank;
-    if (!rank) return null;
-    
-    if (rank === 1) return <Badge className="bg-yellow-500 text-yellow-950">#1</Badge>;
-    if (rank === 2) return <Badge className="bg-gray-400 text-gray-950">#2</Badge>;
-    if (rank === 3) return <Badge className="bg-amber-600 text-amber-950">#3</Badge>;
-    if (rank <= 50) return <Badge variant="outline" className="border-primary text-primary">Top 50</Badge>;
-    if (rank <= 100) return <Badge variant="outline">Top 100</Badge>;
+  const getEquippedTitle = () => {
+    if (equipped.title) {
+      const purchase = purchases.find((p) => p.item_id === equipped.title);
+      return purchase?.shop_items?.name;
+    }
     return null;
   };
 
-  const handleShare = (platform: string) => {
-    const profileUrl = `${window.location.origin}/profile/${viewingUserId}`;
-    const text = `Check out ${profile?.display_name || profile?.username || "this explorer"}'s species discoveries!`;
-    
-    let shareUrl = "";
-    switch (platform) {
-      case "twitter":
-        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(profileUrl)}`;
-        break;
-      case "facebook":
-        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(profileUrl)}`;
-        break;
-      case "copy":
-        navigator.clipboard.writeText(profileUrl);
-        toast.success("Profile link copied!");
-        setShowShareDialog(false);
-        return;
-    }
-    
-    if (shareUrl) {
-      window.open(shareUrl, "_blank");
-    }
+  const getExplorerName = () => {
+    if (profileData.displayName) return profileData.displayName;
+    if (!userId) return "Explorer #0000";
+    return `Explorer #${userId.slice(-4).toUpperCase()}`;
   };
 
-  // Get display badges for header
-  const getDisplayBadgesForHeader = () => {
-    if (displayBadges.length === 0) return earnedBadges.slice(0, 3);
-    return earnedBadges.filter(b => displayBadges.includes(b.badge_id)).slice(0, 3);
+  const getDisplayBadges = () => {
+    if (!profileData.displayBadges || profileData.displayBadges.length === 0) {
+      return allUserBadges.slice(0, 3);
+    }
+    return allUserBadges.filter((ub) => profileData.displayBadges.includes(ub.badge_id));
+  };
+
+  const getRankBadge = (rank: number | null, type: "global" | "country") => {
+    if (!rank || rank > 100) return null;
+
+    let color = "bg-muted text-muted-foreground";
+    let icon = null;
+    let label = "";
+
+    if (rank === 1) {
+      color = "bg-yellow-500 text-white";
+      icon = <Crown className="h-3 w-3" />;
+      label = "1st";
+    } else if (rank === 2) {
+      color = "bg-gray-400 text-white";
+      icon = <Medal className="h-3 w-3" />;
+      label = "2nd";
+    } else if (rank === 3) {
+      color = "bg-amber-600 text-white";
+      icon = <Medal className="h-3 w-3" />;
+      label = "3rd";
+    } else if (rank <= 50) {
+      color = "bg-primary/80 text-primary-foreground";
+      label = `Top 50`;
+    } else {
+      color = "bg-secondary text-secondary-foreground";
+      label = `Top 100`;
+    }
+
+    return (
+      <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${color}`}>
+        {icon}
+        {type === "global" ? <Globe className="h-2.5 w-2.5" /> : <MapPin className="h-2.5 w-2.5" />}
+        <span>{label}</span>
+      </div>
+    );
+  };
+
+  const getProfileShareUrl = () => {
+    return `${window.location.origin}/profile?share=${userId?.slice(-8)}`;
+  };
+
+  const shareProfile = (platform: "twitter" | "facebook" | "copy") => {
+    const shareText = `Check out my nature explorer profile! I've discovered ${uniqueSpeciesCount} unique species! 🌿`;
+    const shareUrl = getProfileShareUrl();
+
+    switch (platform) {
+      case "twitter":
+        window.open(
+          `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
+          "_blank"
+        );
+        break;
+      case "facebook":
+        window.open(
+          `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`,
+          "_blank"
+        );
+        break;
+      case "copy":
+        navigator.clipboard.writeText(shareUrl);
+        toast.success("Profile link copied!");
+        break;
+    }
+    setIsShareDialogOpen(false);
   };
 
   if (loading) {
@@ -530,392 +535,437 @@ export default function Profile() {
     );
   }
 
-  const displayName = profile?.display_name || profile?.username || "Explorer";
-
   return (
     <div className="pb-20">
-      {/* Instagram-style Header */}
-      <div className="bg-gradient-to-br from-primary/10 to-accent/20 p-4">
+      {/* Profile Header */}
+      <div className="bg-gradient-to-br from-primary/5 to-accent/10 px-4 pt-6 pb-4">
         <div className="flex items-start gap-4">
-          {/* Avatar with rank badge */}
+          {/* Profile Picture with Rank Badges */}
           <div className="relative">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center border-2 border-background shadow-lg">
-              {profile?.avatar_url ? (
-                <img src={profile.avatar_url} alt="Avatar" className="w-full h-full rounded-full object-cover" />
-              ) : (
-                <User className="h-10 w-10 text-primary-foreground" />
-              )}
+            <Avatar className="h-20 w-20 border-2 border-primary">
+              {profileData.profilePicture ? (
+                <AvatarImage src={profileData.profilePicture} alt="Profile" />
+              ) : null}
+              <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">
+                {getExplorerName().slice(0, 2).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+            {/* Rank indicators on profile picture */}
+            <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 flex gap-0.5">
+              {getRankBadge(globalRank ?? null, "global")}
             </div>
-            {getRankBadge() && (
-              <div className="absolute -bottom-1 -right-1">
-                {getRankBadge()}
-              </div>
-            )}
           </div>
 
-          {/* Stats */}
+          {/* User Info */}
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-lg font-bold truncate">{displayName}</h1>
-              {/* Display badges near username */}
-              <div className="flex gap-1">
-                {getDisplayBadgesForHeader().map((userBadge) => (
-                  <div key={userBadge.id} className="w-5 h-5">
-                    <BadgeProgressCircle
-                      icon={getBadgeIcon(userBadge.badges.icon)}
-                      progress={1}
-                      isEarned={true}
-                      size="sm"
-                    />
-                  </div>
-                ))}
-              </div>
+              <h1 className="text-lg font-bold">{getExplorerName()}</h1>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={openEditDialog}>
+                <Settings className="h-3.5 w-3.5" />
+              </Button>
             </div>
-            
-            {equippedTitle && (
-              <Badge variant="secondary" className="mb-2 bg-amber-500/20 text-amber-600 border-amber-500/30 text-xs">
-                {equippedTitle}
-              </Badge>
-            )}
 
-            {profile?.country && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
-                <MapPin className="h-3 w-3" />
-                {profile.country}
-              </div>
-            )}
+            {/* Country and Title */}
+            <div className="flex items-center gap-2 flex-wrap mb-2">
+              {profileData.country && (
+                <Badge variant="outline" className="text-xs">
+                  <MapPin className="h-3 w-3 mr-1" />
+                  {profileData.country}
+                </Badge>
+              )}
+              {getEquippedTitle() && (
+                <Badge variant="secondary" className="text-xs">
+                  {getEquippedTitle()}
+                </Badge>
+              )}
+              {streakData && streakData.current_streak > 0 && (
+                <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/30">
+                  <Flame className="h-3 w-3 mr-1" />
+                  {streakData.current_streak} day streak
+                </Badge>
+              )}
+              {countryData?.rank && getRankBadge(countryData.rank, "country")}
+            </div>
 
-            <div className="flex gap-4 text-center">
-              <div>
-                <p className="font-bold text-lg">{speciesCount}</p>
-                <p className="text-xs text-muted-foreground">Species</p>
-              </div>
-              <div>
-                <p className="font-bold text-lg">{followersCount}</p>
-                <p className="text-xs text-muted-foreground">Followers</p>
-              </div>
-              <div>
-                <p className="font-bold text-lg">{followingCount}</p>
-                <p className="text-xs text-muted-foreground">Following</p>
-              </div>
+            {/* 3 Badge Squares */}
+            <div className="flex gap-1.5 mt-2">
+              {getDisplayBadges().slice(0, 3).map((ub) => (
+                <div
+                  key={ub.id}
+                  className="w-8 h-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center"
+                  title={ub.badges.name}
+                >
+                  {badgeIconMap[ub.badges.icon] || <Award className="h-3.5 w-3.5 text-primary" />}
+                </div>
+              ))}
+              {Array.from({ length: Math.max(0, 3 - getDisplayBadges().length) }).map((_, i) => (
+                <div
+                  key={`empty-${i}`}
+                  className="w-8 h-8 rounded-md bg-muted/50 border border-dashed border-muted-foreground/20 flex items-center justify-center"
+                >
+                  <Award className="h-3 w-3 text-muted-foreground/30" />
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-
-        {/* Streak */}
-        <div className="flex items-center gap-2 mt-3 bg-background/50 rounded-lg p-2">
-          <Flame className="h-4 w-4 text-orange-500" />
-          <span className="text-sm font-medium">{currentStreak} day streak</span>
         </div>
 
         {/* Bio */}
-        {profile?.bio && (
-          <p className="text-sm text-muted-foreground mt-3">{profile.bio}</p>
+        {profileData.bio && (
+          <p className="text-sm text-muted-foreground mt-3 px-1">{profileData.bio}</p>
         )}
 
-        {/* Action buttons */}
+        {/* Stats Grid */}
+        <div className="grid grid-cols-4 gap-2 mt-4 bg-background/50 rounded-xl p-3">
+          <div className="text-center">
+            <p className="text-xl font-bold">{speciesCount}</p>
+            <p className="text-[10px] text-muted-foreground">Sightings</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xl font-bold">{uniqueSpeciesCount}</p>
+            <p className="text-[10px] text-muted-foreground">Species</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xl font-bold">{allUserBadges.length}</p>
+            <p className="text-[10px] text-muted-foreground">Badges</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xl font-bold flex items-center justify-center gap-1">
+              <CoinIcon className="w-4 h-4 text-yellow-500" />
+              {coinBalance.toLocaleString()}
+            </p>
+            <p className="text-[10px] text-muted-foreground">Coins</p>
+          </div>
+        </div>
+
+        {/* Action Buttons */}
         <div className="flex gap-2 mt-4">
-          {isOwnProfile ? (
-            <>
-              <Button variant="outline" size="sm" className="flex-1" onClick={() => setShowEditProfile(true)}>
-                <Edit2 className="h-4 w-4 mr-1" />
-                Edit Profile
+          <Button variant="outline" size="sm" className="flex-1" onClick={openEditDialog}>
+            <Edit2 className="h-4 w-4 mr-2" />
+            Edit Profile
+          </Button>
+          <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="default" size="sm" className="flex-1">
+                <Share2 className="h-4 w-4 mr-2" />
+                Share Profile
               </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowShareDialog(true)}>
-                <Share2 className="h-4 w-4" />
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button 
-                size="sm" 
-                className="flex-1"
-                variant={isFollowing ? "outline" : "default"}
-                onClick={handleFollow}
-              >
-                {isFollowing ? (
-                  <>
-                    <UserMinus className="h-4 w-4 mr-1" />
-                    Unfollow
-                  </>
-                ) : (
-                  <>
-                    <UserPlus className="h-4 w-4 mr-1" />
-                    Follow
-                  </>
-                )}
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowShareDialog(true)}>
-                <Share2 className="h-4 w-4" />
-              </Button>
-            </>
-          )}
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Share Your Profile</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 pt-4">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => shareProfile("twitter")}
+                >
+                  <Twitter className="h-5 w-5 mr-3 text-[#1DA1F2]" />
+                  Share on Twitter
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => shareProfile("facebook")}
+                >
+                  <Facebook className="h-5 w-5 mr-3 text-[#4267B2]" />
+                  Share on Facebook
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => shareProfile("copy")}
+                >
+                  <Copy className="h-5 w-5 mr-3" />
+                  Copy Profile Link
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 rounded-none border-b">
-          <TabsTrigger value="discoveries" className="flex items-center gap-1 text-xs rounded-none">
-            <Grid3X3 className="h-4 w-4" />
-          </TabsTrigger>
-          <TabsTrigger value="badges" className="flex items-center gap-1 text-xs rounded-none">
-            <Award className="h-4 w-4" />
-          </TabsTrigger>
-          <TabsTrigger value="items" className="flex items-center gap-1 text-xs rounded-none">
-            <Sparkles className="h-4 w-4" />
-          </TabsTrigger>
-          <TabsTrigger value="boosts" className="flex items-center gap-1 text-xs rounded-none">
-            <Zap className="h-4 w-4" />
-          </TabsTrigger>
-        </TabsList>
+      {/* Edit Profile Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Profile</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-5 pt-4">
+            {/* Profile Picture */}
+            <div className="flex flex-col items-center gap-3">
+              <Avatar className="h-24 w-24 border-2 border-primary">
+                {editData.profilePicture ? (
+                  <AvatarImage src={editData.profilePicture} alt="Profile" />
+                ) : null}
+                <AvatarFallback className="bg-primary text-primary-foreground text-3xl font-bold">
+                  {getExplorerName().slice(0, 2).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <input
+                type="file"
+                ref={fileInputRef}
+                className="hidden"
+                accept="image/*"
+                onChange={handleProfilePictureUpload}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingPicture}
+              >
+                {uploadingPicture ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Camera className="h-4 w-4 mr-2" />
+                )}
+                Change Picture
+              </Button>
+            </div>
 
-        <div className="p-4">
-          <TabsContent value="discoveries" className="mt-0">
-            <Card className="p-6 text-center">
-              <Grid3X3 className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">
-                {speciesCount > 0 
-                  ? `${speciesCount} species discovered`
-                  : "No species discovered yet"}
-              </p>
-              <Link to={`/plants`}>
-                <Button variant="link" className="mt-2">View Collection</Button>
-              </Link>
-            </Card>
-          </TabsContent>
+            {/* Display Name */}
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Display Name</Label>
+              <Input
+                value={editData.displayName}
+                onChange={(e) => setEditData({ ...editData, displayName: e.target.value })}
+                placeholder="Enter your display name"
+                maxLength={30}
+              />
+            </div>
 
-          <TabsContent value="badges" className="mt-0">
-            <div className="space-y-3">
-              {earnedBadges.length === 0 ? (
-                <Card className="p-6 text-center">
-                  <Award className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">No badges earned yet</p>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-3 gap-3">
-                  {earnedBadges.map((userBadge) => (
-                    <Card 
-                      key={userBadge.id} 
-                      className={`p-3 text-center bg-gradient-to-br from-amber-500/10 to-amber-500/5 border-amber-500/20 ${
-                        displayBadges.includes(userBadge.badge_id) ? "ring-2 ring-primary" : ""
-                      }`}
-                      onClick={() => isOwnProfile && toggleDisplayBadge(userBadge.badge_id)}
-                    >
-                      <div className="flex justify-center mb-2">
-                        <BadgeProgressCircle
-                          icon={getBadgeIcon(userBadge.badges.icon)}
-                          progress={1}
-                          isEarned={true}
-                          size="lg"
-                        />
-                      </div>
-                      <h3 className="font-semibold text-xs truncate">{userBadge.badges.name}</h3>
-                      <p className="text-[10px] text-muted-foreground">
-                        {new Date(userBadge.earned_at).toLocaleDateString()}
-                      </p>
-                      {displayBadges.includes(userBadge.badge_id) && (
-                        <Badge variant="secondary" className="mt-1 text-[8px]">Display</Badge>
-                      )}
-                    </Card>
+            {/* Country */}
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Country</Label>
+              <Select
+                value={editData.country}
+                onValueChange={(value) => setEditData({ ...editData, country: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your country" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COUNTRIES.map((country) => (
+                    <SelectItem key={country} value={country}>
+                      {country}
+                    </SelectItem>
                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Bio */}
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Bio</Label>
+              <Textarea
+                value={editData.bio}
+                onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
+                placeholder="Tell others about yourself..."
+                maxLength={150}
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground mt-1">{editData.bio.length}/150</p>
+            </div>
+
+            {/* Display Badges Selection */}
+            <div>
+              <Label className="text-sm font-medium mb-2 block">
+                Display Badges <span className="text-muted-foreground">(Select up to 3)</span>
+              </Label>
+              {allUserBadges.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No badges earned yet</p>
+              ) : (
+                <div className="grid grid-cols-4 gap-2">
+                  {allUserBadges.map((ub) => {
+                    const isSelected = editData.displayBadges?.includes(ub.badge_id);
+                    return (
+                      <div
+                        key={ub.id}
+                        onClick={() => handleSelectDisplayBadges(ub.badge_id)}
+                        className={`p-2 rounded-lg border cursor-pointer transition-all flex flex-col items-center gap-1 ${
+                          isSelected
+                            ? "border-primary bg-primary/10"
+                            : "border-border hover:border-primary/50"
+                        }`}
+                      >
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          {badgeIconMap[ub.badges.icon] || <Award className="h-4 w-4 text-primary" />}
+                        </div>
+                        <p className="text-[10px] text-center truncate w-full">{ub.badges.name}</p>
+                        {isSelected && (
+                          <Check className="h-3 w-3 text-primary absolute top-1 right-1" />
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
-          </TabsContent>
 
-          <TabsContent value="items" className="mt-0">
+            <Button onClick={handleSaveProfile} className="w-full">
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3 rounded-none border-b bg-transparent h-12">
+          <TabsTrigger
+            value="items"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+          >
+            <Grid3X3 className="h-5 w-5" />
+          </TabsTrigger>
+          <TabsTrigger
+            value="badges"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+          >
+            <Award className="h-5 w-5" />
+          </TabsTrigger>
+          <TabsTrigger
+            value="boosts"
+            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
+          >
+            <Zap className="h-5 w-5" />
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="items" className="p-4">
+          <h3 className="text-sm font-semibold text-muted-foreground mb-3">Profile Items</h3>
+          {filterByCategory("profile").length === 0 ? (
+            <Card className="p-6 text-center border-dashed">
+              <User className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">No profile items yet</p>
+              <p className="text-sm text-muted-foreground">Visit the Coin Shop!</p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {filterByCategory("profile").map((purchase) => {
+                const item = purchase.shop_items;
+                const isItemEquipped = isEquipped(item.id);
+
+                return (
+                  <Card
+                    key={purchase.id}
+                    className={`p-3 text-center cursor-pointer transition-all ${
+                      isItemEquipped ? "border-primary ring-2 ring-primary/20" : "hover:border-primary/50"
+                    }`}
+                    onClick={() => {
+                      const metadata = item.metadata as Record<string, unknown>;
+                      const itemType = (metadata?.item_type as string) || item.category;
+                      isItemEquipped ? handleUnequip(itemType) : handleEquip(item);
+                    }}
+                  >
+                    <div className="w-10 h-10 mx-auto rounded-full bg-purple-500/10 flex items-center justify-center text-purple-500 mb-2">
+                      {iconMap[item.icon] || <Sparkles className="h-5 w-5" />}
+                    </div>
+                    <p className="text-xs font-medium truncate">{item.name}</p>
+                    {isItemEquipped && (
+                      <Badge variant="default" className="text-[10px] mt-1">
+                        <Check className="h-3 w-3 mr-0.5" />
+                        Equipped
+                      </Badge>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="badges" className="p-4">
+          <h3 className="text-sm font-semibold text-muted-foreground mb-3">Cosmetic Badges</h3>
+          {filterByCategory("badge").length === 0 ? (
+            <Card className="p-6 text-center border-dashed">
+              <Award className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">No cosmetic badges</p>
+              <p className="text-sm text-muted-foreground">Visit the Coin Shop!</p>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-3 gap-2">
+              {filterByCategory("badge").map((purchase) => {
+                const item = purchase.shop_items;
+                const isItemEquipped = isEquipped(item.id);
+
+                return (
+                  <Card
+                    key={purchase.id}
+                    className={`p-3 text-center cursor-pointer transition-all ${
+                      isItemEquipped ? "border-amber-500 ring-2 ring-amber-500/20" : "hover:border-amber-500/50"
+                    }`}
+                    onClick={() => (isItemEquipped ? handleUnequip("badge") : handleEquip(item))}
+                  >
+                    <div className="w-10 h-10 mx-auto rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 mb-2">
+                      {iconMap[item.icon] || <Award className="h-5 w-5" />}
+                    </div>
+                    <p className="text-xs font-medium truncate">{item.name}</p>
+                    {isItemEquipped && (
+                      <Badge className="text-[10px] mt-1 bg-amber-500">
+                        <Check className="h-3 w-3 mr-0.5" />
+                        Displayed
+                      </Badge>
+                    )}
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="boosts" className="p-4">
+          <h3 className="text-sm font-semibold text-muted-foreground mb-3">Active Boosts</h3>
+          {filterByCategory("boost").length === 0 ? (
+            <Card className="p-6 text-center border-dashed">
+              <Zap className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
+              <p className="text-muted-foreground">No boosts purchased</p>
+              <p className="text-sm text-muted-foreground">Visit the Coin Shop!</p>
+            </Card>
+          ) : (
             <div className="space-y-3">
-              {filterByCategory("profile").length === 0 ? (
-                <Card className="p-6 text-center">
-                  <User className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">No profile items yet</p>
-                  {isOwnProfile && (
-                    <Link to="/coin-shop">
-                      <Button variant="link" className="mt-2">Visit Shop</Button>
-                    </Link>
-                  )}
-                </Card>
-              ) : (
-                filterByCategory("profile").map((purchase) => {
-                  const item = purchase.shop_items;
-                  const equippedItem = isEquipped(item.id);
-                  const metadata = item.metadata as Record<string, unknown>;
+              {filterByCategory("boost").map((purchase) => {
+                const item = purchase.shop_items;
+                const active = isBoostActive(purchase);
 
-                  return (
-                    <Card key={purchase.id} className={`p-4 ${equippedItem ? "border-primary" : ""}`}>
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500">
-                          {iconMap[item.icon] || <Sparkles className="h-6 w-6" />}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold">{item.name}</h3>
-                          <p className="text-xs text-muted-foreground capitalize">{metadata?.item_type as string}</p>
-                        </div>
-                        {isOwnProfile && (
-                          <Button
-                            size="sm"
-                            variant={equippedItem ? "outline" : "default"}
-                            onClick={() => equippedItem ? handleUnequip(metadata?.item_type as string) : handleEquip(item)}
-                          >
-                            {equippedItem ? "Unequip" : "Equip"}
-                          </Button>
+                return (
+                  <Card
+                    key={purchase.id}
+                    className={`p-4 ${active ? "border-blue-500 bg-blue-500/5" : "opacity-50"}`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                          active ? "bg-blue-500/10 text-blue-500" : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        {iconMap[item.icon] || <Zap className="h-6 w-6" />}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-sm">{item.name}</h3>
+                        <p className="text-xs text-muted-foreground">{item.description}</p>
+                        {purchase.expires_at && (
+                          <div className="flex items-center gap-1 mt-1 text-xs">
+                            <Clock className="h-3 w-3" />
+                            <span className={active ? "text-blue-500" : "text-destructive"}>
+                              {getTimeRemaining(purchase.expires_at)}
+                            </span>
+                          </div>
                         )}
                       </div>
-                    </Card>
-                  );
-                })
-              )}
+                      <Badge variant={active ? "default" : "secondary"}>
+                        {active ? "Active" : "Expired"}
+                      </Badge>
+                    </div>
+                  </Card>
+                );
+              })}
             </div>
-          </TabsContent>
-
-          <TabsContent value="boosts" className="mt-0">
-            <div className="space-y-3">
-              {filterByCategory("boost").length === 0 ? (
-                <Card className="p-6 text-center">
-                  <Zap className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                  <p className="text-muted-foreground">No active boosts</p>
-                  {isOwnProfile && (
-                    <Link to="/coin-shop">
-                      <Button variant="link" className="mt-2">Visit Shop</Button>
-                    </Link>
-                  )}
-                </Card>
-              ) : (
-                filterByCategory("boost").map((purchase) => {
-                  const item = purchase.shop_items;
-                  const active = isBoostActive(purchase);
-
-                  return (
-                    <Card key={purchase.id} className={`p-4 ${active ? "border-blue-500 bg-blue-500/5" : "opacity-50"}`}>
-                      <div className="flex items-center gap-3">
-                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${active ? "bg-blue-500/10 text-blue-500" : "bg-muted text-muted-foreground"}`}>
-                          {iconMap[item.icon] || <Zap className="h-6 w-6" />}
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="font-semibold">{item.name}</h3>
-                          <p className="text-xs text-muted-foreground">{item.description}</p>
-                          {purchase.expires_at && (
-                            <div className="flex items-center gap-1 mt-1 text-xs">
-                              <Clock className="h-3 w-3" />
-                              <span className={active ? "text-blue-500" : "text-destructive"}>
-                                {getTimeRemaining(purchase.expires_at)}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <Badge variant={active ? "default" : "secondary"}>
-                          {active ? "Active" : "Expired"}
-                        </Badge>
-                      </div>
-                    </Card>
-                  );
-                })
-              )}
-            </div>
-          </TabsContent>
-        </div>
+          )}
+        </TabsContent>
       </Tabs>
-
-      {/* Edit Profile Dialog */}
-      <Dialog open={showEditProfile} onOpenChange={setShowEditProfile}>
-        <DialogContent className="mx-4 max-w-[calc(100%-2rem)]">
-          <DialogHeader>
-            <DialogTitle>Edit Profile</DialogTitle>
-            <DialogDescription>Customize your profile</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Username</label>
-              <Input
-                value={editForm.username}
-                onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
-                placeholder="your_username"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Display Name</label>
-              <Input
-                value={editForm.display_name}
-                onChange={(e) => setEditForm({ ...editForm, display_name: e.target.value })}
-                placeholder="Your Name"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Bio</label>
-              <Textarea
-                value={editForm.bio}
-                onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
-                placeholder="Tell us about yourself..."
-                rows={3}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Country</label>
-              <Input
-                value={editForm.country}
-                onChange={(e) => setEditForm({ ...editForm, country: e.target.value })}
-                placeholder="Your Country"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-2 block">Display Badges (select up to 3)</label>
-              <div className="grid grid-cols-4 gap-2">
-                {earnedBadges.map((userBadge) => (
-                  <div
-                    key={userBadge.id}
-                    className={`p-2 rounded-lg cursor-pointer border-2 transition-all ${
-                      displayBadges.includes(userBadge.badge_id)
-                        ? "border-primary bg-primary/10"
-                        : "border-transparent bg-muted/50"
-                    }`}
-                    onClick={() => toggleDisplayBadge(userBadge.badge_id)}
-                  >
-                    <BadgeProgressCircle
-                      icon={getBadgeIcon(userBadge.badges.icon)}
-                      progress={1}
-                      isEarned={true}
-                      size="sm"
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={() => setShowEditProfile(false)}>
-                Cancel
-              </Button>
-              <Button className="flex-1" onClick={handleSaveProfile}>
-                Save
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Share Dialog */}
-      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
-        <DialogContent className="mx-4 max-w-[calc(100%-2rem)]">
-          <DialogHeader>
-            <DialogTitle>Share Profile</DialogTitle>
-            <DialogDescription>Share your discoveries with friends</DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-3 gap-4">
-            <Button variant="outline" className="flex flex-col gap-2 h-auto py-4" onClick={() => handleShare("twitter")}>
-              <Twitter className="h-6 w-6" />
-              <span className="text-xs">Twitter</span>
-            </Button>
-            <Button variant="outline" className="flex flex-col gap-2 h-auto py-4" onClick={() => handleShare("facebook")}>
-              <Facebook className="h-6 w-6" />
-              <span className="text-xs">Facebook</span>
-            </Button>
-            <Button variant="outline" className="flex flex-col gap-2 h-auto py-4" onClick={() => handleShare("copy")}>
-              <Copy className="h-6 w-6" />
-              <span className="text-xs">Copy Link</span>
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
