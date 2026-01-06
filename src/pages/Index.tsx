@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Camera, Upload, Loader2, Menu, Flag, Leaf, Cat, Bug, Bird, Fish, Microscope } from "lucide-react";
 import { CameraCapture } from "@/components/CameraCapture";
 import { useToast } from "@/hooks/use-toast";
+import { Session } from "@supabase/supabase-js";
 import {
   Dialog,
   DialogContent,
@@ -19,6 +21,7 @@ import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
 
 const Index = () => {
+  const [session, setSession] = useState<Session | null>(null);
   const [showCamera, setShowCamera] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [isIdentifying, setIsIdentifying] = useState(false);
@@ -26,9 +29,25 @@ const Index = () => {
   const [coordinates, setCoordinates] = useState<{latitude: number, longitude: number} | null>(null);
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState("");
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
+    // Set up auth listener
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session);
+      if (!session) {
+        navigate("/auth");
+      }
+    });
+
     // Get user's location
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -43,7 +62,9 @@ const Index = () => {
         }
       );
     }
-  }, []);
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -177,6 +198,9 @@ const Index = () => {
     setReportReason("");
   };
 
+  if (!session) {
+    return null;
+  }
 
   return (
     <SidebarProvider>

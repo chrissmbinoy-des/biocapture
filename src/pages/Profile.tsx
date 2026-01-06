@@ -1,14 +1,13 @@
-import { useState, useEffect, useRef } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -16,13 +15,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -50,8 +42,6 @@ import {
   Twitter,
   Facebook,
   Medal,
-  Camera,
-  Settings,
 } from "lucide-react";
 import CoinIcon from "@/components/icons/CoinIcon";
 import type { Json } from "@/integrations/supabase/types";
@@ -94,26 +84,6 @@ interface UserBadge {
   };
 }
 
-interface ProfileData {
-  bio: string;
-  displayName: string;
-  country: string;
-  profilePicture: string;
-  displayBadges: string[];
-}
-
-const COUNTRIES = [
-  "Afghanistan", "Albania", "Algeria", "Argentina", "Australia", "Austria", "Bangladesh",
-  "Belgium", "Brazil", "Canada", "Chile", "China", "Colombia", "Croatia", "Czech Republic",
-  "Denmark", "Egypt", "Finland", "France", "Germany", "Greece", "Hungary", "India",
-  "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Japan", "Kenya", "Malaysia",
-  "Mexico", "Morocco", "Nepal", "Netherlands", "New Zealand", "Nigeria", "Norway", "Pakistan",
-  "Peru", "Philippines", "Poland", "Portugal", "Romania", "Russia", "Saudi Arabia", "Singapore",
-  "South Africa", "South Korea", "Spain", "Sri Lanka", "Sweden", "Switzerland", "Taiwan",
-  "Thailand", "Turkey", "Ukraine", "United Arab Emirates", "United Kingdom", "United States",
-  "Venezuela", "Vietnam"
-];
-
 const iconMap: Record<string, React.ReactNode> = {
   crown: <Crown className="h-5 w-5" />,
   leaf: <Leaf className="h-5 w-5" />,
@@ -142,51 +112,21 @@ const badgeIconMap: Record<string, React.ReactNode> = {
 };
 
 export default function Profile() {
-  const queryClient = useQueryClient();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [purchases, setPurchases] = useState<UserPurchase[]>([]);
   const [equipped, setEquipped] = useState<EquippedItems>({});
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("items");
-  const [profileData, setProfileData] = useState<ProfileData>({
-    bio: "",
-    displayName: "",
-    country: "",
-    profilePicture: "",
-    displayBadges: [],
-  });
+  const [bio, setBio] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
-  const [isBadgeSelectOpen, setIsBadgeSelectOpen] = useState(false);
-  const [editData, setEditData] = useState<ProfileData>({
-    bio: "",
-    displayName: "",
-    country: "",
-    profilePicture: "",
-    displayBadges: [],
-  });
-  const [uploadingPicture, setUploadingPicture] = useState(false);
+  const [editBio, setEditBio] = useState("");
+  const [editName, setEditName] = useState("");
 
   useEffect(() => {
     fetchProfileData();
   }, []);
-
-  // Fetch all earned badges
-  const { data: allUserBadges = [] } = useQuery({
-    queryKey: ["allUserBadges", userId],
-    queryFn: async () => {
-      if (!userId) return [];
-      const { data, error } = await supabase
-        .from("user_badges")
-        .select("*, badges(*)")
-        .eq("user_id", userId)
-        .order("earned_at", { ascending: false });
-      if (error) throw error;
-      return (data as UserBadge[]) || [];
-    },
-    enabled: !!userId,
-  });
 
   // Fetch species count
   const { data: speciesCount = 0 } = useQuery({
@@ -215,6 +155,23 @@ export default function Profile() {
       if (error) throw error;
       const unique = new Set(data?.map((s) => s.species_name.toLowerCase()));
       return unique.size;
+    },
+    enabled: !!userId,
+  });
+
+  // Fetch badges earned with details
+  const { data: userBadges = [] } = useQuery({
+    queryKey: ["userBadgesDetails", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase
+        .from("user_badges")
+        .select("*, badges(*)")
+        .eq("user_id", userId)
+        .order("earned_at", { ascending: false })
+        .limit(3);
+      if (error) throw error;
+      return (data as UserBadge[]) || [];
     },
     enabled: !!userId,
   });
@@ -304,23 +261,17 @@ export default function Profile() {
       if (error) throw error;
       setPurchases(purchasesData || []);
 
-      // Load equipped items from localStorage
+      // Load equipped items and profile data from localStorage
       const savedEquipped = localStorage.getItem(`equipped_${user.id}`);
       if (savedEquipped) {
         setEquipped(JSON.parse(savedEquipped));
       }
 
-      // Load profile data from localStorage
       const savedProfile = localStorage.getItem(`profile_${user.id}`);
       if (savedProfile) {
-        const parsed = JSON.parse(savedProfile);
-        setProfileData({
-          bio: parsed.bio || "",
-          displayName: parsed.displayName || "",
-          country: parsed.country || "",
-          profilePicture: parsed.profilePicture || "",
-          displayBadges: parsed.displayBadges || [],
-        });
+        const profileData = JSON.parse(savedProfile);
+        setBio(profileData.bio || "");
+        setDisplayName(profileData.displayName || "");
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -357,66 +308,20 @@ export default function Profile() {
 
   const handleSaveProfile = () => {
     if (userId) {
-      localStorage.setItem(`profile_${userId}`, JSON.stringify(editData));
-      setProfileData(editData);
+      localStorage.setItem(
+        `profile_${userId}`,
+        JSON.stringify({ bio: editBio, displayName: editName })
+      );
+      setBio(editBio);
+      setDisplayName(editName);
       setIsEditDialogOpen(false);
       toast.success("Profile updated!");
     }
   };
 
-  const handleSelectDisplayBadges = (badgeId: string) => {
-    const current = editData.displayBadges || [];
-    if (current.includes(badgeId)) {
-      setEditData({ ...editData, displayBadges: current.filter((id) => id !== badgeId) });
-    } else if (current.length < 3) {
-      setEditData({ ...editData, displayBadges: [...current, badgeId] });
-    } else {
-      toast.error("You can only display 3 badges");
-    }
-  };
-
-  const handleProfilePictureUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !userId) return;
-
-    if (!file.type.startsWith("image/")) {
-      toast.error("Please select an image file");
-      return;
-    }
-
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Image must be less than 2MB");
-      return;
-    }
-
-    setUploadingPicture(true);
-    try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${userId}/profile.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("species-images")
-        .upload(fileName, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      const { data: urlData } = supabase.storage
-        .from("species-images")
-        .getPublicUrl(fileName);
-
-      const imageUrl = `${urlData.publicUrl}?t=${Date.now()}`;
-      setEditData({ ...editData, profilePicture: imageUrl });
-      toast.success("Profile picture uploaded!");
-    } catch (error: any) {
-      console.error("Upload error:", error);
-      toast.error("Failed to upload picture");
-    } finally {
-      setUploadingPicture(false);
-    }
-  };
-
   const openEditDialog = () => {
-    setEditData({ ...profileData });
+    setEditBio(bio);
+    setEditName(displayName);
     setIsEditDialogOpen(true);
   };
 
@@ -450,16 +355,9 @@ export default function Profile() {
   };
 
   const getExplorerName = () => {
-    if (profileData.displayName) return profileData.displayName;
+    if (displayName) return displayName;
     if (!userId) return "Explorer #0000";
     return `Explorer #${userId.slice(-4).toUpperCase()}`;
-  };
-
-  const getDisplayBadges = () => {
-    if (!profileData.displayBadges || profileData.displayBadges.length === 0) {
-      return allUserBadges.slice(0, 3);
-    }
-    return allUserBadges.filter((ub) => profileData.displayBadges.includes(ub.badge_id));
   };
 
   const getRankBadge = (rank: number | null, type: "global" | "country") => {
@@ -543,9 +441,6 @@ export default function Profile() {
           {/* Profile Picture with Rank Badges */}
           <div className="relative">
             <Avatar className="h-20 w-20 border-2 border-primary">
-              {profileData.profilePicture ? (
-                <AvatarImage src={profileData.profilePicture} alt="Profile" />
-              ) : null}
               <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">
                 {getExplorerName().slice(0, 2).toUpperCase()}
               </AvatarFallback>
@@ -561,18 +456,12 @@ export default function Profile() {
             <div className="flex items-center gap-2 mb-1">
               <h1 className="text-lg font-bold">{getExplorerName()}</h1>
               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={openEditDialog}>
-                <Settings className="h-3.5 w-3.5" />
+                <Edit2 className="h-3.5 w-3.5" />
               </Button>
             </div>
 
-            {/* Country and Title */}
+            {/* Title and Streak */}
             <div className="flex items-center gap-2 flex-wrap mb-2">
-              {profileData.country && (
-                <Badge variant="outline" className="text-xs">
-                  <MapPin className="h-3 w-3 mr-1" />
-                  {profileData.country}
-                </Badge>
-              )}
               {getEquippedTitle() && (
                 <Badge variant="secondary" className="text-xs">
                   {getEquippedTitle()}
@@ -589,7 +478,7 @@ export default function Profile() {
 
             {/* 3 Badge Squares */}
             <div className="flex gap-1.5 mt-2">
-              {getDisplayBadges().slice(0, 3).map((ub) => (
+              {userBadges.slice(0, 3).map((ub) => (
                 <div
                   key={ub.id}
                   className="w-8 h-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center"
@@ -598,7 +487,7 @@ export default function Profile() {
                   {badgeIconMap[ub.badges.icon] || <Award className="h-3.5 w-3.5 text-primary" />}
                 </div>
               ))}
-              {Array.from({ length: Math.max(0, 3 - getDisplayBadges().length) }).map((_, i) => (
+              {Array.from({ length: Math.max(0, 3 - userBadges.length) }).map((_, i) => (
                 <div
                   key={`empty-${i}`}
                   className="w-8 h-8 rounded-md bg-muted/50 border border-dashed border-muted-foreground/20 flex items-center justify-center"
@@ -611,8 +500,8 @@ export default function Profile() {
         </div>
 
         {/* Bio */}
-        {profileData.bio && (
-          <p className="text-sm text-muted-foreground mt-3 px-1">{profileData.bio}</p>
+        {bio && (
+          <p className="text-sm text-muted-foreground mt-3 px-1">{bio}</p>
         )}
 
         {/* Stats Grid */}
@@ -626,7 +515,7 @@ export default function Profile() {
             <p className="text-[10px] text-muted-foreground">Species</p>
           </div>
           <div className="text-center">
-            <p className="text-xl font-bold">{allUserBadges.length}</p>
+            <p className="text-xl font-bold">{userBadges.length}</p>
             <p className="text-[10px] text-muted-foreground">Badges</p>
           </div>
           <div className="text-center">
@@ -688,122 +577,31 @@ export default function Profile() {
 
       {/* Edit Profile Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Profile</DialogTitle>
           </DialogHeader>
-          <div className="space-y-5 pt-4">
-            {/* Profile Picture */}
-            <div className="flex flex-col items-center gap-3">
-              <Avatar className="h-24 w-24 border-2 border-primary">
-                {editData.profilePicture ? (
-                  <AvatarImage src={editData.profilePicture} alt="Profile" />
-                ) : null}
-                <AvatarFallback className="bg-primary text-primary-foreground text-3xl font-bold">
-                  {getExplorerName().slice(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <input
-                type="file"
-                ref={fileInputRef}
-                className="hidden"
-                accept="image/*"
-                onChange={handleProfilePictureUpload}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingPicture}
-              >
-                {uploadingPicture ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Camera className="h-4 w-4 mr-2" />
-                )}
-                Change Picture
-              </Button>
-            </div>
-
-            {/* Display Name */}
+          <div className="space-y-4 pt-4">
             <div>
-              <Label className="text-sm font-medium mb-2 block">Display Name</Label>
+              <label className="text-sm font-medium mb-2 block">Display Name</label>
               <Input
-                value={editData.displayName}
-                onChange={(e) => setEditData({ ...editData, displayName: e.target.value })}
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
                 placeholder="Enter your display name"
                 maxLength={30}
               />
             </div>
-
-            {/* Country */}
             <div>
-              <Label className="text-sm font-medium mb-2 block">Country</Label>
-              <Select
-                value={editData.country}
-                onValueChange={(value) => setEditData({ ...editData, country: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select your country" />
-                </SelectTrigger>
-                <SelectContent>
-                  {COUNTRIES.map((country) => (
-                    <SelectItem key={country} value={country}>
-                      {country}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Bio */}
-            <div>
-              <Label className="text-sm font-medium mb-2 block">Bio</Label>
+              <label className="text-sm font-medium mb-2 block">Bio</label>
               <Textarea
-                value={editData.bio}
-                onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
+                value={editBio}
+                onChange={(e) => setEditBio(e.target.value)}
                 placeholder="Tell others about yourself..."
                 maxLength={150}
                 rows={3}
               />
-              <p className="text-xs text-muted-foreground mt-1">{editData.bio.length}/150</p>
+              <p className="text-xs text-muted-foreground mt-1">{editBio.length}/150</p>
             </div>
-
-            {/* Display Badges Selection */}
-            <div>
-              <Label className="text-sm font-medium mb-2 block">
-                Display Badges <span className="text-muted-foreground">(Select up to 3)</span>
-              </Label>
-              {allUserBadges.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No badges earned yet</p>
-              ) : (
-                <div className="grid grid-cols-4 gap-2">
-                  {allUserBadges.map((ub) => {
-                    const isSelected = editData.displayBadges?.includes(ub.badge_id);
-                    return (
-                      <div
-                        key={ub.id}
-                        onClick={() => handleSelectDisplayBadges(ub.badge_id)}
-                        className={`p-2 rounded-lg border cursor-pointer transition-all flex flex-col items-center gap-1 ${
-                          isSelected
-                            ? "border-primary bg-primary/10"
-                            : "border-border hover:border-primary/50"
-                        }`}
-                      >
-                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                          {badgeIconMap[ub.badges.icon] || <Award className="h-4 w-4 text-primary" />}
-                        </div>
-                        <p className="text-[10px] text-center truncate w-full">{ub.badges.name}</p>
-                        {isSelected && (
-                          <Check className="h-3 w-3 text-primary absolute top-1 right-1" />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
             <Button onClick={handleSaveProfile} className="w-full">
               Save Changes
             </Button>
