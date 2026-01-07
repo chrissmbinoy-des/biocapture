@@ -8,10 +8,34 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const countries = [
+  "Afghanistan", "Albania", "Algeria", "Argentina", "Australia", "Austria",
+  "Bangladesh", "Belgium", "Brazil", "Canada", "Chile", "China", "Colombia",
+  "Czech Republic", "Denmark", "Egypt", "Ethiopia", "Finland", "France",
+  "Germany", "Ghana", "Greece", "Hungary", "India", "Indonesia", "Iran",
+  "Iraq", "Ireland", "Israel", "Italy", "Japan", "Kenya", "Malaysia",
+  "Mexico", "Morocco", "Netherlands", "New Zealand", "Nigeria", "Norway",
+  "Pakistan", "Peru", "Philippines", "Poland", "Portugal", "Romania",
+  "Russia", "Saudi Arabia", "Singapore", "South Africa", "South Korea",
+  "Spain", "Sri Lanka", "Sweden", "Switzerland", "Taiwan", "Thailand",
+  "Turkey", "Ukraine", "United Arab Emirates", "United Kingdom",
+  "United States", "Vietnam"
+];
 
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [country, setCountry] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -34,12 +58,60 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  const createUserProfile = async (userId: string) => {
+    // Create user profile immediately after signup
+    const { error } = await supabase.from("user_profiles").insert({
+      user_id: userId,
+      username: username.trim() || null,
+      display_name: displayName.trim() || null,
+      country: country || null,
+    });
+
+    if (error && error.code !== "23505") {
+      // Ignore duplicate key error
+      console.error("Error creating profile:", error);
+    }
+
+    // Initialize user coins
+    await supabase.from("user_coins").insert({
+      user_id: userId,
+      balance: 0,
+    });
+
+    // Initialize login streak
+    await supabase.from("login_streaks").insert({
+      user_id: userId,
+      current_streak: 1,
+      longest_streak: 1,
+      last_login_date: new Date().toISOString().split("T")[0],
+    });
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!username.trim()) {
+      toast({
+        title: "Username required",
+        description: "Please enter a username to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!country) {
+      toast({
+        title: "Country required",
+        description: "Please select your country to continue.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -49,9 +121,14 @@ const Auth = () => {
 
       if (error) throw error;
 
+      // Create profile immediately after signup
+      if (data.user) {
+        await createUserProfile(data.user.id);
+      }
+
       toast({
         title: "Account created!",
-        description: "You can now log in with your credentials.",
+        description: "Welcome to Species Identifier!",
       });
     } catch (error: any) {
       toast({
@@ -141,7 +218,50 @@ const Auth = () => {
           <TabsContent value="signup">
             <form onSubmit={handleSignUp} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="signup-email">Email</Label>
+                <Label htmlFor="signup-username">Username *</Label>
+                <Input
+                  id="signup-username"
+                  type="text"
+                  placeholder="naturelover123"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  maxLength={30}
+                />
+                <p className="text-xs text-muted-foreground">This cannot be changed later</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="signup-displayname">Display Name</Label>
+                <Input
+                  id="signup-displayname"
+                  type="text"
+                  placeholder="Nature Lover"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  maxLength={50}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="signup-country">Country *</Label>
+                <Select value={country} onValueChange={setCountry}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select your country" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {countries.map((c) => (
+                      <SelectItem key={c} value={c}>
+                        {c}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">This cannot be changed later</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="signup-email">Email *</Label>
                 <Input
                   id="signup-email"
                   type="email"
@@ -153,7 +273,7 @@ const Auth = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="signup-password">Password</Label>
+                <Label htmlFor="signup-password">Password *</Label>
                 <Input
                   id="signup-password"
                   type="password"

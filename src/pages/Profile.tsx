@@ -111,18 +111,28 @@ const badgeIconMap: Record<string, React.ReactNode> = {
   award: <Award className="h-3 w-3" />,
 };
 
+interface UserProfile {
+  id: string;
+  user_id: string;
+  username: string | null;
+  display_name: string | null;
+  bio: string | null;
+  country: string | null;
+  avatar_url: string | null;
+}
+
 export default function Profile() {
   const [purchases, setPurchases] = useState<UserPurchase[]>([]);
   const [equipped, setEquipped] = useState<EquippedItems>({});
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("items");
-  const [bio, setBio] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [editBio, setEditBio] = useState("");
-  const [editName, setEditName] = useState("");
+  const [editDisplayName, setEditDisplayName] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
 
   useEffect(() => {
     fetchProfileData();
@@ -228,17 +238,28 @@ export default function Profile() {
     queryKey: ["countryRank", userId],
     queryFn: async () => {
       if (!userId) return { country: null, rank: null };
-      const { data: country } = await supabase.rpc("get_user_country", {
-        target_user_id: userId,
-      });
-      if (!country) return { country: null, rank: null };
+      // Use country from user profile first
+      const profileCountry = userProfile?.country;
+      if (!profileCountry) {
+        const { data: country } = await supabase.rpc("get_user_country", {
+          target_user_id: userId,
+        });
+        if (!country) return { country: null, rank: null };
+
+        const { data: leaderboard } = await supabase.rpc("get_country_leaderboard", {
+          country_filter: country,
+          limit_count: 100,
+        });
+        const userEntry = leaderboard?.find((e: { user_id: string }) => e.user_id === userId);
+        return { country, rank: userEntry?.rank || null };
+      }
 
       const { data: leaderboard } = await supabase.rpc("get_country_leaderboard", {
-        country_filter: country,
+        country_filter: profileCountry,
         limit_count: 100,
       });
       const userEntry = leaderboard?.find((e: { user_id: string }) => e.user_id === userId);
-      return { country, rank: userEntry?.rank || null };
+      return { country: profileCountry, rank: userEntry?.rank || null };
     },
     enabled: !!userId,
   });
@@ -251,6 +272,17 @@ export default function Profile() {
       if (!user) return;
       setUserId(user.id);
 
+      // Fetch user profile from database
+      const { data: profileData } = await supabase
+        .from("user_profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (profileData) {
+        setUserProfile(profileData);
+      }
+
       // Fetch user purchases with item details
       const { data: purchasesData, error } = await supabase
         .from("user_purchases")
@@ -261,17 +293,10 @@ export default function Profile() {
       if (error) throw error;
       setPurchases(purchasesData || []);
 
-      // Load equipped items and profile data from localStorage
+      // Load equipped items from localStorage (these can still be local)
       const savedEquipped = localStorage.getItem(`equipped_${user.id}`);
       if (savedEquipped) {
         setEquipped(JSON.parse(savedEquipped));
-      }
-
-      const savedProfile = localStorage.getItem(`profile_${user.id}`);
-      if (savedProfile) {
-        const profileData = JSON.parse(savedProfile);
-        setBio(profileData.bio || "");
-        setDisplayName(profileData.displayName || "");
       }
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -306,22 +331,39 @@ export default function Profile() {
     toast.success("Item unequipped");
   };
 
-  const handleSaveProfile = () => {
-    if (userId) {
-      localStorage.setItem(
-        `profile_${userId}`,
-        JSON.stringify({ bio: editBio, displayName: editName })
-      );
-      setBio(editBio);
-      setDisplayName(editName);
+  const handleSaveProfile = async () => {
+    if (!userId || !userProfile) return;
+    
+    setSavingProfile(true);
+    try {
+      const { error } = await supabase
+        .from("user_profiles")
+        .update({
+          display_name: editDisplayName.trim() || null,
+          bio: editBio.trim() || null,
+        })
+        .eq("user_id", userId);
+
+      if (error) throw error;
+
+      setUserProfile({
+        ...userProfile,
+        display_name: editDisplayName.trim() || null,
+        bio: editBio.trim() || null,
+      });
       setIsEditDialogOpen(false);
       toast.success("Profile updated!");
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      toast.error("Failed to save profile");
+    } finally {
+      setSavingProfile(false);
     }
   };
 
   const openEditDialog = () => {
-    setEditBio(bio);
-    setEditName(displayName);
+    setEditBio(userProfile?.bio || "");
+    setEditDisplayName(userProfile?.display_name || "");
     setIsEditDialogOpen(true);
   };
 
@@ -355,9 +397,14 @@ export default function Profile() {
   };
 
   const getExplorerName = () => {
-    if (displayName) return displayName;
+    if (userProfile?.display_name) return userProfile.display_name;
+    if (userProfile?.username) return `@${userProfile.username}`;
     if (!userId) return "Explorer #0000";
     return `Explorer #${userId.slice(-4).toUpperCase()}`;
+  };
+
+  const getUsername = () => {
+    return userProfile?.username ? `@${userProfile.username}` : null;
   };
 
   const getRankBadge = (rank: number | null, type: "global" | "country") => {
@@ -499,12 +546,19 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Bio */}
-        {bio && (
-          <p className="text-sm text-muted-foreground mt-3 px-1">{bio}</p>
+        {/* Username and Bio */}
+        {getUsername() && userProfile?.display_name && (
+          <p className="text-xs text-muted-foreground mt-1 px-1">{getUsername()}</p>
         )}
-
-        {/* Stats Grid */}
+        {userProfile?.bio && (
+          <p className="text-sm text-muted-foreground mt-2 px-1">{userProfile.bio}</p>
+        )}
+        {userProfile?.country && (
+          <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground px-1">
+            <MapPin className="h-3 w-3" />
+            <span>{userProfile.country}</span>
+          </div>
+        )}
         <div className="grid grid-cols-4 gap-2 mt-4 bg-background/50 rounded-xl p-3">
           <div className="text-center">
             <p className="text-xl font-bold">{speciesCount}</p>
@@ -582,13 +636,33 @@ export default function Profile() {
             <DialogTitle>Edit Profile</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
+            {userProfile?.username && (
+              <div>
+                <label className="text-sm font-medium mb-2 block text-muted-foreground">Username (cannot be changed)</label>
+                <Input
+                  value={`@${userProfile.username}`}
+                  disabled
+                  className="bg-muted"
+                />
+              </div>
+            )}
+            {userProfile?.country && (
+              <div>
+                <label className="text-sm font-medium mb-2 block text-muted-foreground">Country (cannot be changed)</label>
+                <Input
+                  value={userProfile.country}
+                  disabled
+                  className="bg-muted"
+                />
+              </div>
+            )}
             <div>
               <label className="text-sm font-medium mb-2 block">Display Name</label>
               <Input
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
+                value={editDisplayName}
+                onChange={(e) => setEditDisplayName(e.target.value)}
                 placeholder="Enter your display name"
-                maxLength={30}
+                maxLength={50}
               />
             </div>
             <div>
@@ -602,7 +676,8 @@ export default function Profile() {
               />
               <p className="text-xs text-muted-foreground mt-1">{editBio.length}/150</p>
             </div>
-            <Button onClick={handleSaveProfile} className="w-full">
+            <Button onClick={handleSaveProfile} className="w-full" disabled={savingProfile}>
+              {savingProfile ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Save Changes
             </Button>
           </div>
