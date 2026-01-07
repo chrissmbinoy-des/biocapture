@@ -42,8 +42,34 @@ import {
   Twitter,
   Facebook,
   Medal,
+  Cat,
+  Bug,
+  Bird,
+  Fish,
+  Microscope,
+  Target,
+  Heart,
+  Sun,
+  Moon,
+  Mountain,
+  Trees,
+  Wind,
+  Cloud,
+  Snowflake,
+  Compass,
+  Rainbow,
+  Earth,
+  Map,
+  Calendar,
+  CalendarDays,
+  CalendarCheck,
+  Dumbbell,
+  LucideIcon,
 } from "lucide-react";
 import CoinIcon from "@/components/icons/CoinIcon";
+import { BadgeProgressCircle } from "@/components/BadgeProgressCircle";
+import CrocodileIcon from "@/components/icons/CrocodileIcon";
+import FrogIcon from "@/components/icons/FrogIcon";
 import type { Json } from "@/integrations/supabase/types";
 
 interface ShopItem {
@@ -98,17 +124,49 @@ const iconMap: Record<string, React.ReactNode> = {
   "plus-circle": <PlusCircle className="h-5 w-5" />,
 };
 
-const badgeIconMap: Record<string, React.ReactNode> = {
-  leaf: <Leaf className="h-3 w-3" />,
-  bug: <Sparkles className="h-3 w-3" />,
-  bird: <Feather className="h-3 w-3" />,
-  fish: <Waves className="h-3 w-3" />,
-  paw: <Award className="h-3 w-3" />,
-  microscope: <Star className="h-3 w-3" />,
-  crown: <Crown className="h-3 w-3" />,
-  trophy: <Trophy className="h-3 w-3" />,
-  star: <Star className="h-3 w-3" />,
-  award: <Award className="h-3 w-3" />,
+const BADGE_ICON_MAP: { [key: string]: LucideIcon } = {
+  "🌿": Leaf,
+  "🦁": Cat,
+  "🦋": Bug,
+  "🦅": Bird,
+  "🐟": Fish,
+  "🦎": CrocodileIcon as unknown as LucideIcon,
+  "🐸": FrogIcon as unknown as LucideIcon,
+  "🦠": Microscope,
+  "⭐": Star,
+  "🌟": Star,
+  "🏆": Trophy,
+  "🎯": Target,
+  "⚡": Zap,
+  "👑": Crown,
+  "🥇": Medal,
+  "🏅": Medal,
+  "🎖️": Medal,
+  "🛡️": Shield,
+  "❤️": Heart,
+  "🔥": Flame,
+  "☀️": Sun,
+  "🌙": Moon,
+  "🏔️": Mountain,
+  "🌲": Trees,
+  "🌊": Waves,
+  "💨": Wind,
+  "☁️": Cloud,
+  "❄️": Snowflake,
+  "✨": Sparkles,
+  "🧭": Compass,
+  "🌈": Rainbow,
+  "🌍": Earth,
+  "🌏": Globe,
+  "🗺️": Map,
+  "📅": Calendar,
+  "🗓️": CalendarDays,
+  "📆": CalendarCheck,
+  "💪": Dumbbell,
+};
+
+const getBadgeIcon = (iconStr: string): LucideIcon => {
+  return BADGE_ICON_MAP[iconStr] || Award;
 };
 
 interface UserProfile {
@@ -523,23 +581,26 @@ export default function Profile() {
               {countryData?.rank && getRankBadge(countryData.rank, "country")}
             </div>
 
-            {/* 3 Badge Squares */}
-            <div className="flex gap-1.5 mt-2">
+            {/* 3 Badge Circles */}
+            <div className="flex gap-1 mt-2">
               {userBadges.slice(0, 3).map((ub) => (
-                <div
-                  key={ub.id}
-                  className="w-8 h-8 rounded-md bg-primary/10 border border-primary/20 flex items-center justify-center"
-                  title={ub.badges.name}
-                >
-                  {badgeIconMap[ub.badges.icon] || <Award className="h-3.5 w-3.5 text-primary" />}
+                <div key={ub.id} title={ub.badges.name}>
+                  <BadgeProgressCircle
+                    icon={getBadgeIcon(ub.badges.icon)}
+                    progress={1}
+                    isEarned={true}
+                    size="sm"
+                  />
                 </div>
               ))}
               {Array.from({ length: Math.max(0, 3 - userBadges.length) }).map((_, i) => (
-                <div
-                  key={`empty-${i}`}
-                  className="w-8 h-8 rounded-md bg-muted/50 border border-dashed border-muted-foreground/20 flex items-center justify-center"
-                >
-                  <Award className="h-3 w-3 text-muted-foreground/30" />
+                <div key={`empty-${i}`} className="opacity-30">
+                  <BadgeProgressCircle
+                    icon={Award}
+                    progress={0}
+                    isEarned={false}
+                    size="sm"
+                  />
                 </div>
               ))}
             </div>
