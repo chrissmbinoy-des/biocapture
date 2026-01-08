@@ -1,13 +1,15 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
@@ -15,6 +17,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import {
   Loader2,
@@ -64,6 +73,7 @@ import {
   CalendarDays,
   CalendarCheck,
   Dumbbell,
+  Camera,
   LucideIcon,
 } from "lucide-react";
 import CoinIcon from "@/components/icons/CoinIcon";
@@ -71,6 +81,20 @@ import { BadgeProgressCircle } from "@/components/BadgeProgressCircle";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
 import type { Json } from "@/integrations/supabase/types";
+
+const countries = [
+  "Afghanistan", "Albania", "Algeria", "Argentina", "Australia", "Austria",
+  "Bangladesh", "Belgium", "Brazil", "Canada", "Chile", "China", "Colombia",
+  "Czech Republic", "Denmark", "Egypt", "Ethiopia", "Finland", "France",
+  "Germany", "Ghana", "Greece", "Hungary", "India", "Indonesia", "Iran",
+  "Iraq", "Ireland", "Israel", "Italy", "Japan", "Kenya", "Malaysia",
+  "Mexico", "Morocco", "Netherlands", "New Zealand", "Nigeria", "Norway",
+  "Pakistan", "Peru", "Philippines", "Poland", "Portugal", "Romania",
+  "Russia", "Saudi Arabia", "Singapore", "South Africa", "South Korea",
+  "Spain", "Sri Lanka", "Sweden", "Switzerland", "Taiwan", "Thailand",
+  "Turkey", "Ukraine", "United Arab Emirates", "United Kingdom",
+  "United States", "Vietnam"
+];
 
 interface ShopItem {
   id: string;
@@ -177,9 +201,23 @@ interface UserProfile {
   bio: string | null;
   country: string | null;
   avatar_url: string | null;
+  display_badges: string[] | null;
+}
+
+interface AllBadge {
+  id: string;
+  badge_id: string;
+  badges: {
+    id: string;
+    name: string;
+    icon: string;
+    description: string;
+  };
 }
 
 export default function Profile() {
+  const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [purchases, setPurchases] = useState<UserPurchase[]>([]);
   const [equipped, setEquipped] = useState<EquippedItems>({});
   const [loading, setLoading] = useState(true);
@@ -190,7 +228,11 @@ export default function Profile() {
   const [isShareDialogOpen, setIsShareDialogOpen] = useState(false);
   const [editBio, setEditBio] = useState("");
   const [editDisplayName, setEditDisplayName] = useState("");
+  const [editCountry, setEditCountry] = useState("");
+  const [editAvatarUrl, setEditAvatarUrl] = useState("");
+  const [selectedBadges, setSelectedBadges] = useState<string[]>([]);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     fetchProfileData();
@@ -227,19 +269,40 @@ export default function Profile() {
     enabled: !!userId,
   });
 
-  // Fetch badges earned with details
+  // Fetch badges earned with details (for display - limited to selected or first 3)
   const { data: userBadges = [] } = useQuery({
-    queryKey: ["userBadgesDetails", userId],
+    queryKey: ["userBadgesDetails", userId, userProfile?.display_badges],
     queryFn: async () => {
       if (!userId) return [];
       const { data, error } = await supabase
         .from("user_badges")
         .select("*, badges(*)")
         .eq("user_id", userId)
-        .order("earned_at", { ascending: false })
-        .limit(3);
+        .order("earned_at", { ascending: false });
       if (error) throw error;
-      return (data as UserBadge[]) || [];
+      
+      const allBadges = (data as UserBadge[]) || [];
+      // Return selected badges or first 3
+      if (userProfile?.display_badges?.length) {
+        return allBadges.filter(ub => userProfile.display_badges?.includes(ub.badge_id)).slice(0, 3);
+      }
+      return allBadges.slice(0, 3);
+    },
+    enabled: !!userId,
+  });
+
+  // Fetch ALL user badges (for badge selection dialog)
+  const { data: allUserBadges = [] } = useQuery({
+    queryKey: ["allUserBadges", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase
+        .from("user_badges")
+        .select("*, badges(*)")
+        .eq("user_id", userId)
+        .order("earned_at", { ascending: false });
+      if (error) throw error;
+      return (data as AllBadge[]) || [];
     },
     enabled: !!userId,
   });
@@ -389,6 +452,60 @@ export default function Profile() {
     toast.success("Item unequipped");
   };
 
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !userId) return;
+
+    // Validate file
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be less than 2MB');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${userId}/avatar.${fileExt}`;
+
+      // Upload to storage
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      setEditAvatarUrl(publicUrl);
+      toast.success('Avatar uploaded!');
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      toast.error('Failed to upload avatar');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const handleBadgeToggle = (badgeId: string) => {
+    setSelectedBadges(prev => {
+      if (prev.includes(badgeId)) {
+        return prev.filter(id => id !== badgeId);
+      }
+      if (prev.length >= 3) {
+        toast.error('You can only select up to 3 badges');
+        return prev;
+      }
+      return [...prev, badgeId];
+    });
+  };
+
   const handleSaveProfile = async () => {
     if (!userId || !userProfile) return;
     
@@ -399,6 +516,9 @@ export default function Profile() {
         .update({
           display_name: editDisplayName.trim() || null,
           bio: editBio.trim() || null,
+          country: editCountry || userProfile.country,
+          avatar_url: editAvatarUrl || userProfile.avatar_url,
+          display_badges: selectedBadges.length > 0 ? selectedBadges : null,
         })
         .eq("user_id", userId);
 
@@ -408,7 +528,15 @@ export default function Profile() {
         ...userProfile,
         display_name: editDisplayName.trim() || null,
         bio: editBio.trim() || null,
+        country: editCountry || userProfile.country,
+        avatar_url: editAvatarUrl || userProfile.avatar_url,
+        display_badges: selectedBadges.length > 0 ? selectedBadges : null,
       });
+      
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ["userBadgesDetails"] });
+      queryClient.invalidateQueries({ queryKey: ["countryRank"] });
+      
       setIsEditDialogOpen(false);
       toast.success("Profile updated!");
     } catch (error) {
@@ -422,6 +550,9 @@ export default function Profile() {
   const openEditDialog = () => {
     setEditBio(userProfile?.bio || "");
     setEditDisplayName(userProfile?.display_name || "");
+    setEditCountry(userProfile?.country || "");
+    setEditAvatarUrl(userProfile?.avatar_url || "");
+    setSelectedBadges(userProfile?.display_badges || []);
     setIsEditDialogOpen(true);
   };
 
@@ -546,6 +677,9 @@ export default function Profile() {
           {/* Profile Picture with Rank Badges */}
           <div className="relative">
             <Avatar className="h-20 w-20 border-2 border-primary">
+              {userProfile?.avatar_url && (
+                <AvatarImage src={userProfile.avatar_url} alt={getExplorerName()} />
+              )}
               <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-bold">
                 {getExplorerName().slice(0, 2).toUpperCase()}
               </AvatarFallback>
@@ -692,11 +826,47 @@ export default function Profile() {
 
       {/* Edit Profile Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Profile</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-4">
+            {/* Avatar Upload */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Profile Picture</label>
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16 border-2 border-primary">
+                  {editAvatarUrl && <AvatarImage src={editAvatarUrl} alt="Preview" />}
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xl font-bold">
+                    {getExplorerName().slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingAvatar}
+                  >
+                    {uploadingAvatar ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Camera className="h-4 w-4 mr-2" />
+                    )}
+                    {uploadingAvatar ? "Uploading..." : "Change Photo"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1">Max 2MB, JPG/PNG</p>
+                </div>
+              </div>
+            </div>
+
             {userProfile?.username && (
               <div>
                 <label className="text-sm font-medium mb-2 block text-muted-foreground">Username (cannot be changed)</label>
@@ -707,16 +877,22 @@ export default function Profile() {
                 />
               </div>
             )}
-            {userProfile?.country && (
-              <div>
-                <label className="text-sm font-medium mb-2 block text-muted-foreground">Country (cannot be changed)</label>
-                <Input
-                  value={userProfile.country}
-                  disabled
-                  className="bg-muted"
-                />
-              </div>
-            )}
+            
+            {/* Country Selection */}
+            <div>
+              <label className="text-sm font-medium mb-2 block">Country</label>
+              <Select value={editCountry} onValueChange={setEditCountry}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select your country" />
+                </SelectTrigger>
+                <SelectContent>
+                  {countries.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div>
               <label className="text-sm font-medium mb-2 block">Display Name</label>
               <Input
@@ -737,6 +913,52 @@ export default function Profile() {
               />
               <p className="text-xs text-muted-foreground mt-1">{editBio.length}/150</p>
             </div>
+
+            {/* Badge Selection */}
+            {allUserBadges.length > 0 && (
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Display Badges ({selectedBadges.length}/3)
+                </label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Select up to 3 badges to display on your profile
+                </p>
+                <ScrollArea className="h-[160px] border rounded-md p-2">
+                  <div className="grid grid-cols-3 gap-2">
+                    {allUserBadges.map((ub) => {
+                      const isSelected = selectedBadges.includes(ub.badge_id);
+                      return (
+                        <div
+                          key={ub.id}
+                          className={`p-2 rounded-lg border cursor-pointer transition-all ${
+                            isSelected
+                              ? "border-primary bg-primary/10"
+                              : "border-border hover:border-primary/50"
+                          }`}
+                          onClick={() => handleBadgeToggle(ub.badge_id)}
+                        >
+                          <div className="flex flex-col items-center gap-1">
+                            <BadgeProgressCircle
+                              icon={getBadgeIcon(ub.badges.icon)}
+                              progress={1}
+                              isEarned={true}
+                              size="sm"
+                            />
+                            <p className="text-[10px] text-center font-medium truncate w-full">
+                              {ub.badges.name}
+                            </p>
+                            {isSelected && (
+                              <Check className="h-3 w-3 text-primary" />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
+
             <Button onClick={handleSaveProfile} className="w-full" disabled={savingProfile}>
               {savingProfile ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Save Changes
