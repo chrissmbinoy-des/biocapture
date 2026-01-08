@@ -633,7 +633,7 @@ export default function Profile() {
   };
 
   const getProfileShareUrl = () => {
-    return `${window.location.origin}/profile?share=${userId?.slice(-8)}`;
+    return `${window.location.origin}/explorer?share=${userId?.slice(-8)}`;
   };
 
   const shareProfile = (platform: "twitter" | "facebook" | "copy") => {

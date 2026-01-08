@@ -81,7 +81,7 @@ const App = () => (
               <Route path="/coin-shop" element={<CoinShop />} />
               <Route path="/profile" element={<Profile />} />
             </Route>
-            <Route path="/u/:username" element={<PublicProfile />} />
+            <Route path="/explorer" element={<PublicProfile />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
