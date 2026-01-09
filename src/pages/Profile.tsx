@@ -76,7 +76,7 @@ import {
   Camera,
   LucideIcon,
 } from "lucide-react";
-import CoinIcon from "@/components/icons/CoinIcon";
+
 import { BadgeProgressCircle } from "@/components/BadgeProgressCircle";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
@@ -143,7 +143,7 @@ const iconMap: Record<string, React.ReactNode> = {
   butterfly: <Sparkles className="h-5 w-5" />,
   star: <Star className="h-5 w-5" />,
   feather: <Feather className="h-5 w-5" />,
-  coins: <CoinIcon className="h-5 w-5" />,
+  coins: <Star className="h-5 w-5" />,
   shield: <Shield className="h-5 w-5" />,
   "plus-circle": <PlusCircle className="h-5 w-5" />,
 };
@@ -754,7 +754,7 @@ export default function Profile() {
             <span>{userProfile.country}</span>
           </div>
         )}
-        <div className="grid grid-cols-4 gap-2 mt-4 bg-background/50 rounded-xl p-3">
+        <div className="grid grid-cols-3 gap-2 mt-4 bg-background/50 rounded-xl p-3">
           <div className="text-center">
             <p className="text-xl font-bold">{speciesCount}</p>
             <p className="text-[10px] text-muted-foreground">Sightings</p>
@@ -766,13 +766,6 @@ export default function Profile() {
           <div className="text-center">
             <p className="text-xl font-bold">{userBadges.length}</p>
             <p className="text-[10px] text-muted-foreground">Badges</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xl font-bold flex items-center justify-center gap-1">
-              <CoinIcon className="w-4 h-4 text-yellow-500" />
-              {coinBalance.toLocaleString()}
-            </p>
-            <p className="text-[10px] text-muted-foreground">Coins</p>
           </div>
         </div>
 
