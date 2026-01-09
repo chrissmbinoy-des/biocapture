@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,8 @@ import { Loader2, Trophy, Medal, Award, Crown, Globe, MapPin, Calendar, Calendar
 interface LeaderboardEntry {
   user_id: string;
   species_count: number;
+  display_name?: string | null;
+  username?: string | null;
   rank: number;
 }
 
@@ -15,6 +18,7 @@ type TimeFilter = "all" | "monthly" | "weekly";
 type GeoFilter = "worldwide" | "country";
 
 export default function Leaderboard() {
+  const navigate = useNavigate();
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -51,6 +55,7 @@ export default function Leaderboard() {
     setLoading(true);
     try {
       const daysBack = timeFilter === "weekly" ? 7 : timeFilter === "monthly" ? 30 : null;
+      let leaderboardData: LeaderboardEntry[] = [];
 
       if (geoFilter === "worldwide") {
         const { data, error } = await supabase
@@ -62,7 +67,7 @@ export default function Leaderboard() {
         if (error) {
           console.error("Worldwide leaderboard error:", error);
         } else {
-          setEntries(data || []);
+          leaderboardData = data || [];
         }
       } else if (userCountry) {
         const { data, error } = await supabase
@@ -75,15 +80,39 @@ export default function Leaderboard() {
         if (error) {
           console.error("Country leaderboard error:", error);
         } else {
-          setEntries(data || []);
+          leaderboardData = data || [];
         }
-      } else {
-        setEntries([]);
       }
+
+      // Fetch user profiles for display names
+      if (leaderboardData.length > 0) {
+        const userIds = leaderboardData.map(e => e.user_id);
+        const { data: profiles } = await supabase
+          .from('user_profiles')
+          .select('user_id, display_name, username')
+          .in('user_id', userIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+        leaderboardData = leaderboardData.map(entry => ({
+          ...entry,
+          display_name: profileMap.get(entry.user_id)?.display_name,
+          username: profileMap.get(entry.user_id)?.username
+        }));
+      }
+
+      setEntries(leaderboardData);
     } catch (error) {
       console.error("Error fetching leaderboard:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUserClick = (entry: LeaderboardEntry) => {
+    if (entry.user_id === currentUserId) {
+      navigate('/profile');
+    } else {
+      navigate(`/explorer?share=${entry.user_id.slice(-8)}`);
     }
   };
 
@@ -213,7 +242,8 @@ export default function Leaderboard() {
             {entries.map((entry) => (
               <Card
                 key={entry.user_id}
-                className={`p-3 flex items-center justify-between ${getRankStyle(Number(entry.rank))} ${
+                onClick={() => handleUserClick(entry)}
+                className={`p-3 flex items-center justify-between cursor-pointer hover:bg-accent/50 transition-colors ${getRankStyle(Number(entry.rank))} ${
                   entry.user_id === currentUserId ? "ring-2 ring-primary" : ""
                 }`}
               >
@@ -221,7 +251,9 @@ export default function Leaderboard() {
                   <div className="w-8 flex justify-center">{getRankIcon(Number(entry.rank))}</div>
                   <div>
                     <p className="font-medium text-sm">
-                      {entry.user_id === currentUserId ? "You" : `Explorer #${entry.rank}`}
+                      {entry.user_id === currentUserId 
+                        ? "You" 
+                        : entry.display_name || entry.username || `Explorer #${entry.rank}`}
                     </p>
                     {entry.user_id === currentUserId && (
                       <Badge variant="secondary" className="text-xs">Your Profile</Badge>
