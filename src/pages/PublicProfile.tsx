@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
 import {
   Loader2,
   Award,
@@ -45,6 +46,8 @@ import {
   Dumbbell,
   ArrowLeft,
   LucideIcon,
+  UserPlus,
+  UserMinus,
 } from "lucide-react";
 import { BadgeProgressCircle } from "@/components/BadgeProgressCircle";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
@@ -119,9 +122,19 @@ const getBadgeIcon = (iconStr: string): LucideIcon => {
 };
 
 export default function PublicProfile() {
+  const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const shareId = searchParams.get("share");
-  const [userId, setUserId] = useState<string | null>(null);
+  const [profileUserId, setProfileUserId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [followLoading, setFollowLoading] = useState(false);
+
+  // Get current user
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setCurrentUserId(data.user?.id || null);
+    });
+  }, []);
 
   // Find user by share ID (last 8 chars of user_id)
   const { data: profile, isLoading: profileLoading } = useQuery({
@@ -136,7 +149,7 @@ export default function PublicProfile() {
 
       if (error) throw error;
       if (data && data.length > 0) {
-        setUserId(data[0].user_id);
+        setProfileUserId(data[0].user_id);
         return data[0] as UserProfile;
       }
       return null;
@@ -144,50 +157,97 @@ export default function PublicProfile() {
     enabled: !!shareId,
   });
 
-  // Fetch species count
-  const { data: speciesCount = 0 } = useQuery({
-    queryKey: ["publicSpeciesCount", userId],
+  // Check if following
+  const { data: isFollowing = false } = useQuery({
+    queryKey: ["isFollowing", currentUserId, profileUserId],
     queryFn: async () => {
-      if (!userId) return 0;
+      if (!currentUserId || !profileUserId) return false;
+      const { data, error } = await supabase
+        .from("user_followers")
+        .select("id")
+        .eq("follower_id", currentUserId)
+        .eq("following_id", profileUserId)
+        .maybeSingle();
+      if (error) throw error;
+      return !!data;
+    },
+    enabled: !!currentUserId && !!profileUserId && currentUserId !== profileUserId,
+  });
+
+  // Fetch follower count
+  const { data: followerCount = 0 } = useQuery({
+    queryKey: ["followerCount", profileUserId],
+    queryFn: async () => {
+      if (!profileUserId) return 0;
       const { count, error } = await supabase
-        .from("species_identifications")
+        .from("user_followers")
         .select("*", { count: "exact", head: true })
-        .eq("user_id", userId);
+        .eq("following_id", profileUserId);
       if (error) throw error;
       return count || 0;
     },
-    enabled: !!userId,
+    enabled: !!profileUserId,
+  });
+
+  // Fetch following count
+  const { data: followingCount = 0 } = useQuery({
+    queryKey: ["followingCount", profileUserId],
+    queryFn: async () => {
+      if (!profileUserId) return 0;
+      const { count, error } = await supabase
+        .from("user_followers")
+        .select("*", { count: "exact", head: true })
+        .eq("follower_id", profileUserId);
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!profileUserId,
+  });
+
+  // Fetch species count
+  const { data: speciesCount = 0 } = useQuery({
+    queryKey: ["publicSpeciesCount", profileUserId],
+    queryFn: async () => {
+      if (!profileUserId) return 0;
+      const { count, error } = await supabase
+        .from("species_identifications")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", profileUserId);
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!profileUserId,
   });
 
   // Fetch unique species count
   const { data: uniqueSpeciesCount = 0 } = useQuery({
-    queryKey: ["publicUniqueSpecies", userId],
+    queryKey: ["publicUniqueSpecies", profileUserId],
     queryFn: async () => {
-      if (!userId) return 0;
+      if (!profileUserId) return 0;
       const { data, error } = await supabase
         .from("species_identifications")
         .select("species_name")
-        .eq("user_id", userId);
+        .eq("user_id", profileUserId);
       if (error) throw error;
       const unique = new Set(data?.map((s) => s.species_name.toLowerCase()));
       return unique.size;
     },
-    enabled: !!userId,
+    enabled: !!profileUserId,
   });
 
   // Fetch all user badges
   const { data: allUserBadges = [] } = useQuery({
-    queryKey: ["publicUserBadges", userId],
+    queryKey: ["publicUserBadges", profileUserId],
     queryFn: async () => {
-      if (!userId) return [];
+      if (!profileUserId) return [];
       const { data, error } = await supabase
         .from("user_badges")
         .select("*, badges(*)")
-        .eq("user_id", userId);
+        .eq("user_id", profileUserId);
       if (error) throw error;
       return (data as UserBadge[]) || [];
     },
-    enabled: !!userId,
+    enabled: !!profileUserId,
   });
 
   // Get displayed badges (either selected or first 3)
@@ -197,56 +257,90 @@ export default function PublicProfile() {
 
   // Fetch login streak
   const { data: streakData } = useQuery({
-    queryKey: ["publicStreak", userId],
+    queryKey: ["publicStreak", profileUserId],
     queryFn: async () => {
-      if (!userId) return null;
+      if (!profileUserId) return null;
       const { data, error } = await supabase
         .from("login_streaks")
         .select("*")
-        .eq("user_id", userId)
+        .eq("user_id", profileUserId)
         .maybeSingle();
       if (error) throw error;
       return data;
     },
-    enabled: !!userId,
+    enabled: !!profileUserId,
   });
 
   // Fetch global rank
   const { data: globalRank } = useQuery({
-    queryKey: ["publicGlobalRank", userId],
+    queryKey: ["publicGlobalRank", profileUserId],
     queryFn: async () => {
-      if (!userId) return null;
+      if (!profileUserId) return null;
       const { data, error } = await supabase.rpc("get_worldwide_leaderboard", {
         limit_count: 100,
       });
       if (error) throw error;
-      const userEntry = data?.find((e: { user_id: string }) => e.user_id === userId);
+      const userEntry = data?.find((e: { user_id: string }) => e.user_id === profileUserId);
       return userEntry?.rank || null;
     },
-    enabled: !!userId,
+    enabled: !!profileUserId,
   });
 
   // Fetch country rank
   const { data: countryData } = useQuery({
-    queryKey: ["publicCountryRank", userId, profile?.country],
+    queryKey: ["publicCountryRank", profileUserId, profile?.country],
     queryFn: async () => {
-      if (!userId || !profile?.country) return { country: null, rank: null };
+      if (!profileUserId || !profile?.country) return { country: null, rank: null };
 
       const { data: leaderboard } = await supabase.rpc("get_country_leaderboard", {
         country_filter: profile.country,
         limit_count: 100,
       });
-      const userEntry = leaderboard?.find((e: { user_id: string }) => e.user_id === userId);
+      const userEntry = leaderboard?.find((e: { user_id: string }) => e.user_id === profileUserId);
       return { country: profile.country, rank: userEntry?.rank || null };
     },
-    enabled: !!userId && !!profile?.country,
+    enabled: !!profileUserId && !!profile?.country,
   });
+
+  const handleFollow = async () => {
+    if (!currentUserId || !profileUserId) {
+      toast.error("Please sign in to follow explorers");
+      return;
+    }
+
+    setFollowLoading(true);
+    try {
+      if (isFollowing) {
+        const { error } = await supabase
+          .from("user_followers")
+          .delete()
+          .eq("follower_id", currentUserId)
+          .eq("following_id", profileUserId);
+        if (error) throw error;
+        toast.success("Unfollowed explorer");
+      } else {
+        const { error } = await supabase
+          .from("user_followers")
+          .insert({ follower_id: currentUserId, following_id: profileUserId });
+        if (error) throw error;
+        toast.success("Now following explorer!");
+      }
+      queryClient.invalidateQueries({ queryKey: ["isFollowing"] });
+      queryClient.invalidateQueries({ queryKey: ["followerCount"] });
+      queryClient.invalidateQueries({ queryKey: ["following"] });
+    } catch (error) {
+      console.error("Error following/unfollowing:", error);
+      toast.error("Failed to update follow status");
+    } finally {
+      setFollowLoading(false);
+    }
+  };
 
   const getExplorerName = () => {
     if (profile?.display_name) return profile.display_name;
     if (profile?.username) return `@${profile.username}`;
-    if (!userId) return "Explorer";
-    return `Explorer #${userId.slice(-4).toUpperCase()}`;
+    if (!profileUserId) return "Explorer";
+    return `Explorer #${profileUserId.slice(-4).toUpperCase()}`;
   };
 
   const getUsername = () => {
@@ -401,8 +495,29 @@ export default function PublicProfile() {
             </div>
           )}
 
+          {/* Follow Button */}
+          {currentUserId && currentUserId !== profileUserId && (
+            <div className="mt-4">
+              <Button
+                onClick={handleFollow}
+                disabled={followLoading}
+                variant={isFollowing ? "outline" : "default"}
+                className="w-full"
+              >
+                {followLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : isFollowing ? (
+                  <UserMinus className="h-4 w-4 mr-2" />
+                ) : (
+                  <UserPlus className="h-4 w-4 mr-2" />
+                )}
+                {isFollowing ? "Unfollow" : "Follow"}
+              </Button>
+            </div>
+          )}
+
           {/* Stats Grid */}
-          <div className="grid grid-cols-3 gap-3 mt-6 bg-background/60 backdrop-blur rounded-xl p-4">
+          <div className="grid grid-cols-4 gap-2 mt-4 bg-background/60 backdrop-blur rounded-xl p-4">
             <div className="text-center">
               <p className="text-2xl font-bold">{speciesCount}</p>
               <p className="text-xs text-muted-foreground">Sightings</p>
@@ -412,8 +527,12 @@ export default function PublicProfile() {
               <p className="text-xs text-muted-foreground">Species</p>
             </div>
             <div className="text-center">
-              <p className="text-2xl font-bold">{allUserBadges.length}</p>
-              <p className="text-xs text-muted-foreground">Badges</p>
+              <p className="text-2xl font-bold">{followerCount}</p>
+              <p className="text-xs text-muted-foreground">Followers</p>
+            </div>
+            <div className="text-center">
+              <p className="text-2xl font-bold">{followingCount}</p>
+              <p className="text-xs text-muted-foreground">Following</p>
             </div>
           </div>
         </div>

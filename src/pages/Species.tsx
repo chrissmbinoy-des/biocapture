@@ -3,12 +3,13 @@ import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope } from "lucide-react";
+import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope, Share2, Copy, Twitter, Facebook } from "lucide-react";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
 import { IconBadge, getKingdomVariant, IconComponent } from "@/components/IconBadge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -66,6 +67,7 @@ export default function Species() {
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportingId, setReportingId] = useState<string | null>(null);
+  const [shareItem, setShareItem] = useState<Finding | null>(null);
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   
@@ -189,6 +191,33 @@ export default function Species() {
     setReportingId(null);
   };
 
+  const shareDiscovery = (platform: "twitter" | "facebook" | "copy") => {
+    if (!shareItem) return;
+    
+    const shareText = `I discovered a ${shareItem.species_name}! 🌿`;
+    const shareUrl = `${window.location.origin}/species?id=${shareItem.id}`;
+
+    switch (platform) {
+      case "twitter":
+        window.open(
+          `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`,
+          "_blank"
+        );
+        break;
+      case "facebook":
+        window.open(
+          `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`,
+          "_blank"
+        );
+        break;
+      case "copy":
+        navigator.clipboard.writeText(`${shareText} ${shareUrl}`);
+        sonnerToast.success("Link copied to clipboard!");
+        break;
+    }
+    setShareItem(null);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -281,6 +310,15 @@ export default function Species() {
                       variant="ghost"
                       size="sm"
                       className="h-6 px-2 text-xs text-muted-foreground"
+                      onClick={() => setShareItem(finding)}
+                    >
+                      <Share2 className="h-3 w-3 mr-1" />
+                      Share
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs text-muted-foreground"
                       onClick={() => handleReport(finding.id)}
                     >
                       <Flag className="h-3 w-3 mr-1" />
@@ -330,6 +368,71 @@ export default function Species() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Dialog */}
+      <Dialog open={!!shareItem} onOpenChange={() => setShareItem(null)}>
+        <DialogContent className="mx-4 max-w-[calc(100%-2rem)]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Share2 className="h-5 w-5" />
+              Share Discovery
+            </DialogTitle>
+          </DialogHeader>
+          {shareItem && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-muted rounded-lg">
+                {shareItem.image_url ? (
+                  <img
+                    src={shareItem.image_url}
+                    alt={shareItem.species_name}
+                    className="w-16 h-16 object-cover rounded"
+                  />
+                ) : (
+                  <div className="w-16 h-16 bg-primary/10 rounded flex items-center justify-center">
+                    <IconBadge
+                      icon={KINGDOM_ICONS[shareItem.kingdom] || Microscope}
+                      size="lg"
+                      variant={getKingdomVariant(shareItem.kingdom)}
+                    />
+                  </div>
+                )}
+                <div>
+                  <p className="font-semibold">{shareItem.species_name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {KINGDOM_LABELS[shareItem.kingdom]}
+                  </p>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => shareDiscovery("twitter")}
+                >
+                  <Twitter className="h-5 w-5 mr-3 text-[#1DA1F2]" />
+                  Share on Twitter
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => shareDiscovery("facebook")}
+                >
+                  <Facebook className="h-5 w-5 mr-3 text-[#4267B2]" />
+                  Share on Facebook
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => shareDiscovery("copy")}
+                >
+                  <Copy className="h-5 w-5 mr-3" />
+                  Copy Link
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

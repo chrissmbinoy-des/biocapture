@@ -30,6 +30,7 @@ const OtherOrganisms = lazy(() => import("./pages/OtherOrganisms"));
 const CoinShop = lazy(() => import("./pages/CoinShop"));
 const Profile = lazy(() => import("./pages/Profile"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
+const Feed = lazy(() => import("./pages/Feed"));
 
 // Optimized QueryClient with stale time to reduce refetches
 const queryClient = new QueryClient({
@@ -80,6 +81,7 @@ const App = () => (
               <Route path="/login-streak" element={<LoginStreak />} />
               <Route path="/coin-shop" element={<CoinShop />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/feed" element={<Feed />} />
             </Route>
             <Route path="/explorer" element={<PublicProfile />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

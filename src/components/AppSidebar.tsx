@@ -1,4 +1,4 @@
-import { Home, Camera, MapPin, Award, Sparkles, Leaf, Cat, Bug, Bird, Fish, Microscope, ChevronDown, Target, LogOut, Trophy, Flame, ShoppingBag, User } from "lucide-react";
+import { Home, Camera, MapPin, Award, Sparkles, Leaf, Cat, Bug, Bird, Fish, Microscope, ChevronDown, Target, LogOut, Trophy, Flame, ShoppingBag, User, Users } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +29,7 @@ import {
 const mainItems = [
   { title: "Camera", url: "/", icon: Camera },
   { title: "My Profile", url: "/profile", icon: User },
+  { title: "Discovery Feed", url: "/feed", icon: Users },
 ];
 
 const kingdoms = [
