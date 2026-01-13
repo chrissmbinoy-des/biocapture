@@ -142,16 +142,41 @@ export default function PublicProfile() {
     queryFn: async () => {
       if (!shareId) return null;
       
-      const { data, error } = await supabase
+      // First try to find in user_profiles
+      const { data: profiles, error } = await supabase
         .from("user_profiles")
         .select("*")
         .ilike("user_id", `%${shareId}`);
 
       if (error) throw error;
-      if (data && data.length > 0) {
-        setProfileUserId(data[0].user_id);
-        return data[0] as UserProfile;
+      if (profiles && profiles.length > 0) {
+        setProfileUserId(profiles[0].user_id);
+        return profiles[0] as UserProfile;
       }
+      
+      // If no profile found, check species_identifications to see if user exists
+      const { data: species } = await supabase
+        .from("species_identifications")
+        .select("user_id")
+        .ilike("user_id", `%${shareId}`)
+        .limit(1);
+      
+      if (species && species.length > 0) {
+        const userId = species[0].user_id;
+        setProfileUserId(userId);
+        // Return a minimal profile for users without a profile entry
+        return {
+          id: "",
+          user_id: userId,
+          username: null,
+          display_name: null,
+          bio: null,
+          country: null,
+          avatar_url: null,
+          display_badges: null,
+        } as UserProfile;
+      }
+      
       return null;
     },
     enabled: !!shareId,
