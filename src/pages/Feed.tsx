@@ -5,7 +5,8 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Link } from "react-router-dom";
+import { Input } from "@/components/ui/input";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Loader2,
   Leaf,
@@ -19,6 +20,7 @@ import {
   Copy,
   Twitter,
   Facebook,
+  Search,
 } from "lucide-react";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
@@ -71,14 +73,53 @@ const KINGDOM_ICONS: { [key: string]: IconComponent } = {
 };
 
 export default function Feed() {
+  const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
   const [shareItem, setShareItem] = useState<FeedItem | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Array<{
+    user_id: string;
+    display_name: string | null;
+    username: string | null;
+    avatar_url: string | null;
+  }>>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUserId(data.user?.id || null);
     });
   }, []);
+
+  // Search for users
+  useEffect(() => {
+    const searchUsers = async () => {
+      if (searchQuery.trim().length < 2) {
+        setSearchResults([]);
+        return;
+      }
+      setIsSearching(true);
+      const { data } = await supabase
+        .from("user_profiles")
+        .select("user_id, display_name, username, avatar_url")
+        .or(`display_name.ilike.%${searchQuery}%,username.ilike.%${searchQuery}%`)
+        .limit(10);
+      setSearchResults(data || []);
+      setIsSearching(false);
+    };
+    const debounce = setTimeout(searchUsers, 300);
+    return () => clearTimeout(debounce);
+  }, [searchQuery]);
+
+  const handleUserClick = (targetUserId: string) => {
+    if (targetUserId === userId) {
+      navigate('/profile');
+    } else {
+      navigate(`/explorer?share=${targetUserId.slice(-8)}`);
+    }
+    setSearchQuery("");
+    setSearchResults([]);
+  };
 
   // Fetch following list
   const { data: following = [] } = useQuery({
@@ -171,9 +212,58 @@ export default function Feed() {
   return (
     <div className="p-4 pb-20">
       <h1 className="text-2xl font-bold mb-4">Discovery Feed</h1>
-      <p className="text-sm text-muted-foreground mb-6">
+      <p className="text-sm text-muted-foreground mb-4">
         See what explorers you follow have discovered
       </p>
+
+      {/* User Search */}
+      <div className="relative mb-6">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search explorers..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        {(searchResults.length > 0 || isSearching) && searchQuery.length >= 2 && (
+          <Card className="absolute top-full left-0 right-0 z-50 mt-1 max-h-64 overflow-y-auto">
+            {isSearching ? (
+              <div className="p-4 text-center">
+                <Loader2 className="h-5 w-5 animate-spin mx-auto" />
+              </div>
+            ) : searchResults.length === 0 ? (
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                No explorers found
+              </div>
+            ) : (
+              searchResults.map((user) => (
+                <div
+                  key={user.user_id}
+                  onClick={() => handleUserClick(user.user_id)}
+                  className="flex items-center gap-3 p-3 hover:bg-accent cursor-pointer"
+                >
+                  <Avatar className="h-8 w-8">
+                    {user.avatar_url && <AvatarImage src={user.avatar_url} />}
+                    <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                      {(user.display_name || user.username || "?").slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium text-sm">
+                      {user.display_name || user.username || `Explorer #${user.user_id.slice(-4)}`}
+                    </p>
+                    {user.username && user.display_name && (
+                      <p className="text-xs text-muted-foreground">@{user.username}</p>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </Card>
+        )}
+      </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
