@@ -109,11 +109,7 @@ export default function Leaderboard() {
   };
 
   const handleUserClick = (entry: LeaderboardEntry) => {
-    if (entry.user_id === currentUserId) {
-      navigate('/profile');
-    } else {
-      navigate(`/explorer?share=${entry.user_id.slice(-8)}`);
-    }
+    navigate(`/explorer?share=${entry.user_id.slice(-8)}`);
   };
 
   const getRankIcon = (rank: number) => {
