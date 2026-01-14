@@ -236,33 +236,30 @@ export default function PublicProfile() {
     enabled: !!profileUserId,
   });
 
-  // Fetch species count
+  // Fetch species count using RPC function (bypasses RLS)
   const { data: speciesCount = 0 } = useQuery({
     queryKey: ["publicSpeciesCount", profileUserId],
     queryFn: async () => {
       if (!profileUserId) return 0;
-      const { count, error } = await supabase
-        .from("species_identifications")
-        .select("*", { count: "exact", head: true })
-        .eq("user_id", profileUserId);
+      const { data, error } = await supabase.rpc("get_user_species_count", {
+        target_user_id: profileUserId,
+      });
       if (error) throw error;
-      return count || 0;
+      return data || 0;
     },
     enabled: !!profileUserId,
   });
 
-  // Fetch unique species count
+  // Fetch unique species count using RPC function (bypasses RLS)
   const { data: uniqueSpeciesCount = 0 } = useQuery({
     queryKey: ["publicUniqueSpecies", profileUserId],
     queryFn: async () => {
       if (!profileUserId) return 0;
-      const { data, error } = await supabase
-        .from("species_identifications")
-        .select("species_name")
-        .eq("user_id", profileUserId);
+      const { data, error } = await supabase.rpc("get_user_unique_species_count", {
+        target_user_id: profileUserId,
+      });
       if (error) throw error;
-      const unique = new Set(data?.map((s) => s.species_name.toLowerCase()));
-      return unique.size;
+      return data || 0;
     },
     enabled: !!profileUserId,
   });

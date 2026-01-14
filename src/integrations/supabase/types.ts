@@ -496,6 +496,14 @@ export type Database = {
         }[]
       }
       get_user_country: { Args: { target_user_id: string }; Returns: string }
+      get_user_species_count: {
+        Args: { target_user_id: string }
+        Returns: number
+      }
+      get_user_unique_species_count: {
+        Args: { target_user_id: string }
+        Returns: number
+      }
       get_worldwide_leaderboard: {
         Args: { limit_count?: number }
         Returns: {
