@@ -496,6 +496,7 @@ export type Database = {
         }[]
       }
       get_user_country: { Args: { target_user_id: string }; Returns: string }
+      get_user_id_by_share_id: { Args: { share_id: string }; Returns: string }
       get_user_species_count: {
         Args: { target_user_id: string }
         Returns: number

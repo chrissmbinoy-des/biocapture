@@ -159,17 +159,12 @@ export default function PublicProfile() {
         return matchedProfile as UserProfile;
       }
       
-      // If no profile found, check species_identifications to see if user exists
-      const { data: species } = await supabase
-        .from("species_identifications")
-        .select("user_id");
+      // If no profile found, use RPC function to find user by share ID (bypasses RLS)
+      const { data: userId } = await supabase.rpc("get_user_id_by_share_id", {
+        share_id: shareId,
+      });
       
-      const matchedSpecies = species?.find(s => 
-        s.user_id.toLowerCase().endsWith(shareId.toLowerCase())
-      );
-      
-      if (matchedSpecies) {
-        const userId = matchedSpecies.user_id;
+      if (userId) {
         setProfileUserId(userId);
         // Return a minimal profile for users without a profile entry
         return {
