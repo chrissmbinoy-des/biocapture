@@ -507,31 +507,28 @@ export default function Profile() {
   };
 
   const handleSaveProfile = async () => {
-    if (!userId || !userProfile) return;
+    if (!userId) return;
     
     setSavingProfile(true);
     try {
-      const { error } = await supabase
+      const profileData = {
+        user_id: userId,
+        display_name: editDisplayName.trim() || null,
+        bio: editBio.trim() || null,
+        country: editCountry || userProfile?.country || null,
+        avatar_url: editAvatarUrl || userProfile?.avatar_url || null,
+        display_badges: selectedBadges.length > 0 ? selectedBadges : null,
+      };
+
+      const { data, error } = await supabase
         .from("user_profiles")
-        .update({
-          display_name: editDisplayName.trim() || null,
-          bio: editBio.trim() || null,
-          country: editCountry || userProfile.country,
-          avatar_url: editAvatarUrl || userProfile.avatar_url,
-          display_badges: selectedBadges.length > 0 ? selectedBadges : null,
-        })
-        .eq("user_id", userId);
+        .upsert(profileData, { onConflict: "user_id" })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      setUserProfile({
-        ...userProfile,
-        display_name: editDisplayName.trim() || null,
-        bio: editBio.trim() || null,
-        country: editCountry || userProfile.country,
-        avatar_url: editAvatarUrl || userProfile.avatar_url,
-        display_badges: selectedBadges.length > 0 ? selectedBadges : null,
-      });
+      setUserProfile(data as UserProfile);
       
       // Invalidate queries to refresh data
       queryClient.invalidateQueries({ queryKey: ["userBadgesDetails"] });

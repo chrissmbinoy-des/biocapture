@@ -142,27 +142,34 @@ export default function PublicProfile() {
     queryFn: async () => {
       if (!shareId) return null;
       
-      // First try to find in user_profiles
+      // First try to find in user_profiles - filter by checking if user_id ends with shareId
       const { data: profiles, error } = await supabase
         .from("user_profiles")
-        .select("*")
-        .ilike("user_id", `%${shareId}`);
+        .select("*");
 
       if (error) throw error;
-      if (profiles && profiles.length > 0) {
-        setProfileUserId(profiles[0].user_id);
-        return profiles[0] as UserProfile;
+      
+      // Find profile where user_id ends with the shareId
+      const matchedProfile = profiles?.find(p => 
+        p.user_id.toLowerCase().endsWith(shareId.toLowerCase())
+      );
+      
+      if (matchedProfile) {
+        setProfileUserId(matchedProfile.user_id);
+        return matchedProfile as UserProfile;
       }
       
       // If no profile found, check species_identifications to see if user exists
       const { data: species } = await supabase
         .from("species_identifications")
-        .select("user_id")
-        .ilike("user_id", `%${shareId}`)
-        .limit(1);
+        .select("user_id");
       
-      if (species && species.length > 0) {
-        const userId = species[0].user_id;
+      const matchedSpecies = species?.find(s => 
+        s.user_id.toLowerCase().endsWith(shareId.toLowerCase())
+      );
+      
+      if (matchedSpecies) {
+        const userId = matchedSpecies.user_id;
         setProfileUserId(userId);
         // Return a minimal profile for users without a profile entry
         return {
