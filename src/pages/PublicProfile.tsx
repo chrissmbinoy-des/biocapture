@@ -570,30 +570,6 @@ export default function PublicProfile() {
         </div>
       </div>
 
-      {/* Badges Section */}
-      <div className="max-w-lg mx-auto px-4 mt-6">
-        <h2 className="text-lg font-semibold mb-3">Earned Badges</h2>
-        {allUserBadges.length === 0 ? (
-          <Card className="p-6 text-center border-dashed">
-            <Award className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">No badges earned yet</p>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-4 gap-3">
-            {allUserBadges.map((ub) => (
-              <Card key={ub.id} className="p-3 text-center">
-                <BadgeProgressCircle
-                  icon={getBadgeIcon(ub.badges.icon)}
-                  progress={1}
-                  isEarned={true}
-                  size="md"
-                />
-                <p className="text-xs font-medium mt-2 truncate">{ub.badges.name}</p>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
 
       {/* CTA */}
       <div className="max-w-lg mx-auto px-4 mt-8">
