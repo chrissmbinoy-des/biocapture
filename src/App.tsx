@@ -31,6 +31,7 @@ const CoinShop = lazy(() => import("./pages/CoinShop"));
 const Profile = lazy(() => import("./pages/Profile"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const Feed = lazy(() => import("./pages/Feed"));
+const AIAssistant = lazy(() => import("./pages/AIAssistant"));
 
 // Optimized QueryClient with stale time to reduce refetches
 const queryClient = new QueryClient({
@@ -72,7 +73,7 @@ const App = () => (
               <Route path="/fish" element={<Fishes />} />
               <Route path="/amphibians" element={<Amphibians />} />
               <Route path="/other-organisms" element={<OtherOrganisms />} />
-            <Route path="/locations" element={<Locations />} />
+              <Route path="/ai-assistant" element={<AIAssistant />} />
             <Route path="/daily-challenges" element={<DailyChallenges />} />
               <Route path="/badges" element={<Badges />} />
               <Route path="/easter-eggs" element={<EasterEggs />} />
