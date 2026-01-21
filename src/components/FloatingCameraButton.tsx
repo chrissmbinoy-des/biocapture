@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 export function FloatingCameraButton() {
   const location = useLocation();
   
-  // Don't show on camera page (Index)
-  if (location.pathname === "/") {
+  // Don't show on camera page (Index) or AI Assistant
+  if (location.pathname === "/" || location.pathname === "/ai-assistant") {
     return null;
   }
 
