@@ -11,11 +11,56 @@ serve(async (req) => {
   }
 
   try {
-    const { messages } = await req.json();
+    const { messages, audioBase64 } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
+    }
+
+    // Build the messages array
+    const aiMessages: any[] = [
+      { 
+        role: "system", 
+        content: `You are a helpful AI assistant for a species identification app called Species Identifier. 
+You help users learn about wildlife, plants, insects, and other organisms. 
+You can answer questions about:
+- Species identification tips
+- Animal behavior and habitats
+- Plant care and identification
+- Conservation and ecology
+- The app's features and how to use them
+
+When users share audio recordings, analyze them to identify species by their sounds (bird calls, frog croaks, insect chirps, etc.).
+Provide the species name, scientific name if known, and interesting facts about the species.
+
+Keep your responses friendly, informative, and concise. Use emojis occasionally to make responses engaging.`
+      },
+    ];
+
+    // Add previous messages
+    if (messages && messages.length > 0) {
+      aiMessages.push(...messages);
+    }
+
+    // If there's audio, add it as a user message with audio content
+    if (audioBase64) {
+      aiMessages.push({
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: "Please identify the species in this audio recording. What animal or creature is making this sound?"
+          },
+          {
+            type: "input_audio",
+            input_audio: {
+              data: audioBase64,
+              format: "wav"
+            }
+          }
+        ]
+      });
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -25,23 +70,8 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { 
-            role: "system", 
-            content: `You are a helpful AI assistant for a species identification app called Species Identifier. 
-You help users learn about wildlife, plants, insects, and other organisms. 
-You can answer questions about:
-- Species identification tips
-- Animal behavior and habitats
-- Plant care and identification
-- Conservation and ecology
-- The app's features and how to use them
-
-Keep your responses friendly, informative, and concise. Use emojis occasionally to make responses engaging.`
-          },
-          ...messages,
-        ],
+        model: "google/gemini-2.5-flash",
+        messages: aiMessages,
         stream: true,
       }),
     });
