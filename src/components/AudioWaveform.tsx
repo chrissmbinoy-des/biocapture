@@ -5,6 +5,25 @@ interface AudioWaveformProps {
   analyserNode: AnalyserNode | null;
 }
 
+// Convert CSS variable HSL format (space-separated) to Canvas-compatible format (comma-separated)
+function parseHslVariable(hslValue: string): string {
+  // hslValue is like "222.2 47.4% 11.2%"
+  const parts = hslValue.trim().split(/\s+/);
+  if (parts.length >= 3) {
+    return `hsl(${parts[0]}, ${parts[1]}, ${parts[2]})`;
+  }
+  // Fallback to a safe color
+  return "hsl(142, 76%, 36%)";
+}
+
+function parseHslaVariable(hslValue: string, alpha: number): string {
+  const parts = hslValue.trim().split(/\s+/);
+  if (parts.length >= 3) {
+    return `hsla(${parts[0]}, ${parts[1]}, ${parts[2]}, ${alpha})`;
+  }
+  return `hsla(142, 76%, 36%, ${alpha})`;
+}
+
 export default function AudioWaveform({ isRecording, analyserNode }: AudioWaveformProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
@@ -23,13 +42,13 @@ export default function AudioWaveform({ isRecording, analyserNode }: AudioWavefo
 
     // Get computed colors from CSS variables
     const computedStyle = getComputedStyle(document.documentElement);
-    const primaryColor = computedStyle.getPropertyValue("--primary").trim();
-    const bgColor = computedStyle.getPropertyValue("--background").trim();
+    const primaryValue = computedStyle.getPropertyValue("--primary").trim();
+    const bgValue = computedStyle.getPropertyValue("--background").trim();
 
-    // Parse HSL values and create valid color strings
-    const primaryHsl = `hsl(${primaryColor})`;
-    const primaryHslFaded = `hsla(${primaryColor}, 0.3)`;
-    const bgHsl = `hsl(${bgColor})`;
+    // Convert to Canvas-compatible colors
+    const primaryHsl = parseHslVariable(primaryValue);
+    const primaryHslFaded = parseHslaVariable(primaryValue, 0.3);
+    const bgHsl = parseHslVariable(bgValue);
 
     const bufferLength = analyserNode.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
