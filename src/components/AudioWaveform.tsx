@@ -21,6 +21,16 @@ export default function AudioWaveform({ isRecording, analyserNode }: AudioWavefo
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    // Get computed colors from CSS variables
+    const computedStyle = getComputedStyle(document.documentElement);
+    const primaryColor = computedStyle.getPropertyValue("--primary").trim();
+    const bgColor = computedStyle.getPropertyValue("--background").trim();
+
+    // Parse HSL values and create valid color strings
+    const primaryHsl = `hsl(${primaryColor})`;
+    const primaryHslFaded = `hsla(${primaryColor}, 0.3)`;
+    const bgHsl = `hsl(${bgColor})`;
+
     const bufferLength = analyserNode.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
 
@@ -30,7 +40,7 @@ export default function AudioWaveform({ isRecording, analyserNode }: AudioWavefo
       animationRef.current = requestAnimationFrame(draw);
       analyserNode.getByteFrequencyData(dataArray);
 
-      ctx.fillStyle = "hsl(var(--background))";
+      ctx.fillStyle = bgHsl;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const barWidth = (canvas.width / bufferLength) * 2.5;
@@ -41,8 +51,8 @@ export default function AudioWaveform({ isRecording, analyserNode }: AudioWavefo
 
         // Create gradient effect with primary color
         const gradient = ctx.createLinearGradient(0, canvas.height - barHeight, 0, canvas.height);
-        gradient.addColorStop(0, "hsl(var(--primary))");
-        gradient.addColorStop(1, "hsl(var(--primary) / 0.3)");
+        gradient.addColorStop(0, primaryHsl);
+        gradient.addColorStop(1, primaryHslFaded);
 
         ctx.fillStyle = gradient;
         ctx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
