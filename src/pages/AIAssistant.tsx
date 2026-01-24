@@ -1,15 +1,18 @@
-import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Loader2, Mic, MicOff, Plus, MessageSquare, Trash2 } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Send, Bot, User, Loader2, Mic, MicOff, Plus, MessageSquare, Trash2, Save, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import AudioWaveform from "@/components/AudioWaveform";
 
 type Message = {
   role: "user" | "assistant";
   content: string;
+  isAudioIdentification?: boolean;
+  savedToCollection?: boolean;
 };
 
 type Conversation = {
@@ -31,6 +34,9 @@ export default function AIAssistant() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const [analyserNode, setAnalyserNode] = useState<AnalyserNode | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -237,6 +243,17 @@ export default function AIAssistant() {
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      
+      // Set up audio context and analyser for waveform
+      const audioContext = new AudioContext();
+      const analyser = audioContext.createAnalyser();
+      const source = audioContext.createMediaStreamSource(stream);
+      analyser.fftSize = 256;
+      source.connect(analyser);
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+      setAnalyserNode(analyser);
+
       const mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/webm" });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
@@ -250,6 +267,15 @@ export default function AIAssistant() {
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         stream.getTracks().forEach((track) => track.stop());
+        
+        // Clean up audio context
+        if (audioContextRef.current) {
+          audioContextRef.current.close();
+          audioContextRef.current = null;
+        }
+        analyserRef.current = null;
+        setAnalyserNode(null);
+        
         await processAudio(audioBlob);
       };
 
@@ -276,6 +302,99 @@ export default function AIAssistant() {
     }
   };
 
+  // Parse species info from AI response for saving to collection
+  const parseSpeciesFromResponse = (content: string): { speciesName: string; scientificName?: string; kingdom: string; description?: string } | null => {
+    // Look for patterns like "Species: X" or "I identified this as X"
+    const speciesPatterns = [
+      /(?:species|identified|recognize|detected|hearing|sounds like)[:\s]+(?:a\s+)?([A-Z][a-z]+(?:\s+[a-z]+)?)/i,
+      /(?:This (?:is|sounds like)(?: a| an)?)\s+([A-Z][a-z]+(?:\s+[a-z]+)?)/i,
+      /\*\*([A-Z][a-z]+(?:\s+[a-z]+)?)\*\*/,
+    ];
+
+    for (const pattern of speciesPatterns) {
+      const match = content.match(pattern);
+      if (match && match[1]) {
+        const speciesName = match[1].trim();
+        
+        // Try to find scientific name
+        const scientificMatch = content.match(/\(([A-Z][a-z]+\s+[a-z]+)\)/);
+        
+        // Determine kingdom based on common patterns
+        let kingdom = "other";
+        const lowerContent = content.toLowerCase();
+        if (lowerContent.includes("bird") || lowerContent.includes("avian") || lowerContent.includes("song")) kingdom = "bird";
+        else if (lowerContent.includes("mammal") || lowerContent.includes("canine") || lowerContent.includes("feline")) kingdom = "mammal";
+        else if (lowerContent.includes("insect") || lowerContent.includes("cricket") || lowerContent.includes("cicada")) kingdom = "insect";
+        else if (lowerContent.includes("frog") || lowerContent.includes("toad") || lowerContent.includes("amphibian")) kingdom = "amphibian";
+        else if (lowerContent.includes("reptile") || lowerContent.includes("lizard") || lowerContent.includes("snake")) kingdom = "reptile";
+
+        return {
+          speciesName,
+          scientificName: scientificMatch?.[1],
+          kingdom,
+          description: content.slice(0, 500),
+        };
+      }
+    }
+    return null;
+  };
+
+  // Save species to collection
+  const saveToCollection = useCallback(async (messageIndex: number) => {
+    const message = messages[messageIndex];
+    if (!message || message.role !== "assistant") return;
+
+    const speciesInfo = parseSpeciesFromResponse(message.content);
+    if (!speciesInfo) {
+      toast({
+        title: "Cannot save",
+        description: "Could not identify species information from this response.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: "Not logged in",
+          description: "Please log in to save species to your collection.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { error } = await supabase.from("species_identifications").insert({
+        user_id: user.id,
+        species_name: speciesInfo.speciesName,
+        scientific_name: speciesInfo.scientificName || null,
+        kingdom: speciesInfo.kingdom,
+        description: speciesInfo.description,
+        confidence: 70, // Default confidence for audio identification
+      });
+
+      if (error) throw error;
+
+      // Mark message as saved
+      setMessages(prev => prev.map((m, i) => 
+        i === messageIndex ? { ...m, savedToCollection: true } : m
+      ));
+
+      toast({
+        title: "Saved to collection!",
+        description: `${speciesInfo.speciesName} has been added to your species collection.`,
+      });
+    } catch (error) {
+      console.error("Error saving to collection:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save species to collection.",
+        variant: "destructive",
+      });
+    }
+  }, [messages, toast]);
+
   const processAudio = async (audioBlob: Blob) => {
     setIsLoading(true);
     
@@ -301,9 +420,15 @@ export default function AIAssistant() {
 
       const assistantContent = await streamChat(messages, base64);
       
-      // Save assistant message
+      // Save assistant message and mark as audio identification
       if (assistantContent) {
         await saveMessage.mutateAsync({ conversationId: convId, role: "assistant", content: assistantContent });
+        // Mark the last message as an audio identification result
+        setMessages(prev => prev.map((m, i) => 
+          i === prev.length - 1 && m.role === "assistant" 
+            ? { ...m, isAudioIdentification: true } 
+            : m
+        ));
       }
     } catch (error) {
       console.error("Audio processing error:", error);
@@ -442,14 +567,37 @@ export default function AIAssistant() {
                         <Bot className="h-4 w-4 text-primary" />
                       </div>
                     )}
-                    <div
-                      className={`rounded-2xl px-4 py-2 max-w-[80%] ${
-                        message.role === "user"
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted"
-                      }`}
-                    >
-                      <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+                    <div className="flex flex-col gap-2 max-w-[80%]">
+                      <div
+                        className={`rounded-2xl px-4 py-2 ${
+                          message.role === "user"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted"
+                        }`}
+                      >
+                        <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+                      </div>
+                      {message.role === "assistant" && message.isAudioIdentification && (
+                        <Button
+                          variant={message.savedToCollection ? "secondary" : "outline"}
+                          size="sm"
+                          className="self-start gap-2"
+                          onClick={() => saveToCollection(index)}
+                          disabled={message.savedToCollection}
+                        >
+                          {message.savedToCollection ? (
+                            <>
+                              <Check className="h-3 w-3" />
+                              Saved
+                            </>
+                          ) : (
+                            <>
+                              <Save className="h-3 w-3" />
+                              Save to Collection
+                            </>
+                          )}
+                        </Button>
+                      )}
                     </div>
                     {message.role === "user" && (
                       <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center shrink-0">
@@ -472,6 +620,12 @@ export default function AIAssistant() {
             )}
           </ScrollArea>
 
+          {isRecording && (
+            <div className="p-4 border-t">
+              <AudioWaveform isRecording={isRecording} analyserNode={analyserNode} />
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="p-4 border-t bg-background">
             <div className="flex gap-2">
               <Button
@@ -480,6 +634,7 @@ export default function AIAssistant() {
                 size="icon"
                 onClick={isRecording ? stopRecording : startRecording}
                 disabled={isLoading}
+                className={isRecording ? "animate-pulse" : ""}
               >
                 {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
               </Button>
