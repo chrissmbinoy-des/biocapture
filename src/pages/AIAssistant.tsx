@@ -7,10 +7,12 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import AudioWaveform from "@/components/AudioWaveform";
+import AudioPlayer from "@/components/AudioPlayer";
 
 type Message = {
   role: "user" | "assistant";
   content: string;
+  audioUrl?: string;
   isAudioIdentification?: boolean;
   savedToCollection?: boolean;
 };
@@ -44,6 +46,9 @@ export default function AIAssistant() {
   const { data: conversations = [] } = useQuery({
     queryKey: ["chat-conversations"],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return [];
+      
       const { data, error } = await supabase
         .from("chat_conversations")
         .select("*")
@@ -64,7 +69,19 @@ export default function AIAssistant() {
         .eq("conversation_id", currentConversationId)
         .order("created_at", { ascending: true });
       if (error) throw error;
-      return data.map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
+      
+      // Map messages and detect audio identification responses
+      return data.map((m, idx) => {
+        const hasAudioBefore = data.slice(0, idx).some(
+          (prev) => prev.role === "user" && prev.audio_url
+        );
+        return {
+          role: m.role as "user" | "assistant",
+          content: m.content,
+          audioUrl: m.audio_url || undefined,
+          isAudioIdentification: m.role === "assistant" && hasAudioBefore,
+        };
+      });
     },
     enabled: !!currentConversationId,
   });
@@ -97,10 +114,20 @@ export default function AIAssistant() {
 
   // Save message mutation
   const saveMessage = useMutation({
-    mutationFn: async ({ conversationId, role, content }: { conversationId: string; role: string; content: string }) => {
+    mutationFn: async ({ conversationId, role, content, audioUrl }: { 
+      conversationId: string; 
+      role: string; 
+      content: string;
+      audioUrl?: string;
+    }) => {
       const { error } = await supabase
         .from("chat_messages")
-        .insert({ conversation_id: conversationId, role, content });
+        .insert({ 
+          conversation_id: conversationId, 
+          role, 
+          content,
+          audio_url: audioUrl 
+        });
       if (error) throw error;
       
       // Update conversation's updated_at
@@ -134,6 +161,33 @@ export default function AIAssistant() {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Upload audio to storage
+  const uploadAudio = async (audioBlob: Blob): Promise<string | null> => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const fileName = `${user.id}/${Date.now()}.webm`;
+      const { data, error } = await supabase.storage
+        .from("audio-recordings")
+        .upload(fileName, audioBlob, {
+          contentType: "audio/webm",
+          upsert: false,
+        });
+
+      if (error) throw error;
+
+      const { data: urlData } = supabase.storage
+        .from("audio-recordings")
+        .getPublicUrl(data.path);
+
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error("Error uploading audio:", error);
+      return null;
+    }
+  };
 
   const streamChat = async (userMessages: Message[], audioBase64?: string) => {
     const resp = await fetch(CHAT_URL, {
@@ -397,13 +451,20 @@ export default function AIAssistant() {
 
   const processAudio = async (audioBlob: Blob) => {
     setIsLoading(true);
-    
-    const userMessage: Message = { role: "user", content: "🎤 [Audio recording for species identification]" };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
 
     try {
-      // Convert to base64
+      // Upload audio to storage first
+      const audioUrl = await uploadAudio(audioBlob);
+      
+      const userMessage: Message = { 
+        role: "user", 
+        content: "🎤 Audio recording for species identification",
+        audioUrl: audioUrl || undefined,
+      };
+      const newMessages = [...messages, userMessage];
+      setMessages(newMessages);
+
+      // Convert to base64 for AI processing
       const arrayBuffer = await audioBlob.arrayBuffer();
       const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
 
@@ -415,8 +476,13 @@ export default function AIAssistant() {
         setCurrentConversationId(convId);
       }
 
-      // Save user message
-      await saveMessage.mutateAsync({ conversationId: convId, role: "user", content: userMessage.content });
+      // Save user message with audio URL
+      await saveMessage.mutateAsync({ 
+        conversationId: convId, 
+        role: "user", 
+        content: userMessage.content,
+        audioUrl: audioUrl || undefined,
+      });
 
       const assistantContent = await streamChat(messages, base64);
       
@@ -576,6 +642,11 @@ export default function AIAssistant() {
                         }`}
                       >
                         <p className="whitespace-pre-wrap text-sm">{message.content}</p>
+                        {message.audioUrl && (
+                          <div className="mt-2">
+                            <AudioPlayer audioUrl={message.audioUrl} />
+                          </div>
+                        )}
                       </div>
                       {message.role === "assistant" && message.isAudioIdentification && (
                         <Button
@@ -645,15 +716,14 @@ export default function AIAssistant() {
                 disabled={isLoading || isRecording}
                 className="flex-1"
               />
-              <Button type="submit" disabled={isLoading || !input.trim() || isRecording} size="icon">
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              <Button type="submit" disabled={isLoading || !input.trim()}>
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Send className="h-4 w-4" />
+                )}
               </Button>
             </div>
-            {isRecording && (
-              <p className="text-xs text-center text-destructive mt-2 animate-pulse">
-                🔴 Recording... Tap microphone to stop
-              </p>
-            )}
           </form>
         </>
       )}
