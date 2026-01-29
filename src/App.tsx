@@ -12,7 +12,7 @@ const Auth = lazy(() => import("./pages/Auth"));
 const Species = lazy(() => import("./pages/Species"));
 const Locations = lazy(() => import("./pages/Locations"));
 const Badges = lazy(() => import("./pages/Badges"));
-const EasterEggs = lazy(() => import("./pages/EasterEggs"));
+
 const Collection = lazy(() => import("./pages/Collection"));
 const Install = lazy(() => import("./pages/Install"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -76,7 +76,6 @@ const App = () => (
               <Route path="/ai-assistant" element={<AIAssistant />} />
             <Route path="/daily-challenges" element={<DailyChallenges />} />
               <Route path="/badges" element={<Badges />} />
-              <Route path="/easter-eggs" element={<EasterEggs />} />
               <Route path="/collection" element={<Collection />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/login-streak" element={<LoginStreak />} />
