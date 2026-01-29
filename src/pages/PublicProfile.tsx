@@ -560,20 +560,6 @@ export default function PublicProfile() {
           </div>
         </div>
       </div>
-
-
-      {/* CTA */}
-      <div className="max-w-lg mx-auto px-4 mt-8">
-        <Card className="p-6 text-center bg-gradient-to-br from-primary/5 to-accent/10">
-          <h3 className="font-semibold mb-2">Want to explore nature too?</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Join thousands of explorers identifying species around the world!
-          </p>
-          <Link to="/auth">
-            <Button>Get Started</Button>
-          </Link>
-        </Card>
-      </div>
     </div>
   );
 }
