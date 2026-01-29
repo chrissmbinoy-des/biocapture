@@ -712,7 +712,6 @@ export default function Profile() {
                   {streakData.current_streak} day streak
                 </Badge>
               )}
-              {countryData?.rank && getRankBadge(countryData.rank, "country")}
             </div>
 
             {/* 3 Badge Circles */}

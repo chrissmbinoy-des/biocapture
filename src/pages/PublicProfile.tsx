@@ -469,7 +469,7 @@ export default function PublicProfile() {
                 <p className="text-sm text-muted-foreground">{getUsername()}</p>
               )}
 
-              {/* Streak and Country Rank */}
+              {/* Streak */}
               <div className="flex items-center gap-2 flex-wrap mt-2">
                 {streakData && streakData.current_streak > 0 && (
                   <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/30">
@@ -477,7 +477,6 @@ export default function PublicProfile() {
                     {streakData.current_streak} day streak
                   </Badge>
                 )}
-                {countryData?.rank && getRankBadge(countryData.rank, "country")}
               </div>
 
               {/* 3 Badge Circles */}
