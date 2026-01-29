@@ -694,6 +694,9 @@ export default function Profile() {
               <Button variant="ghost" size="icon" className="h-6 w-6" onClick={openEditDialog}>
                 <Edit2 className="h-3.5 w-3.5" />
               </Button>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsShareDialogOpen(true)}>
+                <Share2 className="h-3.5 w-3.5" />
+              </Button>
             </div>
 
             {/* Title and Streak */}
@@ -766,53 +769,42 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-2 mt-4">
-          <Button variant="outline" size="sm" className="flex-1" onClick={openEditDialog}>
-            <Edit2 className="h-4 w-4 mr-2" />
-            Edit Profile
-          </Button>
-          <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="default" size="sm" className="flex-1">
-                <Share2 className="h-4 w-4 mr-2" />
-                Share Profile
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Share Your Profile</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-3 pt-4">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => shareProfile("twitter")}
-                >
-                  <Twitter className="h-5 w-5 mr-3 text-[#1DA1F2]" />
-                  Share on Twitter
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => shareProfile("facebook")}
-                >
-                  <Facebook className="h-5 w-5 mr-3 text-[#4267B2]" />
-                  Share on Facebook
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={() => shareProfile("copy")}
-                >
-                  <Copy className="h-5 w-5 mr-3" />
-                  Copy Profile Link
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
       </div>
+
+      {/* Share Profile Dialog */}
+      <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Share Your Profile</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 pt-4">
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => shareProfile("twitter")}
+            >
+              <Twitter className="h-5 w-5 mr-3 text-[#1DA1F2]" />
+              Share on Twitter
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => shareProfile("facebook")}
+            >
+              <Facebook className="h-5 w-5 mr-3 text-[#4267B2]" />
+              Share on Facebook
+            </Button>
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => shareProfile("copy")}
+            >
+              <Copy className="h-5 w-5 mr-3" />
+              Copy Profile Link
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Profile Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
