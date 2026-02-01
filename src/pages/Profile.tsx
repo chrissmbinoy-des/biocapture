@@ -8,14 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -78,6 +76,7 @@ import {
 } from "lucide-react";
 
 import { BadgeProgressCircle } from "@/components/BadgeProgressCircle";
+import { ProfileThemeWrapper, getFrameStyles } from "@/components/ProfileThemeWrapper";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
 import type { Json } from "@/integrations/supabase/types";
@@ -428,7 +427,8 @@ export default function Profile() {
 
   const handleEquip = (item: ShopItem) => {
     const metadata = item.metadata as Record<string, unknown>;
-    const itemType = (metadata?.item_type as string) || item.category;
+    // Use 'type' key from metadata (e.g., 'theme', 'frame', 'title') or fallback to category
+    const itemType = (metadata?.type as string) || item.category;
 
     const newEquipped = { ...equipped, [itemType]: item.id };
     setEquipped(newEquipped);
@@ -577,7 +577,33 @@ export default function Profile() {
   const getEquippedTitle = () => {
     if (equipped.title) {
       const purchase = purchases.find((p) => p.item_id === equipped.title);
+      if (purchase?.shop_items?.metadata) {
+        const meta = purchase.shop_items.metadata as Record<string, unknown>;
+        return (meta.value as string) || purchase.shop_items.name;
+      }
       return purchase?.shop_items?.name;
+    }
+    return null;
+  };
+
+  const getEquippedTheme = (): string | null => {
+    if (equipped.theme) {
+      const purchase = purchases.find((p) => p.item_id === equipped.theme);
+      if (purchase?.shop_items?.metadata) {
+        const meta = purchase.shop_items.metadata as Record<string, unknown>;
+        return (meta.style as string) || null;
+      }
+    }
+    return null;
+  };
+
+  const getEquippedFrame = (): string | null => {
+    if (equipped.frame) {
+      const purchase = purchases.find((p) => p.item_id === equipped.frame);
+      if (purchase?.shop_items?.metadata) {
+        const meta = purchase.shop_items.metadata as Record<string, unknown>;
+        return (meta.style as string) || null;
+      }
     }
     return null;
   };
@@ -666,14 +692,17 @@ export default function Profile() {
     );
   }
 
+  const equippedTheme = getEquippedTheme();
+  const equippedFrame = getEquippedFrame();
+
   return (
     <div className="pb-20">
       {/* Profile Header */}
-      <div className="bg-gradient-to-br from-primary/5 to-accent/10 px-4 pt-6 pb-4">
+      <ProfileThemeWrapper theme={equippedTheme} className="px-4 pt-6 pb-4">
         <div className="flex items-start gap-4">
           {/* Profile Picture with Rank Badges */}
           <div className="relative">
-            <Avatar className="h-20 w-20 border-2 border-primary">
+            <Avatar className={`h-20 w-20 ${getFrameStyles(equippedFrame)}`}>
               {userProfile?.avatar_url && (
                 <AvatarImage src={userProfile.avatar_url} alt={getExplorerName()} />
               )}
@@ -768,7 +797,7 @@ export default function Profile() {
           </div>
         </div>
 
-      </div>
+      </ProfileThemeWrapper>
 
       {/* Share Profile Dialog */}
       <Dialog open={isShareDialogOpen} onOpenChange={setIsShareDialogOpen}>
@@ -993,7 +1022,7 @@ export default function Profile() {
                     }`}
                     onClick={() => {
                       const metadata = item.metadata as Record<string, unknown>;
-                      const itemType = (metadata?.item_type as string) || item.category;
+                      const itemType = (metadata?.type as string) || item.category;
                       isItemEquipped ? handleUnequip(itemType) : handleEquip(item);
                     }}
                   >

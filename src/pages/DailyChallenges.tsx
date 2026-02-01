@@ -84,6 +84,32 @@ const DailyChallenges = () => {
     enabled: !!userId,
   });
 
+  // Check for extra challenge boost
+  const { data: extraChallengeCount = 0 } = useQuery({
+    queryKey: ["extraChallengeBoost", userId],
+    queryFn: async () => {
+      if (!userId) return 0;
+      const { data: purchases } = await supabase
+        .from("user_purchases")
+        .select("*, shop_items(*)")
+        .eq("user_id", userId)
+        .eq("is_active", true);
+      
+      let extraCount = 0;
+      if (purchases) {
+        for (const purchase of purchases) {
+          const metadata = purchase.shop_items?.metadata as Record<string, unknown>;
+          const boostType = (metadata?.type as string) || "";
+          if (boostType === "extra_challenge") {
+            extraCount += (metadata?.count as number) || 1;
+          }
+        }
+      }
+      return extraCount;
+    },
+    enabled: !!userId,
+  });
+
   // Generate daily challenges mutation
   const generateChallenges = useMutation({
     mutationFn: async () => {
@@ -98,11 +124,24 @@ const DailyChallenges = () => {
         .eq("user_id", userId)
         .eq("challenge_date", today);
 
-      if (existing && existing.length >= 3) return;
+      // Base challenges = 3, plus any extra from boosts
+      const totalChallenges = 3 + extraChallengeCount;
+      
+      if (existing && existing.length >= totalChallenges) return;
 
-      // Pick 3 random templates
-      const shuffled = [...templates].sort(() => Math.random() - 0.5);
-      const selected = shuffled.slice(0, 3);
+      // If we need to add more challenges due to boost
+      const existingCount = existing?.length || 0;
+      const challengesToAdd = totalChallenges - existingCount;
+      
+      if (challengesToAdd <= 0) return;
+
+      // Pick random templates (avoiding duplicates if possible)
+      const existingTemplateIds = new Set(userChallenges.map(uc => uc.challenge_template_id));
+      const availableTemplates = templates.filter(t => !existingTemplateIds.has(t.id));
+      const shuffled = availableTemplates.length >= challengesToAdd 
+        ? [...availableTemplates].sort(() => Math.random() - 0.5)
+        : [...templates].sort(() => Math.random() - 0.5);
+      const selected = shuffled.slice(0, challengesToAdd);
 
       // Insert challenges
       const challengesToInsert = selected.map((t) => ({
@@ -119,6 +158,28 @@ const DailyChallenges = () => {
 
       if (error) throw error;
 
+      // Mark extra challenge boosts as used
+      if (extraChallengeCount > 0) {
+        const { data: purchases } = await supabase
+          .from("user_purchases")
+          .select("*, shop_items(*)")
+          .eq("user_id", userId)
+          .eq("is_active", true);
+        
+        if (purchases) {
+          for (const purchase of purchases) {
+            const metadata = purchase.shop_items?.metadata as Record<string, unknown>;
+            const boostType = (metadata?.type as string) || "";
+            if (boostType === "extra_challenge") {
+              await supabase
+                .from("user_purchases")
+                .update({ is_active: false })
+                .eq("id", purchase.id);
+            }
+          }
+        }
+      }
+
       // Initialize coins if not exists
       const { data: coinData } = await supabase
         .from("user_coins")
@@ -133,6 +194,7 @@ const DailyChallenges = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["userDailyChallenges"] });
       queryClient.invalidateQueries({ queryKey: ["userCoins"] });
+      queryClient.invalidateQueries({ queryKey: ["extraChallengeBoost"] });
     },
     onError: () => {
       toast({
