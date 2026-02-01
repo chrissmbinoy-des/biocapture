@@ -143,27 +143,80 @@ export default function LoginStreak() {
             });
           }
         } else {
-          // Streak broken - reset to 1
-          await supabase
-            .from("login_streaks")
-            .update({
+          // Streak broken - check for streak shield
+          let streakProtected = false;
+          
+          try {
+            const { data: purchases } = await supabase
+              .from("user_purchases")
+              .select("*, shop_items(*)")
+              .eq("user_id", user.id)
+              .eq("is_active", true);
+            
+            if (purchases) {
+              for (const purchase of purchases) {
+                const metadata = purchase.shop_items?.metadata as Record<string, unknown>;
+                const boostType = (metadata?.type as string) || "";
+                if (boostType === "streak_shield") {
+                  // Use the streak shield
+                  streakProtected = true;
+                  
+                  // Deactivate the used shield
+                  await supabase
+                    .from("user_purchases")
+                    .update({ is_active: false })
+                    .eq("id", purchase.id);
+                  
+                  // Update streak without resetting
+                  await supabase
+                    .from("login_streaks")
+                    .update({
+                      last_login_date: today,
+                      updated_at: new Date().toISOString(),
+                    })
+                    .eq("user_id", user.id);
+
+                  setUserStreak({
+                    current_streak: streakData.current_streak,
+                    longest_streak: streakData.longest_streak,
+                    last_login_date: today,
+                  });
+
+                  toast({
+                    title: "🛡️ Streak Shield Activated!",
+                    description: "Your streak was protected! Shield has been consumed.",
+                  });
+                  break;
+                }
+              }
+            }
+          } catch (shieldErr) {
+            console.error("Error checking streak shield:", shieldErr);
+          }
+          
+          if (!streakProtected) {
+            // Reset to 1
+            await supabase
+              .from("login_streaks")
+              .update({
+                current_streak: 1,
+                last_login_date: today,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("user_id", user.id);
+
+            setUserStreak({
               current_streak: 1,
+              longest_streak: streakData.longest_streak,
               last_login_date: today,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("user_id", user.id);
+            });
 
-          setUserStreak({
-            current_streak: 1,
-            longest_streak: streakData.longest_streak,
-            last_login_date: today,
-          });
-
-          toast({
-            title: "Streak Reset",
-            description: "Your streak was reset. Start fresh today!",
-            variant: "destructive",
-          });
+            toast({
+              title: "Streak Reset",
+              description: "Your streak was reset. Start fresh today!",
+              variant: "destructive",
+            });
+          }
         }
       }
     } catch (error) {

@@ -360,7 +360,9 @@ Return ONLY valid JSON in this exact format:
             for (const purchase of activePurchases) {
               if (purchase.shop_items?.category === 'boost') {
                 const metadata = purchase.shop_items.metadata as Record<string, unknown>;
-                if (metadata?.boost_type === 'double_coins') {
+                // Check for both 'type' and 'boost_type' keys for compatibility
+                const boostType = (metadata?.type as string) || (metadata?.boost_type as string);
+                if (boostType === 'double_coins') {
                   // Check if not expired
                   if (!purchase.expires_at || new Date(purchase.expires_at) > new Date(now)) {
                     coinReward *= 2;
@@ -470,7 +472,8 @@ Return ONLY valid JSON in this exact format:
                     for (const purchase of activePurchases) {
                       if (purchase.shop_items?.category === 'boost') {
                         const metadata = purchase.shop_items.metadata as Record<string, unknown>;
-                        if (metadata?.boost_type === 'double_coins') {
+                        const boostType = (metadata?.type as string) || (metadata?.boost_type as string);
+                        if (boostType === 'double_coins') {
                           if (!purchase.expires_at || new Date(purchase.expires_at) > new Date(now)) {
                             challengeReward *= 2;
                             break;

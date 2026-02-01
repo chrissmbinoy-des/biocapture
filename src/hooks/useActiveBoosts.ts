@@ -33,8 +33,10 @@ export const useActiveBoosts = (userId: string | null) => {
           // Check if boost hasn't expired
           if (!purchase.expires_at || new Date(purchase.expires_at) > new Date(now)) {
             const metadata = item.metadata as Record<string, unknown>;
+            // Support both 'type' and 'boost_type' for compatibility
+            const boostType = (metadata?.type as string) || (metadata?.boost_type as string) || "unknown";
             activeBoosts.push({
-              type: metadata?.boost_type as string || "unknown",
+              type: boostType,
               expiresAt: purchase.expires_at,
             });
           }
