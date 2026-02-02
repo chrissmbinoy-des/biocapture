@@ -80,11 +80,78 @@ const categoryColors: Record<string, string> = {
   boost: "text-blue-500",
 };
 
-const rarityColors: Record<string, string> = {
-  common: "border-muted",
-  uncommon: "border-green-500/50",
-  rare: "border-blue-500/50",
-  legendary: "border-amber-500/50 bg-gradient-to-br from-amber-500/10 to-transparent",
+// Item-specific styling based on item name/metadata
+const getItemStyle = (item: ShopItem): { borderClass: string; badgeClass: string; rarityLabel: string } => {
+  const name = item.name.toLowerCase();
+  const meta = item.metadata as Record<string, unknown> | null;
+  const rarity = (meta?.rarity as string) || "";
+
+  // Profile items - specific themes
+  if (name.includes("nature theme")) {
+    return {
+      borderClass: "border-[hsl(var(--theme-nature))]/50 bg-gradient-to-br from-[hsl(var(--theme-nature))]/10 to-transparent",
+      badgeClass: "border-[hsl(var(--theme-nature))] text-[hsl(var(--theme-nature))]",
+      rarityLabel: "nature",
+    };
+  }
+  if (name.includes("ocean theme")) {
+    return {
+      borderClass: "border-[hsl(var(--theme-ocean))]/50 bg-gradient-to-br from-[hsl(var(--theme-ocean))]/10 to-transparent",
+      badgeClass: "border-[hsl(var(--theme-ocean))] text-[hsl(var(--theme-ocean))]",
+      rarityLabel: "ocean",
+    };
+  }
+  if (name.includes("gold explorer")) {
+    return {
+      borderClass: "border-[hsl(var(--rarity-legendary))]/50 bg-gradient-to-br from-[hsl(var(--rarity-legendary))]/10 to-transparent",
+      badgeClass: "border-[hsl(var(--rarity-legendary))] text-[hsl(var(--rarity-legendary))]",
+      rarityLabel: "gold",
+    };
+  }
+  if (name.includes("wildlife champion")) {
+    return {
+      borderClass: "border-[hsl(var(--rarity-legendary))]/50 bg-gradient-to-br from-[hsl(var(--rarity-legendary))]/15 to-transparent",
+      badgeClass: "border-[hsl(var(--rarity-legendary))] text-[hsl(var(--rarity-legendary))]",
+      rarityLabel: "legendary",
+    };
+  }
+  if (name.includes("master explorer")) {
+    return {
+      borderClass: "border-[hsl(var(--rarity-mythic))]/50 bg-gradient-to-br from-[hsl(var(--rarity-mythic))]/15 to-transparent",
+      badgeClass: "border-[hsl(var(--rarity-mythic))] text-[hsl(var(--rarity-mythic))]",
+      rarityLabel: "mythic",
+    };
+  }
+
+  // Badges with rarity metadata
+  if (rarity === "legendary") {
+    return {
+      borderClass: "border-[hsl(var(--rarity-legendary))]/50 bg-gradient-to-br from-[hsl(var(--rarity-legendary))]/10 to-transparent",
+      badgeClass: "border-[hsl(var(--rarity-legendary))] text-[hsl(var(--rarity-legendary))]",
+      rarityLabel: "legendary",
+    };
+  }
+  if (rarity === "rare" || name.includes("golden butterfly") || name.includes("rainbow feather")) {
+    return {
+      borderClass: "border-[hsl(var(--rarity-rare))]/50 bg-gradient-to-br from-[hsl(var(--rarity-rare))]/10 to-transparent",
+      badgeClass: "border-[hsl(var(--rarity-rare))] text-[hsl(var(--rarity-rare))]",
+      rarityLabel: "rare",
+    };
+  }
+  if (rarity === "uncommon") {
+    return {
+      borderClass: "border-green-500/50",
+      badgeClass: "border-green-500 text-green-500",
+      rarityLabel: "uncommon",
+    };
+  }
+
+  // Default - common
+  return {
+    borderClass: "border-muted",
+    badgeClass: "",
+    rarityLabel: "",
+  };
 };
 
 export default function CoinShop() {
@@ -210,27 +277,19 @@ export default function CoinShop() {
     return purchases.some((p) => p.item_id === itemId);
   };
 
-  const getRarity = (item: ShopItem): string => {
-    if (item.metadata && typeof item.metadata === "object" && !Array.isArray(item.metadata)) {
-      const meta = item.metadata as Record<string, unknown>;
-      return (meta.rarity as string) || "common";
-    }
-    return "common";
-  };
-
   const filterItemsByCategory = (category: string) => {
     return items.filter((item) => item.category === category);
   };
 
   const renderItem = (item: ShopItem) => {
     const owned = isOwned(item.id);
-    const rarity = getRarity(item);
     const canAfford = coinBalance >= item.price;
+    const itemStyle = getItemStyle(item);
 
     return (
       <Card
         key={item.id}
-        className={`p-4 border-2 transition-all ${rarityColors[rarity] || ""} ${
+        className={`p-4 border-2 transition-all ${itemStyle.borderClass} ${
           owned ? "opacity-75" : ""
         }`}
       >
@@ -245,29 +304,19 @@ export default function CoinShop() {
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <h3 className="font-semibold text-sm truncate">{item.name}</h3>
-              {rarity !== "common" && (
+              {itemStyle.rarityLabel && (
                 <Badge
                   variant="outline"
-                  className={`text-xs capitalize ${
-                    rarity === "legendary"
-                      ? "border-amber-500 text-amber-500"
-                      : rarity === "rare"
-                      ? "border-blue-500 text-blue-500"
-                      : "border-green-500 text-green-500"
-                  }`}
+                  className={`text-xs capitalize ${itemStyle.badgeClass}`}
                 >
-                  {rarity}
+                  {itemStyle.rarityLabel}
                 </Badge>
               )}
             </div>
             <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
               {item.description}
             </p>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <CoinIcon className="h-4 w-4 text-yellow-500" />
-                <span className="font-bold text-sm">{item.price}</span>
-              </div>
+            <div className="flex items-center justify-end">
               {owned ? (
                 <Badge variant="secondary" className="flex items-center gap-1">
                   <Check className="h-3 w-3" />
@@ -278,12 +327,16 @@ export default function CoinShop() {
                   size="sm"
                   disabled={!canAfford || purchasing === item.id}
                   onClick={() => inititatePurchase(item)}
-                  className="h-8"
+                  className="h-8 flex items-center gap-1.5"
+                  variant={canAfford ? "default" : "secondary"}
                 >
                   {purchasing === item.id ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    "Buy"
+                    <>
+                      <CoinIcon className="h-4 w-4" />
+                      <span className="font-bold">{item.price}</span>
+                    </>
                   )}
                 </Button>
               )}
