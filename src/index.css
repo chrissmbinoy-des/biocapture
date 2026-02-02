@@ -71,6 +71,11 @@ All colors MUST be HSL.
     /* Rarity colors */
     --rarity-rare: 270 70% 55%;
     --rarity-legendary: 45 90% 55%;
+    --rarity-mythic: 0 75% 55%;
+    
+    /* Theme colors */
+    --theme-nature: 142 71% 45%;
+    --theme-ocean: 200 80% 55%;
   }
 
   .dark {
