@@ -77,7 +77,7 @@ const categoryIcons: Record<string, React.ReactNode> = {
 const categoryColors: Record<string, string> = {
   profile: "text-purple-500",
   badge: "text-amber-500",
-  boost: "text-blue-500",
+  boost: "text-[hsl(var(--species-plant))]",
 };
 
 // Item-specific styling based on item name/metadata
