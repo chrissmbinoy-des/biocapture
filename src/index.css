@@ -67,6 +67,10 @@ All colors MUST be HSL.
     
     /* Icon styling */
     --icon-glow: 142 70% 45%;
+    
+    /* Rarity colors */
+    --rarity-rare: 270 70% 55%;
+    --rarity-legendary: 45 90% 55%;
   }
 
   .dark {

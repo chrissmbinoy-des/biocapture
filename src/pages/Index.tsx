@@ -19,6 +19,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
+import { ActiveBoostsIndicator } from "@/components/ActiveBoostsIndicator";
 
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -219,6 +220,9 @@ const Index = () => {
           </header>
 
       <div className="px-4 py-4 pb-20 space-y-4">
+        {/* Active Boosts Indicator */}
+        <ActiveBoostsIndicator userId={session?.user?.id ?? null} />
+
         {!selectedImage && (
           <div className="flex-1 flex flex-col items-center justify-center min-h-[60vh]">
             <p className="text-center text-sm text-muted-foreground mb-8">
