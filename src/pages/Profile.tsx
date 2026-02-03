@@ -76,7 +76,7 @@ import {
 } from "lucide-react";
 
 import { BadgeProgressCircle } from "@/components/BadgeProgressCircle";
-import { ProfileThemeWrapper, getFrameStyles } from "@/components/ProfileThemeWrapper";
+import { ProfileThemeWrapper, getFrameStyles, getTitleStyles } from "@/components/ProfileThemeWrapper";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
 import type { Json } from "@/integrations/supabase/types";
@@ -237,7 +237,7 @@ export default function Profile() {
     fetchProfileData();
   }, []);
 
-  // Fetch species count
+  // Fetch species count (live updated)
   const { data: speciesCount = 0 } = useQuery({
     queryKey: ["speciesCount", userId],
     queryFn: async () => {
@@ -250,9 +250,10 @@ export default function Profile() {
       return count || 0;
     },
     enabled: !!userId,
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
-  // Fetch unique species count
+  // Fetch unique species count (live updated)
   const { data: uniqueSpeciesCount = 0 } = useQuery({
     queryKey: ["uniqueSpeciesCount", userId],
     queryFn: async () => {
@@ -266,6 +267,7 @@ export default function Profile() {
       return unique.size;
     },
     enabled: !!userId,
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // Fetch badges earned with details (for display - limited to selected or first 3)
@@ -288,9 +290,10 @@ export default function Profile() {
       return allBadges.slice(0, 3);
     },
     enabled: !!userId,
+    refetchInterval: 30000, // Live updates every 30 seconds
   });
 
-  // Fetch ALL user badges (for badge selection dialog)
+  // Fetch ALL user badges (for badge selection dialog - live updated)
   const { data: allUserBadges = [] } = useQuery({
     queryKey: ["allUserBadges", userId],
     queryFn: async () => {
@@ -304,9 +307,10 @@ export default function Profile() {
       return (data as AllBadge[]) || [];
     },
     enabled: !!userId,
+    refetchInterval: 30000, // Live updates every 30 seconds
   });
 
-  // Fetch coin balance
+  // Fetch coin balance (live updated)
   const { data: coinBalance = 0 } = useQuery({
     queryKey: ["userCoins", userId],
     queryFn: async () => {
@@ -320,6 +324,7 @@ export default function Profile() {
       return data?.balance || 0;
     },
     enabled: !!userId,
+    refetchInterval: 30000, // Live updates every 30 seconds
   });
 
   // Fetch login streak
@@ -351,6 +356,22 @@ export default function Profile() {
       return userEntry?.rank || null;
     },
     enabled: !!userId,
+  });
+
+  // Fetch follower count
+  const { data: followerCount = 0 } = useQuery({
+    queryKey: ["followerCount", userId],
+    queryFn: async () => {
+      if (!userId) return 0;
+      const { count, error } = await supabase
+        .from("user_followers")
+        .select("*", { count: "exact", head: true })
+        .eq("following_id", userId);
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!userId,
+    refetchInterval: 30000, // Refetch every 30 seconds for live updates
   });
 
   // Fetch country and country rank
@@ -731,15 +752,20 @@ export default function Profile() {
             {/* Title and Streak */}
             <div className="flex items-center gap-2 flex-wrap mb-2">
               {getEquippedTitle() && (
-                <Badge variant="secondary" className="text-xs">
+                <Badge 
+                  variant="secondary" 
+                  className={`text-xs ${getTitleStyles(getEquippedTitle())}`}
+                >
                   {getEquippedTitle()}
                 </Badge>
               )}
               {streakData && streakData.current_streak > 0 && (
-                <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/30">
-                  <Flame className="h-3 w-3 mr-1" />
-                  {streakData.current_streak} day streak
-                </Badge>
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30">
+                  <Flame className="h-4 w-4 text-orange-500 animate-pulse" />
+                  <span className="text-xs font-bold text-orange-600 dark:text-orange-400">
+                    {streakData.current_streak}
+                  </span>
+                </div>
               )}
             </div>
 
@@ -782,7 +808,7 @@ export default function Profile() {
             <span>{userProfile.country}</span>
           </div>
         )}
-        <div className="grid grid-cols-3 gap-2 mt-4 bg-background/50 rounded-xl p-3">
+        <div className="grid grid-cols-4 gap-2 mt-4 bg-background/50 rounded-xl p-3">
           <div className="text-center">
             <p className="text-xl font-bold">{speciesCount}</p>
             <p className="text-[10px] text-muted-foreground">Sightings</p>
@@ -792,8 +818,12 @@ export default function Profile() {
             <p className="text-[10px] text-muted-foreground">Species</p>
           </div>
           <div className="text-center">
-            <p className="text-xl font-bold">{userBadges.length}</p>
+            <p className="text-xl font-bold">{allUserBadges.length}</p>
             <p className="text-[10px] text-muted-foreground">Badges</p>
+          </div>
+          <div className="text-center">
+            <p className="text-xl font-bold">{followerCount}</p>
+            <p className="text-[10px] text-muted-foreground">Followers</p>
           </div>
         </div>
 

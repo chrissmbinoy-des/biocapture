@@ -81,61 +81,79 @@ const categoryColors: Record<string, string> = {
 };
 
 // Item-specific styling based on item name/metadata
-const getItemStyle = (item: ShopItem): { borderClass: string; badgeClass: string; rarityLabel: string } => {
+const getItemStyle = (item: ShopItem): { borderClass: string; badgeClass: string; rarityLabel: string; bgClass: string } => {
   const name = item.name.toLowerCase();
   const meta = item.metadata as Record<string, unknown> | null;
   const rarity = (meta?.rarity as string) || "";
+  const category = item.category;
+
+  // Boosts - always green shading
+  if (category === "boost") {
+    return {
+      borderClass: "border-[hsl(var(--species-plant))]/50",
+      badgeClass: "border-[hsl(var(--species-plant))] text-[hsl(var(--species-plant))]",
+      rarityLabel: "boost",
+      bgClass: "bg-gradient-to-br from-[hsl(var(--species-plant))]/15 to-[hsl(var(--species-plant))]/5",
+    };
+  }
 
   // Profile items - specific themes
   if (name.includes("nature theme")) {
     return {
-      borderClass: "border-[hsl(var(--theme-nature))]/50 bg-gradient-to-br from-[hsl(var(--theme-nature))]/10 to-transparent",
+      borderClass: "border-[hsl(var(--theme-nature))]/50",
       badgeClass: "border-[hsl(var(--theme-nature))] text-[hsl(var(--theme-nature))]",
       rarityLabel: "nature",
+      bgClass: "bg-gradient-to-br from-[hsl(var(--theme-nature))]/15 to-[hsl(var(--theme-nature))]/5",
     };
   }
   if (name.includes("ocean theme")) {
     return {
-      borderClass: "border-[hsl(var(--theme-ocean))]/50 bg-gradient-to-br from-[hsl(var(--theme-ocean))]/10 to-transparent",
+      borderClass: "border-[hsl(var(--theme-ocean))]/50",
       badgeClass: "border-[hsl(var(--theme-ocean))] text-[hsl(var(--theme-ocean))]",
       rarityLabel: "ocean",
+      bgClass: "bg-gradient-to-br from-[hsl(var(--theme-ocean))]/15 to-[hsl(var(--theme-ocean))]/5",
     };
   }
   if (name.includes("gold explorer")) {
     return {
-      borderClass: "border-[hsl(var(--rarity-legendary))]/50 bg-gradient-to-br from-[hsl(var(--rarity-legendary))]/10 to-transparent",
+      borderClass: "border-[hsl(var(--rarity-legendary))]/50",
       badgeClass: "border-[hsl(var(--rarity-legendary))] text-[hsl(var(--rarity-legendary))]",
       rarityLabel: "gold",
+      bgClass: "bg-gradient-to-br from-[hsl(var(--rarity-legendary))]/15 to-[hsl(var(--rarity-legendary))]/5",
     };
   }
   if (name.includes("wildlife champion")) {
     return {
-      borderClass: "border-[hsl(var(--rarity-legendary))]/50 bg-gradient-to-br from-[hsl(var(--rarity-legendary))]/15 to-transparent",
+      borderClass: "border-[hsl(var(--rarity-legendary))]/50",
       badgeClass: "border-[hsl(var(--rarity-legendary))] text-[hsl(var(--rarity-legendary))]",
       rarityLabel: "legendary",
+      bgClass: "bg-gradient-to-br from-[hsl(var(--rarity-legendary))]/20 to-[hsl(var(--rarity-legendary))]/5",
     };
   }
   if (name.includes("master explorer")) {
     return {
-      borderClass: "border-[hsl(var(--rarity-mythic))]/50 bg-gradient-to-br from-[hsl(var(--rarity-mythic))]/15 to-transparent",
+      borderClass: "border-[hsl(var(--rarity-mythic))]/50",
       badgeClass: "border-[hsl(var(--rarity-mythic))] text-[hsl(var(--rarity-mythic))]",
       rarityLabel: "mythic",
+      bgClass: "bg-gradient-to-br from-[hsl(var(--rarity-mythic))]/20 to-[hsl(var(--rarity-mythic))]/5",
     };
   }
 
   // Badges with rarity metadata
   if (rarity === "legendary") {
     return {
-      borderClass: "border-[hsl(var(--rarity-legendary))]/50 bg-gradient-to-br from-[hsl(var(--rarity-legendary))]/10 to-transparent",
+      borderClass: "border-[hsl(var(--rarity-legendary))]/50",
       badgeClass: "border-[hsl(var(--rarity-legendary))] text-[hsl(var(--rarity-legendary))]",
       rarityLabel: "legendary",
+      bgClass: "bg-gradient-to-br from-[hsl(var(--rarity-legendary))]/15 to-[hsl(var(--rarity-legendary))]/5",
     };
   }
   if (rarity === "rare" || name.includes("golden butterfly") || name.includes("rainbow feather")) {
     return {
-      borderClass: "border-[hsl(var(--rarity-rare))]/50 bg-gradient-to-br from-[hsl(var(--rarity-rare))]/10 to-transparent",
+      borderClass: "border-[hsl(var(--rarity-rare))]/50",
       badgeClass: "border-[hsl(var(--rarity-rare))] text-[hsl(var(--rarity-rare))]",
       rarityLabel: "rare",
+      bgClass: "bg-gradient-to-br from-[hsl(var(--rarity-rare))]/15 to-[hsl(var(--rarity-rare))]/5",
     };
   }
   if (rarity === "uncommon") {
@@ -143,6 +161,7 @@ const getItemStyle = (item: ShopItem): { borderClass: string; badgeClass: string
       borderClass: "border-green-500/50",
       badgeClass: "border-green-500 text-green-500",
       rarityLabel: "uncommon",
+      bgClass: "bg-gradient-to-br from-green-500/10 to-green-500/5",
     };
   }
 
@@ -151,6 +170,7 @@ const getItemStyle = (item: ShopItem): { borderClass: string; badgeClass: string
     borderClass: "border-muted",
     badgeClass: "",
     rarityLabel: "",
+    bgClass: "",
   };
 };
 
@@ -289,7 +309,7 @@ export default function CoinShop() {
     return (
       <Card
         key={item.id}
-        className={`p-4 border-2 transition-all ${itemStyle.borderClass} ${
+        className={`p-4 border-2 transition-all ${itemStyle.borderClass} ${itemStyle.bgClass} ${
           owned ? "opacity-75" : ""
         }`}
       >
