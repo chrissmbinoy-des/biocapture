@@ -146,3 +146,68 @@ All colors MUST be HSL.
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
 }
+
+/* Custom animations */
+@keyframes golden-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px 3px rgba(234, 179, 8, 0.4),
+                0 0 30px 6px rgba(234, 179, 8, 0.2),
+                inset 0 0 10px rgba(234, 179, 8, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 25px 5px rgba(234, 179, 8, 0.6),
+                0 0 50px 10px rgba(234, 179, 8, 0.3),
+                inset 0 0 20px rgba(234, 179, 8, 0.2);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) translateX(0);
+    opacity: 0.3;
+  }
+  50% {
+    transform: translateY(-20px) translateX(10px);
+    opacity: 0.6;
+  }
+}
+
+@keyframes bubble {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+  100% {
+    transform: translateY(-100px) scale(0.5);
+    opacity: 0;
+  }
+}
+
+.animate-golden-glow {
+  animation: golden-glow 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background-size: 200% auto;
+  animation: shimmer 3s linear infinite;
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-bubble {
+  animation: bubble 3s ease-out infinite;
+}
