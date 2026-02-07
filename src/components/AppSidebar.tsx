@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
 import { Button } from "@/components/ui/button";
-import { SidebarBoostIndicator } from "@/components/SidebarBoostIndicator";
 
 import {
   Sidebar,
@@ -50,7 +49,7 @@ const bottomItems = [
   { title: "Badges", url: "/badges", icon: Award },
   { title: "Leaderboard", url: "/leaderboard", icon: Trophy },
   { title: "Login Streak", url: "/login-streak", icon: Flame },
-  { title: "Coin Shop", url: "/coin-shop", icon: ShoppingBag, showBoosts: true },
+  { title: "Coin Shop", url: "/coin-shop", icon: ShoppingBag },
 ];
 
 export function AppSidebar() {
@@ -150,12 +149,7 @@ export function AppSidebar() {
                       onClick={handleNavClick}
                     >
                       <item.icon className="h-4 w-4" />
-                      {!isCollapsed && (
-                        <>
-                          <span>{item.title}</span>
-                          {item.showBoosts && <SidebarBoostIndicator />}
-                        </>
-                      )}
+                      {!isCollapsed && <span>{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
