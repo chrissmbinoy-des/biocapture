@@ -50,8 +50,10 @@ import {
   UserMinus,
 } from "lucide-react";
 import { BadgeProgressCircle } from "@/components/BadgeProgressCircle";
+import { ProfileThemeWrapper, getFrameStyles, getTitleStyles } from "@/components/ProfileThemeWrapper";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
+import type { Json } from "@/integrations/supabase/types";
 
 interface UserProfile {
   id: string;
@@ -62,6 +64,26 @@ interface UserProfile {
   country: string | null;
   avatar_url: string | null;
   display_badges: string[] | null;
+  equipped_items: Json | null;
+}
+
+interface ShopItem {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  price: number;
+  icon: string;
+  metadata: Json;
+}
+
+interface UserPurchase {
+  id: string;
+  item_id: string;
+  purchased_at: string;
+  expires_at: string | null;
+  is_active: boolean;
+  shop_items: ShopItem;
 }
 
 interface UserBadge {
@@ -176,6 +198,7 @@ export default function PublicProfile() {
           country: null,
           avatar_url: null,
           display_badges: null,
+          equipped_items: null,
         } as UserProfile;
       }
       
@@ -278,6 +301,49 @@ export default function PublicProfile() {
   const displayedBadges = profile?.display_badges?.length
     ? allUserBadges.filter((ub) => profile.display_badges?.includes(ub.badge_id))
     : allUserBadges.slice(0, 3);
+
+  // Fetch user purchases to resolve equipped items
+  const { data: userPurchases = [] } = useQuery({
+    queryKey: ["publicUserPurchases", profileUserId],
+    queryFn: async () => {
+      if (!profileUserId) return [];
+      const { data, error } = await supabase
+        .from("user_purchases")
+        .select("*, shop_items(*)")
+        .eq("user_id", profileUserId)
+        .eq("is_active", true);
+      if (error) throw error;
+      return (data as UserPurchase[]) || [];
+    },
+    enabled: !!profileUserId,
+  });
+
+  // Resolve equipped items from profile
+  const equippedItems = (profile?.equipped_items as Record<string, string>) || {};
+
+  const getEquippedTheme = (): string | null => {
+    if (!equippedItems.theme) return null;
+    const purchase = userPurchases.find((p) => p.item_id === equippedItems.theme);
+    if (!purchase?.shop_items?.metadata) return null;
+    const meta = purchase.shop_items.metadata as Record<string, unknown>;
+    return (meta.style as string) || null;
+  };
+
+  const getEquippedFrame = (): string | null => {
+    if (!equippedItems.frame) return null;
+    const purchase = userPurchases.find((p) => p.item_id === equippedItems.frame);
+    if (!purchase?.shop_items?.metadata) return null;
+    const meta = purchase.shop_items.metadata as Record<string, unknown>;
+    return (meta.style as string) || null;
+  };
+
+  const getEquippedTitle = (): string | null => {
+    if (!equippedItems.title) return null;
+    const purchase = userPurchases.find((p) => p.item_id === equippedItems.title);
+    if (!purchase?.shop_items?.metadata) return null;
+    const meta = purchase.shop_items.metadata as Record<string, unknown>;
+    return (meta.value as string) || purchase.shop_items.name;
+  };
 
   // Fetch login streak
   const { data: streakData } = useQuery({
@@ -435,10 +501,14 @@ export default function PublicProfile() {
     );
   }
 
+  const equippedTheme = getEquippedTheme();
+  const equippedFrame = getEquippedFrame();
+  const equippedTitle = getEquippedTitle();
+
   return (
     <div className="min-h-screen bg-background pb-8">
       {/* Header */}
-      <div className="bg-gradient-to-br from-primary/10 to-accent/20 px-4 pt-8 pb-6">
+      <ProfileThemeWrapper theme={equippedTheme} className="px-4 pt-8 pb-6">
         <div className="max-w-lg mx-auto">
           <Link to="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
             <ArrowLeft className="h-4 w-4 mr-1" />
@@ -448,7 +518,7 @@ export default function PublicProfile() {
           <div className="flex items-start gap-4">
             {/* Profile Picture */}
             <div className="relative">
-              <Avatar className="h-24 w-24 border-4 border-background shadow-lg">
+              <Avatar className={`h-24 w-24 shadow-lg ${getFrameStyles(equippedFrame)}`}>
                 {profile.avatar_url ? (
                   <AvatarImage src={profile.avatar_url} alt={getExplorerName()} />
                 ) : null}
@@ -469,13 +539,23 @@ export default function PublicProfile() {
                 <p className="text-sm text-muted-foreground">{getUsername()}</p>
               )}
 
-              {/* Streak */}
+              {/* Title and Streak */}
               <div className="flex items-center gap-2 flex-wrap mt-2">
-                {streakData && streakData.current_streak > 0 && (
-                  <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-600 border-orange-500/30">
-                    <Flame className="h-3 w-3 mr-1" />
-                    {streakData.current_streak} day streak
+                {equippedTitle && (
+                  <Badge 
+                    variant="secondary" 
+                    className={`text-xs ${getTitleStyles(equippedTitle)}`}
+                  >
+                    {equippedTitle}
                   </Badge>
+                )}
+                {streakData && streakData.current_streak > 0 && (
+                  <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30">
+                    <Flame className="h-4 w-4 text-orange-500 animate-pulse" />
+                    <span className="text-xs font-bold text-orange-600 dark:text-orange-400">
+                      {streakData.current_streak}
+                    </span>
+                  </div>
                 )}
               </div>
 
@@ -559,7 +639,7 @@ export default function PublicProfile() {
             </div>
           </div>
         </div>
-      </div>
+      </ProfileThemeWrapper>
     </div>
   );
 }

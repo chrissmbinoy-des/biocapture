@@ -422,6 +422,16 @@ export default function Profile() {
 
       if (profileData) {
         setUserProfile(profileData);
+        // Load equipped items from database first, fallback to localStorage
+        const dbEquipped = profileData.equipped_items as Record<string, string> | null;
+        if (dbEquipped && Object.keys(dbEquipped).length > 0) {
+          setEquipped(dbEquipped as EquippedItems);
+        } else {
+          const savedEquipped = localStorage.getItem(`equipped_${user.id}`);
+          if (savedEquipped) {
+            setEquipped(JSON.parse(savedEquipped));
+          }
+        }
       }
 
       // Fetch user purchases with item details
@@ -433,12 +443,6 @@ export default function Profile() {
 
       if (error) throw error;
       setPurchases(purchasesData || []);
-
-      // Load equipped items from localStorage (these can still be local)
-      const savedEquipped = localStorage.getItem(`equipped_${user.id}`);
-      if (savedEquipped) {
-        setEquipped(JSON.parse(savedEquipped));
-      }
     } catch (error) {
       console.error("Error fetching profile:", error);
     } finally {
@@ -446,17 +450,22 @@ export default function Profile() {
     }
   };
 
+  const saveEquippedToDb = async (newEquipped: EquippedItems) => {
+    if (!userId) return;
+    localStorage.setItem(`equipped_${userId}`, JSON.stringify(newEquipped));
+    await supabase
+      .from("user_profiles")
+      .update({ equipped_items: newEquipped as unknown as Json })
+      .eq("user_id", userId);
+  };
+
   const handleEquip = (item: ShopItem) => {
     const metadata = item.metadata as Record<string, unknown>;
-    // Use 'type' key from metadata (e.g., 'theme', 'frame', 'title') or fallback to category
     const itemType = (metadata?.type as string) || item.category;
 
     const newEquipped = { ...equipped, [itemType]: item.id };
     setEquipped(newEquipped);
-
-    if (userId) {
-      localStorage.setItem(`equipped_${userId}`, JSON.stringify(newEquipped));
-    }
+    saveEquippedToDb(newEquipped);
 
     toast.success(`${item.name} equipped!`);
   };
@@ -465,10 +474,7 @@ export default function Profile() {
     const newEquipped = { ...equipped };
     delete newEquipped[itemType as keyof EquippedItems];
     setEquipped(newEquipped);
-
-    if (userId) {
-      localStorage.setItem(`equipped_${userId}`, JSON.stringify(newEquipped));
-    }
+    saveEquippedToDb(newEquipped);
 
     toast.success("Item unequipped");
   };
@@ -954,8 +960,8 @@ export default function Profile() {
               <p className="text-xs text-muted-foreground mt-1">{editBio.length}/150</p>
             </div>
 
-            {/* Badge Selection */}
-            {allUserBadges.length > 0 && (
+            {/* Badge Selection - Earned + Purchased */}
+            {(allUserBadges.length > 0 || filterByCategory("badge").length > 0) && (
               <div>
                 <label className="text-sm font-medium mb-2 block">
                   Display Badges ({selectedBadges.length}/3)
@@ -963,38 +969,79 @@ export default function Profile() {
                 <p className="text-xs text-muted-foreground mb-3">
                   Select up to 3 badges to display on your profile
                 </p>
-                <ScrollArea className="h-[160px] border rounded-md p-2">
-                  <div className="grid grid-cols-3 gap-2">
-                    {allUserBadges.map((ub) => {
-                      const isSelected = selectedBadges.includes(ub.badge_id);
-                      return (
-                        <div
-                          key={ub.id}
-                          className={`p-2 rounded-lg border cursor-pointer transition-all ${
-                            isSelected
-                              ? "border-primary bg-primary/10"
-                              : "border-border hover:border-primary/50"
-                          }`}
-                          onClick={() => handleBadgeToggle(ub.badge_id)}
-                        >
-                          <div className="flex flex-col items-center gap-1">
-                            <BadgeProgressCircle
-                              icon={getBadgeIcon(ub.badges.icon)}
-                              progress={1}
-                              isEarned={true}
-                              size="sm"
-                            />
-                            <p className="text-[10px] text-center font-medium truncate w-full">
-                              {ub.badges.name}
-                            </p>
-                            {isSelected && (
-                              <Check className="h-3 w-3 text-primary" />
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+                <ScrollArea className="h-[200px] border rounded-md p-2">
+                  {/* Earned Badges */}
+                  {allUserBadges.length > 0 && (
+                    <>
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Earned Badges</p>
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        {allUserBadges.map((ub) => {
+                          const isSelected = selectedBadges.includes(ub.badge_id);
+                          return (
+                            <div
+                              key={ub.id}
+                              className={`p-2 rounded-lg border cursor-pointer transition-all ${
+                                isSelected
+                                  ? "border-primary bg-primary/10"
+                                  : "border-border hover:border-primary/50"
+                              }`}
+                              onClick={() => handleBadgeToggle(ub.badge_id)}
+                            >
+                              <div className="flex flex-col items-center gap-1">
+                                <BadgeProgressCircle
+                                  icon={getBadgeIcon(ub.badges.icon)}
+                                  progress={1}
+                                  isEarned={true}
+                                  size="sm"
+                                />
+                                <p className="text-[10px] text-center font-medium truncate w-full">
+                                  {ub.badges.name}
+                                </p>
+                                {isSelected && (
+                                  <Check className="h-3 w-3 text-primary" />
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                  {/* Purchased Cosmetic Badges */}
+                  {filterByCategory("badge").length > 0 && (
+                    <>
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">Shop Badges</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {filterByCategory("badge").map((purchase) => {
+                          const item = purchase.shop_items;
+                          const isSelected = selectedBadges.includes(item.id);
+                          return (
+                            <div
+                              key={purchase.id}
+                              className={`p-2 rounded-lg border cursor-pointer transition-all ${
+                                isSelected
+                                  ? "border-amber-500 bg-amber-500/10"
+                                  : "border-border hover:border-amber-500/50"
+                              }`}
+                              onClick={() => handleBadgeToggle(item.id)}
+                            >
+                              <div className="flex flex-col items-center gap-1">
+                                <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500">
+                                  {iconMap[item.icon] || <Award className="h-4 w-4" />}
+                                </div>
+                                <p className="text-[10px] text-center font-medium truncate w-full">
+                                  {item.name}
+                                </p>
+                                {isSelected && (
+                                  <Check className="h-3 w-3 text-amber-500" />
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
                 </ScrollArea>
               </div>
             )}
