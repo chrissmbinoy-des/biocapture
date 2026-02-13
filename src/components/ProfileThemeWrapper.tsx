@@ -30,6 +30,23 @@ const NatureDecorations = () => (
       </svg>
     </div>
     
+    {/* Top-left area: Owl on branch */}
+    <div className="absolute top-8 left-14 opacity-40 pointer-events-none animate-owl-bob">
+      <svg width="26" height="30" viewBox="0 0 26 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="13" cy="14" rx="10" ry="11" fill="#8B6914"/>
+        <circle cx="8" cy="11" r="4" fill="#fef3c7"/>
+        <circle cx="18" cy="11" r="4" fill="#fef3c7"/>
+        <circle cx="8" cy="11" r="2" fill="#1f2937"/>
+        <circle cx="18" cy="11" r="2" fill="#1f2937"/>
+        <polygon points="13,14 11,17 15,17" fill="#f97316"/>
+        <path d="M3 6L7 10" stroke="#8B6914" strokeWidth="2"/>
+        <path d="M23 6L19 10" stroke="#8B6914" strokeWidth="2"/>
+        <rect x="6" y="24" width="3" height="4" fill="#d4a574"/>
+        <rect x="17" y="24" width="3" height="4" fill="#d4a574"/>
+        <rect x="0" y="27" width="26" height="3" rx="1" fill="#6b4226"/>
+      </svg>
+    </div>
+    
     {/* Top-center: Flying bird */}
     <div className="absolute top-6 left-1/3 opacity-50 pointer-events-none animate-fly-bird">
       <svg width="28" height="20" viewBox="0 0 28 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -38,6 +55,17 @@ const NatureDecorations = () => (
         <ellipse cx="14" cy="11" rx="4" ry="3" fill="#22c55e"/>
         <circle cx="12" cy="10" r="1" fill="#1f2937"/>
         <path d="M10 11L7 12" stroke="#f97316" strokeWidth="2" strokeLinecap="round"/>
+      </svg>
+    </div>
+    
+    {/* Second bird flying higher */}
+    <div className="absolute top-2 left-1/2 opacity-35 pointer-events-none animate-fly-bird-2">
+      <svg width="22" height="16" viewBox="0 0 28 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14 10C14 10 6 4 2 6C6 8 8 10 14 10Z" fill="#60a5fa" className="animate-wing-flap"/>
+        <path d="M14 10C14 10 22 4 26 6C22 8 20 10 14 10Z" fill="#60a5fa" className="animate-wing-flap-delay"/>
+        <ellipse cx="14" cy="11" rx="4" ry="3" fill="#3b82f6"/>
+        <circle cx="12" cy="10" r="1" fill="#1f2937"/>
+        <path d="M10 11L7 12" stroke="#fbbf24" strokeWidth="2" strokeLinecap="round"/>
       </svg>
     </div>
     
@@ -52,6 +80,17 @@ const NatureDecorations = () => (
       </svg>
     </div>
     
+    {/* Dragonfly near top-right */}
+    <div className="absolute top-16 right-16 opacity-40 pointer-events-none animate-dragonfly">
+      <svg width="28" height="20" viewBox="0 0 28 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="6" y="9" width="16" height="3" rx="1.5" fill="#06b6d4"/>
+        <circle cx="24" cy="10" r="3" fill="#22d3ee"/>
+        <circle cx="23" cy="9" r="1" fill="#1f2937"/>
+        <ellipse cx="14" cy="5" rx="8" ry="3" fill="#67e8f9" fillOpacity="0.5"/>
+        <ellipse cx="14" cy="15" rx="8" ry="3" fill="#67e8f9" fillOpacity="0.5"/>
+      </svg>
+    </div>
+    
     {/* Middle-left: Squirrel */}
     <div className="absolute top-1/3 left-2 opacity-35 pointer-events-none animate-deer-walk">
       <svg width="32" height="28" viewBox="0 0 32 28" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -63,6 +102,21 @@ const NatureDecorations = () => (
       </svg>
     </div>
     
+    {/* Middle-left lower: Hedgehog */}
+    <div className="absolute top-1/2 left-6 opacity-30 pointer-events-none animate-hedgehog-waddle">
+      <svg width="30" height="22" viewBox="0 0 30 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="15" cy="14" rx="12" ry="8" fill="#a87c4f"/>
+        <path d="M6 10L4 4L8 8" fill="#7c5c33"/>
+        <path d="M10 8L9 2L13 7" fill="#7c5c33"/>
+        <path d="M14 7L14 1L17 6" fill="#7c5c33"/>
+        <path d="M18 8L19 2L22 7" fill="#7c5c33"/>
+        <path d="M22 10L25 4L24 9" fill="#7c5c33"/>
+        <ellipse cx="8" cy="14" rx="5" ry="4" fill="#deb887"/>
+        <circle cx="5" cy="13" r="1.5" fill="#1f2937"/>
+        <circle cx="3" cy="14" r="1" fill="#1f2937"/>
+      </svg>
+    </div>
+    
     {/* Middle-center: Second butterfly */}
     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-40 pointer-events-none animate-butterfly-2">
       <svg width="24" height="18" viewBox="0 0 24 18" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -71,6 +125,21 @@ const NatureDecorations = () => (
         <ellipse cx="6" cy="12" rx="4" ry="4" fill="#14b8a6" className="animate-wing-left"/>
         <ellipse cx="18" cy="12" rx="4" ry="4" fill="#a855f7" className="animate-wing-right"/>
         <rect x="11" y="3" width="2" height="12" rx="1" fill="#1f2937"/>
+      </svg>
+    </div>
+    
+    {/* Ladybug near center-right */}
+    <div className="absolute top-[45%] right-1/4 opacity-45 pointer-events-none animate-ladybug-crawl">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="10" cy="12" r="8" fill="#ef4444"/>
+        <line x1="10" y1="4" x2="10" y2="20" stroke="#1f2937" strokeWidth="1.5"/>
+        <circle cx="6" cy="10" r="1.5" fill="#1f2937"/>
+        <circle cx="14" cy="10" r="1.5" fill="#1f2937"/>
+        <circle cx="7" cy="15" r="1.5" fill="#1f2937"/>
+        <circle cx="13" cy="15" r="1.5" fill="#1f2937"/>
+        <circle cx="10" cy="5" r="3" fill="#1f2937"/>
+        <path d="M8 3C6 0 4 1 5 3" stroke="#1f2937" strokeWidth="1"/>
+        <path d="M12 3C14 0 16 1 15 3" stroke="#1f2937" strokeWidth="1"/>
       </svg>
     </div>
     
@@ -101,6 +170,21 @@ const NatureDecorations = () => (
       </svg>
     </div>
     
+    {/* Mushrooms bottom-left area */}
+    <div className="absolute bottom-8 left-16 opacity-35 pointer-events-none">
+      <svg width="32" height="28" viewBox="0 0 32 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="10" cy="12" rx="9" ry="7" fill="#ef4444"/>
+        <circle cx="6" cy="10" r="2" fill="#fef3c7"/>
+        <circle cx="12" cy="8" r="1.5" fill="#fef3c7"/>
+        <circle cx="9" cy="14" r="1" fill="#fef3c7"/>
+        <rect x="8" y="18" width="4" height="8" rx="1" fill="#fde68a"/>
+        <ellipse cx="24" cy="16" rx="6" ry="5" fill="#a855f7"/>
+        <circle cx="22" cy="14" r="1.5" fill="#fef3c7"/>
+        <circle cx="26" cy="16" r="1" fill="#fef3c7"/>
+        <rect x="22" y="20" width="3" height="6" rx="1" fill="#fde68a"/>
+      </svg>
+    </div>
+    
     {/* Bottom-center: Deer */}
     <div className="absolute bottom-2 left-1/3 opacity-25 pointer-events-none animate-deer-walk">
       <svg width="44" height="36" viewBox="0 0 48 40" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -116,7 +200,7 @@ const NatureDecorations = () => (
     </div>
     
     {/* Bottom-right: Fox */}
-    <div className="absolute bottom-6 right-6 opacity-35 pointer-events-none">
+    <div className="absolute bottom-6 right-6 opacity-35 pointer-events-none animate-fox-tail">
       <svg width="36" height="28" viewBox="0 0 36 28" fill="none" xmlns="http://www.w3.org/2000/svg">
         <ellipse cx="18" cy="18" rx="12" ry="8" fill="#f97316"/>
         <polygon points="6,8 12,18 2,14" fill="#f97316"/>
@@ -126,13 +210,35 @@ const NatureDecorations = () => (
         <circle cx="14" cy="10" r="1.5" fill="#1f2937"/>
         <circle cx="22" cy="10" r="1.5" fill="#1f2937"/>
         <ellipse cx="18" cy="13" rx="1.5" ry="1" fill="#1f2937"/>
-        <path d="M34 20C38 18 38 22 34 20" fill="#fb923c"/>
+        <path d="M34 20C38 18 38 22 34 20" fill="#fb923c" className="animate-tail-wag"/>
       </svg>
+    </div>
+    
+    {/* Snail bottom-right area */}
+    <div className="absolute bottom-12 right-14 opacity-30 pointer-events-none animate-snail-crawl">
+      <svg width="24" height="18" viewBox="0 0 24 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="10" cy="14" rx="10" ry="4" fill="#fdba74"/>
+        <circle cx="14" cy="8" r="6" fill="#a87c4f"/>
+        <path d="M14 4C16 4 18 6 18 8C18 10 16 12 14 12C12 12 10 10 12 8" stroke="#7c5c33" strokeWidth="1.5" fill="none"/>
+        <circle cx="4" cy="10" r="1" fill="#1f2937"/>
+        <path d="M3 8L1 5" stroke="#fdba74" strokeWidth="1.5"/>
+        <path d="M5 8L4 5" stroke="#fdba74" strokeWidth="1.5"/>
+      </svg>
+    </div>
+    
+    {/* Fireflies scattered */}
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div className="absolute top-[20%] left-[15%] w-2 h-2 rounded-full bg-yellow-300 animate-firefly" />
+      <div className="absolute top-[35%] right-[20%] w-1.5 h-1.5 rounded-full bg-yellow-200 animate-firefly-2" />
+      <div className="absolute top-[60%] left-[40%] w-2 h-2 rounded-full bg-lime-300 animate-firefly-3" />
+      <div className="absolute top-[15%] right-[35%] w-1.5 h-1.5 rounded-full bg-yellow-300 animate-firefly" style={{ animationDelay: '1s' }} />
+      <div className="absolute top-[70%] left-[25%] w-1.5 h-1.5 rounded-full bg-lime-200 animate-firefly-2" style={{ animationDelay: '2s' }} />
+      <div className="absolute top-[50%] right-[10%] w-2 h-2 rounded-full bg-yellow-200 animate-firefly-3" style={{ animationDelay: '0.5s' }} />
     </div>
     
     {/* Floating leaves scattered */}
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      <div className="absolute top-1/4 left-1/5 w-4 h-4 animate-float-leaf">
+      <div className="absolute top-1/4 left-[20%] w-4 h-4 animate-float-leaf">
         <svg viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="8" rx="6" ry="3" fill="#4ade80" transform="rotate(-30 8 8)"/></svg>
       </div>
       <div className="absolute top-1/2 right-1/4 w-3 h-3 animate-float-leaf-2">
@@ -143,6 +249,9 @@ const NatureDecorations = () => (
       </div>
       <div className="absolute top-2/3 right-1/3 w-3 h-3 animate-float-leaf">
         <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#4ade80" transform="rotate(40 6 6)"/></svg>
+      </div>
+      <div className="absolute top-[10%] left-[60%] w-3 h-3 animate-float-leaf-2" style={{ animationDelay: '3s' }}>
+        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#a3e635" transform="rotate(-25 6 6)"/></svg>
       </div>
     </div>
   </>
@@ -268,12 +377,12 @@ const OceanDecorations = () => (
     
     {/* Bubbles scattered */}
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      <div className="absolute bottom-0 left-1/6 w-4 h-4 bg-cyan-300/30 rounded-full animate-bubble" />
+      <div className="absolute bottom-0 left-[16%] w-4 h-4 bg-cyan-300/30 rounded-full animate-bubble" />
       <div className="absolute bottom-0 left-1/3 w-3 h-3 bg-blue-300/25 rounded-full animate-bubble" style={{ animationDelay: '0.5s' }} />
       <div className="absolute bottom-0 left-1/2 w-5 h-5 bg-sky-300/20 rounded-full animate-bubble" style={{ animationDelay: '1s' }} />
       <div className="absolute bottom-0 left-2/3 w-2 h-2 bg-cyan-400/35 rounded-full animate-bubble" style={{ animationDelay: '1.5s' }} />
       <div className="absolute bottom-0 right-1/4 w-3 h-3 bg-blue-400/25 rounded-full animate-bubble" style={{ animationDelay: '2s' }} />
-      <div className="absolute bottom-0 right-1/6 w-4 h-4 bg-sky-400/20 rounded-full animate-bubble" style={{ animationDelay: '0.3s' }} />
+      <div className="absolute bottom-0 right-[16%] w-4 h-4 bg-sky-400/20 rounded-full animate-bubble" style={{ animationDelay: '0.3s' }} />
     </div>
     
     {/* Waves at bottom */}

@@ -463,6 +463,7 @@ export type Database = {
           created_at: string
           display_badges: string[] | null
           display_name: string | null
+          equipped_items: Json | null
           id: string
           updated_at: string
           user_id: string
@@ -475,6 +476,7 @@ export type Database = {
           created_at?: string
           display_badges?: string[] | null
           display_name?: string | null
+          equipped_items?: Json | null
           id?: string
           updated_at?: string
           user_id: string
@@ -487,6 +489,7 @@ export type Database = {
           created_at?: string
           display_badges?: string[] | null
           display_name?: string | null
+          equipped_items?: Json | null
           id?: string
           updated_at?: string
           user_id?: string
