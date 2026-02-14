@@ -1,11 +1,14 @@
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+type BadgeColor = "green" | "violet" | "gold" | "red";
+
 interface BadgeProgressCircleProps {
   icon: LucideIcon;
   progress: number; // 0 to 1
   isEarned: boolean;
   size?: "sm" | "md" | "lg";
+  color?: BadgeColor;
   className?: string;
 }
 
@@ -15,14 +18,39 @@ const sizeConfig = {
   lg: { container: 80, stroke: 5, iconSize: 36, radius: 34 },
 };
 
+const colorConfig: Record<BadgeColor, { stroke: string; iconClass: string; glowClass: string }> = {
+  green: {
+    stroke: "hsl(142, 71%, 45%)",
+    iconClass: "text-species-plant",
+    glowClass: "bg-species-plant/20",
+  },
+  violet: {
+    stroke: "hsl(270, 70%, 55%)",
+    iconClass: "text-[hsl(270,70%,55%)]",
+    glowClass: "bg-[hsl(270,70%,55%)]/20",
+  },
+  gold: {
+    stroke: "hsl(45, 90%, 55%)",
+    iconClass: "text-[hsl(45,90%,55%)]",
+    glowClass: "bg-[hsl(45,90%,55%)]/20",
+  },
+  red: {
+    stroke: "hsl(0, 75%, 55%)",
+    iconClass: "text-[hsl(0,75%,55%)]",
+    glowClass: "bg-[hsl(0,75%,55%)]/20",
+  },
+};
+
 export function BadgeProgressCircle({
   icon: Icon,
   progress,
   isEarned,
   size = "md",
+  color = "green",
   className,
 }: BadgeProgressCircleProps) {
   const config = sizeConfig[size];
+  const colors = colorConfig[color];
   const circumference = 2 * Math.PI * config.radius;
   const strokeDashoffset = circumference - progress * circumference;
 
@@ -42,7 +70,7 @@ export function BadgeProgressCircle({
           cy={config.container / 2}
           r={config.radius}
           fill="none"
-          stroke="hsl(142, 71%, 45%)"
+          stroke={colors.stroke}
           strokeWidth={config.stroke}
           opacity={0.2}
         />
@@ -52,7 +80,7 @@ export function BadgeProgressCircle({
           cy={config.container / 2}
           r={config.radius}
           fill="none"
-          stroke="hsl(142, 71%, 45%)"
+          stroke={colors.stroke}
           strokeWidth={config.stroke}
           strokeLinecap="round"
           strokeDasharray={circumference}
@@ -69,9 +97,7 @@ export function BadgeProgressCircle({
       <div
         className={cn(
           "relative z-10 flex items-center justify-center rounded-full",
-          isEarned
-            ? "text-species-plant"
-            : "text-species-plant/50"
+          isEarned ? colors.iconClass : `${colors.iconClass}/50`
         )}
       >
         <Icon size={config.iconSize} strokeWidth={1.5} />
@@ -79,7 +105,7 @@ export function BadgeProgressCircle({
       {/* Glow effect for earned badges */}
       {isEarned && (
         <div
-          className="absolute inset-0 rounded-full bg-species-plant/20 blur-md -z-10"
+          className={cn("absolute inset-0 rounded-full blur-md -z-10", colors.glowClass)}
           style={{ width: config.container, height: config.container }}
         />
       )}

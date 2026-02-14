@@ -198,6 +198,14 @@ const getBadgeIcon = (iconStr: string): LucideIcon => {
   return STRING_ICON_MAP[iconStr] || Award;
 };
 
+const getShopBadgeColor = (item: ShopItem): "green" | "violet" | "gold" | "red" => {
+  const meta = item.metadata as Record<string, unknown> | null;
+  const rarity = (meta?.rarity as string) || "";
+  if (rarity === "legendary") return "gold";
+  if (rarity === "rare") return "violet";
+  if (rarity === "mythic") return "red";
+  return "green"; // uncommon/default
+};
 interface UserProfile {
   id: string;
   user_id: string;
@@ -813,6 +821,7 @@ export default function Profile() {
                     progress={1}
                     isEarned={true}
                     size="sm"
+                    color={getShopBadgeColor(purchase.shop_items)}
                   />
                 </div>
               ))}
@@ -1055,9 +1064,13 @@ export default function Profile() {
                               onClick={() => handleBadgeToggle(item.id)}
                             >
                               <div className="flex flex-col items-center gap-1">
-                                <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500">
-                                  {iconMap[item.icon] || <Award className="h-4 w-4" />}
-                                </div>
+                                <BadgeProgressCircle
+                                  icon={getBadgeIcon(item.icon)}
+                                  progress={1}
+                                  isEarned={true}
+                                  size="sm"
+                                  color={getShopBadgeColor(item)}
+                                />
                                 <p className="text-[10px] text-center font-medium truncate w-full">
                                   {item.name}
                                 </p>
