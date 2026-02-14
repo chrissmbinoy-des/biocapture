@@ -10,8 +10,8 @@ interface ProfileThemeWrapperProps {
 // Theme configurations with decorative elements
 const themeStyles: Record<string, { gradient: string; accent: string }> = {
   nature: {
-    gradient: "from-green-500/20 via-emerald-500/10 to-lime-500/5",
-    accent: "border-green-500/30",
+    gradient: "from-green-600/30 via-emerald-500/20 to-green-400/15",
+    accent: "border-green-500/40",
   },
   ocean: {
     gradient: "from-blue-500/20 via-cyan-500/10 to-sky-500/5",

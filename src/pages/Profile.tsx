@@ -189,7 +189,13 @@ const BADGE_ICON_MAP: { [key: string]: LucideIcon } = {
 };
 
 const getBadgeIcon = (iconStr: string): LucideIcon => {
-  return BADGE_ICON_MAP[iconStr] || Award;
+  // Check emoji map first, then string name map for shop badges
+  if (BADGE_ICON_MAP[iconStr]) return BADGE_ICON_MAP[iconStr];
+  const STRING_ICON_MAP: Record<string, LucideIcon> = {
+    leaf: Leaf, star: Star, butterfly: Sparkles, feather: Feather,
+    crown: Crown, award: Award, trophy: Trophy, shield: Shield,
+  };
+  return STRING_ICON_MAP[iconStr] || Award;
 };
 
 interface UserProfile {
@@ -283,14 +289,27 @@ export default function Profile() {
       if (error) throw error;
       
       const allBadges = (data as UserBadge[]) || [];
-      // Return selected badges or first 3
+      // Return selected earned badges or first 3
       if (userProfile?.display_badges?.length) {
         return allBadges.filter(ub => userProfile.display_badges?.includes(ub.badge_id)).slice(0, 3);
       }
       return allBadges.slice(0, 3);
     },
     enabled: !!userId,
-    refetchInterval: 30000, // Live updates every 30 seconds
+    refetchInterval: 30000,
+  });
+
+  // Fetch purchased shop badges that are selected for display
+  const { data: displayedShopBadges = [] } = useQuery({
+    queryKey: ["displayedShopBadges", userId, userProfile?.display_badges, purchases],
+    queryFn: async () => {
+      if (!userId || !userProfile?.display_badges?.length) return [];
+      // Filter purchases that are badge category and selected in display_badges
+      return purchases.filter(
+        (p) => p.shop_items?.category === "badge" && userProfile.display_badges?.includes(p.shop_items.id)
+      );
+    },
+    enabled: !!userId && purchases.length > 0,
   });
 
   // Fetch ALL user badges (for badge selection dialog - live updated)
@@ -777,7 +796,7 @@ export default function Profile() {
 
             {/* 3 Badge Circles */}
             <div className="flex gap-1 mt-2">
-              {userBadges.slice(0, 3).map((ub) => (
+              {userBadges.slice(0, 3 - displayedShopBadges.length).map((ub) => (
                 <div key={ub.id} title={ub.badges.name}>
                   <BadgeProgressCircle
                     icon={getBadgeIcon(ub.badges.icon)}
@@ -787,7 +806,17 @@ export default function Profile() {
                   />
                 </div>
               ))}
-              {Array.from({ length: Math.max(0, 3 - userBadges.length) }).map((_, i) => (
+              {displayedShopBadges.slice(0, 3 - userBadges.length).map((purchase) => (
+                <div key={purchase.id} title={purchase.shop_items.name}>
+                  <BadgeProgressCircle
+                    icon={getBadgeIcon(purchase.shop_items.icon)}
+                    progress={1}
+                    isEarned={true}
+                    size="sm"
+                  />
+                </div>
+              ))}
+              {Array.from({ length: Math.max(0, 3 - userBadges.length - displayedShopBadges.length) }).map((_, i) => (
                 <div key={`empty-${i}`} className="opacity-30">
                   <BadgeProgressCircle
                     icon={Award}

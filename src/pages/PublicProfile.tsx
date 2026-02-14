@@ -45,6 +45,7 @@ import {
   CalendarCheck,
   Dumbbell,
   ArrowLeft,
+  Feather,
   LucideIcon,
   UserPlus,
   UserMinus,
@@ -140,7 +141,12 @@ const BADGE_ICON_MAP: { [key: string]: LucideIcon } = {
 };
 
 const getBadgeIcon = (iconStr: string): LucideIcon => {
-  return BADGE_ICON_MAP[iconStr] || Award;
+  if (BADGE_ICON_MAP[iconStr]) return BADGE_ICON_MAP[iconStr];
+  const STRING_ICON_MAP: Record<string, LucideIcon> = {
+    leaf: Leaf, star: Star, butterfly: Sparkles, feather: Sparkles,
+    crown: Crown, award: Award, trophy: Trophy, shield: Shield,
+  };
+  return STRING_ICON_MAP[iconStr] || Award;
 };
 
 export default function PublicProfile() {
@@ -297,8 +303,8 @@ export default function PublicProfile() {
     enabled: !!profileUserId,
   });
 
-  // Get displayed badges (either selected or first 3)
-  const displayedBadges = profile?.display_badges?.length
+  // Get displayed earned badges (either selected or first 3)
+  const displayedEarnedBadges = profile?.display_badges?.length
     ? allUserBadges.filter((ub) => profile.display_badges?.includes(ub.badge_id))
     : allUserBadges.slice(0, 3);
 
@@ -317,6 +323,13 @@ export default function PublicProfile() {
     },
     enabled: !!profileUserId,
   });
+
+  // Get displayed shop badges
+  const displayedShopBadges = profile?.display_badges?.length
+    ? userPurchases.filter(
+        (p) => p.shop_items?.category === "badge" && profile.display_badges?.includes(p.shop_items.id)
+      )
+    : [];
 
   // Resolve equipped items from profile
   const equippedItems = (profile?.equipped_items as Record<string, string>) || {};
@@ -561,7 +574,7 @@ export default function PublicProfile() {
 
               {/* 3 Badge Circles */}
               <div className="flex gap-1 mt-3">
-                {displayedBadges.map((ub) => (
+                {displayedEarnedBadges.slice(0, 3 - displayedShopBadges.length).map((ub) => (
                   <div key={ub.id} title={ub.badges.name}>
                     <BadgeProgressCircle
                       icon={getBadgeIcon(ub.badges.icon)}
@@ -571,7 +584,17 @@ export default function PublicProfile() {
                     />
                   </div>
                 ))}
-                {Array.from({ length: Math.max(0, 3 - displayedBadges.length) }).map((_, i) => (
+                {displayedShopBadges.slice(0, 3 - displayedEarnedBadges.length).map((purchase) => (
+                  <div key={purchase.id} title={purchase.shop_items.name}>
+                    <BadgeProgressCircle
+                      icon={getBadgeIcon(purchase.shop_items.icon)}
+                      progress={1}
+                      isEarned={true}
+                      size="sm"
+                    />
+                  </div>
+                ))}
+                {Array.from({ length: Math.max(0, 3 - displayedEarnedBadges.length - displayedShopBadges.length) }).map((_, i) => (
                   <div key={`empty-${i}`} className="opacity-30">
                     <BadgeProgressCircle
                       icon={Award}
