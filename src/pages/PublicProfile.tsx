@@ -149,6 +149,15 @@ const getBadgeIcon = (iconStr: string): LucideIcon => {
   return STRING_ICON_MAP[iconStr] || Award;
 };
 
+const getShopBadgeColor = (item: ShopItem): "green" | "violet" | "gold" | "red" => {
+  const meta = item.metadata as Record<string, unknown> | null;
+  const rarity = (meta?.rarity as string) || "";
+  if (rarity === "legendary") return "gold";
+  if (rarity === "rare") return "violet";
+  if (rarity === "mythic") return "red";
+  return "green";
+};
+
 export default function PublicProfile() {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -591,9 +600,11 @@ export default function PublicProfile() {
                       progress={1}
                       isEarned={true}
                       size="sm"
+                      color={getShopBadgeColor(purchase.shop_items)}
                     />
                   </div>
                 ))}
+
                 {Array.from({ length: Math.max(0, 3 - displayedEarnedBadges.length - displayedShopBadges.length) }).map((_, i) => (
                   <div key={`empty-${i}`} className="opacity-30">
                     <BadgeProgressCircle

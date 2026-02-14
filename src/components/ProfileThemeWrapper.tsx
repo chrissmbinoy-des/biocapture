@@ -14,8 +14,8 @@ const themeStyles: Record<string, { gradient: string; accent: string }> = {
     accent: "border-green-500/40",
   },
   ocean: {
-    gradient: "from-blue-500/20 via-cyan-500/10 to-sky-500/5",
-    accent: "border-blue-500/30",
+    gradient: "from-blue-600/30 via-cyan-500/20 to-blue-400/15",
+    accent: "border-blue-500/40",
   },
 };
 
@@ -425,7 +425,7 @@ export const ProfileThemeWrapper = ({
 export const getFrameStyles = (frame: string | null): string => {
   switch (frame) {
     case "gold":
-      return "ring-4 ring-yellow-500 ring-offset-2 ring-offset-background shadow-lg shadow-yellow-500/40 animate-golden-glow";
+      return "ring-4 ring-yellow-500 ring-offset-2 ring-offset-background shadow-lg shadow-yellow-500/40 bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 bg-clip-border animate-shimmer animate-golden-glow";
     case "silver":
       return "ring-4 ring-gray-400 ring-offset-2 ring-offset-background shadow-lg shadow-gray-400/30";
     case "bronze":
