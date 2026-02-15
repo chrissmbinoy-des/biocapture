@@ -250,15 +250,12 @@ export default function CoinShop() {
 
       if (coinError) throw coinError;
 
-      // Calculate expiry for boosts
+      // Calculate expiry for boosts - always 24 hours
       let expiresAt = null;
-      if (item.category === "boost" && item.metadata && typeof item.metadata === "object" && !Array.isArray(item.metadata)) {
-        const meta = item.metadata as Record<string, unknown>;
-        if (meta.duration_hours) {
-          const expiry = new Date();
-          expiry.setHours(expiry.getHours() + Number(meta.duration_hours));
-          expiresAt = expiry.toISOString();
-        }
+      if (item.category === "boost") {
+        const expiry = new Date();
+        expiry.setHours(expiry.getHours() + 24);
+        expiresAt = expiry.toISOString();
       }
 
       // Create purchase record
@@ -294,6 +291,11 @@ export default function CoinShop() {
   };
 
   const isOwned = (itemId: string) => {
+    const item = items.find(i => i.id === itemId);
+    // Boosts can be re-purchased after expiry
+    if (item?.category === "boost") {
+      return purchases.some((p) => p.item_id === itemId && p.expires_at && new Date(p.expires_at) > new Date());
+    }
     return purchases.some((p) => p.item_id === itemId);
   };
 

@@ -11,7 +11,7 @@ export function FloatingCameraButton() {
   }
 
   return (
-    <Link to="/" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+    <Link to="/" className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
       <Button
         size="lg"
         className="h-18 w-18 rounded-full bg-species-plant hover:bg-species-plant/90 shadow-lg shadow-species-plant/30 transition-transform duration-200 active:scale-95 hover:scale-105"

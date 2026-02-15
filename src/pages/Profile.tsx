@@ -1098,18 +1098,12 @@ export default function Profile() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 rounded-none border-b bg-transparent h-12">
+        <TabsList className="grid w-full grid-cols-2 rounded-none border-b bg-transparent h-12">
           <TabsTrigger
             value="items"
             className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
           >
             <Grid3X3 className="h-5 w-5" />
-          </TabsTrigger>
-          <TabsTrigger
-            value="badges"
-            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent"
-          >
-            <Award className="h-5 w-5" />
           </TabsTrigger>
           <TabsTrigger
             value="boosts"
@@ -1153,45 +1147,6 @@ export default function Profile() {
                       <Badge variant="default" className="text-[10px] mt-1">
                         <Check className="h-3 w-3 mr-0.5" />
                         Equipped
-                      </Badge>
-                    )}
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="badges" className="p-4">
-          <h3 className="text-sm font-semibold text-muted-foreground mb-3">Cosmetic Badges</h3>
-          {filterByCategory("badge").length === 0 ? (
-            <Card className="p-6 text-center border-dashed">
-              <Award className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-              <p className="text-muted-foreground">No cosmetic badges</p>
-              <p className="text-sm text-muted-foreground">Visit the Coin Shop!</p>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-3 gap-2">
-              {filterByCategory("badge").map((purchase) => {
-                const item = purchase.shop_items;
-                const isItemEquipped = isEquipped(item.id);
-
-                return (
-                  <Card
-                    key={purchase.id}
-                    className={`p-3 text-center cursor-pointer transition-all ${
-                      isItemEquipped ? "border-amber-500 ring-2 ring-amber-500/20" : "hover:border-amber-500/50"
-                    }`}
-                    onClick={() => (isItemEquipped ? handleUnequip("badge") : handleEquip(item))}
-                  >
-                    <div className="w-10 h-10 mx-auto rounded-full bg-amber-500/10 flex items-center justify-center text-amber-500 mb-2">
-                      {iconMap[item.icon] || <Award className="h-5 w-5" />}
-                    </div>
-                    <p className="text-xs font-medium truncate">{item.name}</p>
-                    {isItemEquipped && (
-                      <Badge className="text-[10px] mt-1 bg-amber-500">
-                        <Check className="h-3 w-3 mr-0.5" />
-                        Displayed
                       </Badge>
                     )}
                   </Card>
