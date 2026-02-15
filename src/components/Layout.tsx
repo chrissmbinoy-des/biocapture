@@ -11,12 +11,12 @@ export default function Layout() {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
-          <header className="h-14 border-b flex items-center justify-between px-4 bg-background sticky top-0 z-10">
+          <header className="h-14 border-b flex items-center justify-between px-4 bg-background sticky top-0 z-50">
             <div className="flex items-center">
               <SidebarTrigger className="mr-2">
                 <Menu className="h-5 w-5" />
               </SidebarTrigger>
-              <h1 className="text-lg font-semibold">Species Identifier</h1>
+              <h1 className="text-lg font-semibold">Specassist</h1>
             </div>
             <CoinDisplay />
           </header>

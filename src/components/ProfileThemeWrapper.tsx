@@ -236,22 +236,37 @@ const NatureDecorations = () => (
       <div className="absolute top-[50%] right-[10%] w-2 h-2 rounded-full bg-yellow-200 animate-firefly-3" style={{ animationDelay: '0.5s' }} />
     </div>
     
-    {/* Floating leaves scattered */}
+    {/* Floating leaves scattered - more leaves */}
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      <div className="absolute top-1/4 left-[20%] w-4 h-4 animate-float-leaf">
+      <div className="absolute top-[5%] left-[10%] w-4 h-4 animate-float-leaf">
         <svg viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="8" rx="6" ry="3" fill="#4ade80" transform="rotate(-30 8 8)"/></svg>
       </div>
-      <div className="absolute top-1/2 right-1/4 w-3 h-3 animate-float-leaf-2">
+      <div className="absolute top-[15%] left-[45%] w-3 h-3 animate-float-leaf-2">
         <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="5" ry="2.5" fill="#86efac" transform="rotate(20 6 6)"/></svg>
       </div>
-      <div className="absolute bottom-1/3 left-1/2 w-3 h-3 animate-float-leaf-3">
+      <div className="absolute top-[10%] right-[15%] w-3 h-3 animate-float-leaf-3">
         <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#22c55e" transform="rotate(-15 6 6)"/></svg>
       </div>
-      <div className="absolute top-2/3 right-1/3 w-3 h-3 animate-float-leaf">
+      <div className="absolute top-[30%] right-[30%] w-3 h-3 animate-float-leaf" style={{ animationDelay: '1s' }}>
         <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#4ade80" transform="rotate(40 6 6)"/></svg>
       </div>
-      <div className="absolute top-[10%] left-[60%] w-3 h-3 animate-float-leaf-2" style={{ animationDelay: '3s' }}>
+      <div className="absolute top-[25%] left-[60%] w-3 h-3 animate-float-leaf-2" style={{ animationDelay: '3s' }}>
         <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#a3e635" transform="rotate(-25 6 6)"/></svg>
+      </div>
+      <div className="absolute top-[50%] left-[15%] w-3 h-3 animate-float-leaf-3" style={{ animationDelay: '0.5s' }}>
+        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#86efac" transform="rotate(15 6 6)"/></svg>
+      </div>
+      <div className="absolute top-[40%] right-[10%] w-4 h-4 animate-float-leaf" style={{ animationDelay: '2s' }}>
+        <svg viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="8" rx="5" ry="2.5" fill="#4ade80" transform="rotate(-40 8 8)"/></svg>
+      </div>
+      <div className="absolute top-[60%] left-[35%] w-3 h-3 animate-float-leaf-2" style={{ animationDelay: '4s' }}>
+        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#22c55e" transform="rotate(30 6 6)"/></svg>
+      </div>
+      <div className="absolute top-[70%] right-[25%] w-3 h-3 animate-float-leaf-3" style={{ animationDelay: '1.5s' }}>
+        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#a3e635" transform="rotate(-10 6 6)"/></svg>
+      </div>
+      <div className="absolute top-[80%] left-[50%] w-3 h-3 animate-float-leaf" style={{ animationDelay: '3.5s' }}>
+        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="5" ry="2" fill="#4ade80" transform="rotate(25 6 6)"/></svg>
       </div>
     </div>
   </>
@@ -385,10 +400,11 @@ const OceanDecorations = () => (
       <div className="absolute bottom-0 right-[16%] w-4 h-4 bg-sky-400/20 rounded-full animate-bubble" style={{ animationDelay: '0.3s' }} />
     </div>
     
-    {/* Waves at bottom */}
-    <div className="absolute bottom-0 left-0 right-0 h-6 opacity-20 pointer-events-none overflow-hidden">
-      <svg className="w-full h-full animate-wave" viewBox="0 0 400 24" preserveAspectRatio="none">
-        <path d="M0 16 Q50 8 100 16 T200 16 T300 16 T400 16 V24 H0 Z" fill="#0ea5e9"/>
+    {/* Waves at bottom - continuous seamless */}
+    <div className="absolute bottom-0 left-0 right-0 h-8 opacity-25 pointer-events-none overflow-hidden">
+      <svg className="absolute bottom-0 left-0 h-full animate-wave" style={{ width: '200%' }} viewBox="0 0 800 32" preserveAspectRatio="none">
+        <path d="M0 20 Q50 10 100 20 T200 20 T300 20 T400 20 T500 20 T600 20 T700 20 T800 20 V32 H0 Z" fill="#0ea5e9"/>
+        <path d="M0 24 Q50 16 100 24 T200 24 T300 24 T400 24 T500 24 T600 24 T700 24 T800 24 V32 H0 Z" fill="#0284c7" fillOpacity="0.6"/>
       </svg>
     </div>
   </>

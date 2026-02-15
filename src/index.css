@@ -398,6 +398,10 @@ All colors MUST be HSL.
   }
 }
 
+.animate-wave {
+  animation: wave 3s linear infinite;
+}
+
 .animate-golden-glow {
   animation: golden-glow 2s ease-in-out infinite;
 }
@@ -510,9 +514,6 @@ All colors MUST be HSL.
   animation: seahorse 3s ease-in-out infinite;
 }
 
-.animate-wave {
-  animation: wave 4s linear infinite;
-}
 
 /* Nature theme additional animations */
 @keyframes owl-bob {
