@@ -532,6 +532,77 @@ export type Database = {
           },
         ]
       }
+      user_weekly_challenges: {
+        Row: {
+          challenge_template_id: string | null
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          is_completed: boolean | null
+          progress: number | null
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          challenge_template_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          is_completed?: boolean | null
+          progress?: number | null
+          user_id: string
+          week_start?: string
+        }
+        Update: {
+          challenge_template_id?: string | null
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          is_completed?: boolean | null
+          progress?: number | null
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_weekly_challenges_challenge_template_id_fkey"
+            columns: ["challenge_template_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_challenge_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      weekly_challenge_templates: {
+        Row: {
+          challenge_type: string
+          coin_reward: number
+          created_at: string | null
+          description: string
+          id: string
+          name: string
+          target_value: string | null
+        }
+        Insert: {
+          challenge_type: string
+          coin_reward?: number
+          created_at?: string | null
+          description: string
+          id?: string
+          name: string
+          target_value?: string | null
+        }
+        Update: {
+          challenge_type?: string
+          coin_reward?: number
+          created_at?: string | null
+          description?: string
+          id?: string
+          name?: string
+          target_value?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -559,6 +630,18 @@ export type Database = {
       }
       get_user_country: { Args: { target_user_id: string }; Returns: string }
       get_user_id_by_share_id: { Args: { share_id: string }; Returns: string }
+      get_user_recent_identifications: {
+        Args: { limit_count?: number; target_user_id: string }
+        Returns: {
+          confidence: number
+          id: string
+          identified_at: string
+          image_url: string
+          kingdom: string
+          scientific_name: string
+          species_name: string
+        }[]
+      }
       get_user_species_count: {
         Args: { target_user_id: string }
         Returns: number
