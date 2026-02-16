@@ -14,44 +14,16 @@ import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
 
 const BADGE_ICON_MAP: { [key: string]: LucideIcon } = {
-  "🌿": Leaf,
-  "🦁": Cat,
-  "🦋": Bug,
-  "🦅": Bird,
-  "🐟": Fish,
+  "🌿": Leaf, "🦁": Cat, "🦋": Bug, "🦅": Bird, "🐟": Fish,
   "🦎": CrocodileIcon as unknown as LucideIcon,
   "🐸": FrogIcon as unknown as LucideIcon,
-  "🦠": Microscope,
-  "⭐": Star,
-  "🌟": Star,
-  "🏆": Trophy,
-  "🎯": Target,
-  "⚡": Zap,
-  "👑": Crown,
-  "🥇": Medal,
-  "🏅": Medal,
-  "🎖️": Medal,
-  "🛡️": Shield,
-  "❤️": Heart,
-  "🔥": Flame,
-  "☀️": Sun,
-  "🌙": Moon,
-  "🏔️": Mountain,
-  "🌲": Trees,
-  "🌊": Waves,
-  "💨": Wind,
-  "☁️": Cloud,
-  "❄️": Snowflake,
-  "✨": Sparkles,
-  "🧭": Compass,
-  "🌈": Rainbow,
-  "🌍": Earth,
-  "🌏": Globe,
-  "🗺️": Map,
-  "📅": Calendar,
-  "🗓️": CalendarDays,
-  "📆": CalendarCheck,
-  "💪": Dumbbell,
+  "🦠": Microscope, "⭐": Star, "🌟": Star, "🏆": Trophy, "🎯": Target,
+  "⚡": Zap, "👑": Crown, "🥇": Medal, "🏅": Medal, "🎖️": Medal,
+  "🛡️": Shield, "❤️": Heart, "🔥": Flame, "☀️": Sun, "🌙": Moon,
+  "🏔️": Mountain, "🌲": Trees, "🌊": Waves, "💨": Wind, "☁️": Cloud,
+  "❄️": Snowflake, "✨": Sparkles, "🧭": Compass, "🌈": Rainbow,
+  "🌍": Earth, "🌏": Globe, "🗺️": Map, "📅": Calendar,
+  "🗓️": CalendarDays, "📆": CalendarCheck, "💪": Dumbbell, "💎": Star,
 };
 
 const getBadgeIcon = (iconStr: string): LucideIcon => {
@@ -83,14 +55,58 @@ interface ProgressData {
 }
 
 const KINGDOM_LABELS: { [key: string]: string } = {
-  plant: "Plants",
-  mammal: "Mammals",
-  insect: "Insects",
-  bird: "Birds",
-  reptile: "Reptiles",
-  fish: "Fish",
-  amphibian: "Amphibians",
-  other: "Other",
+  plant: "Plants", mammal: "Mammals", insect: "Insects", bird: "Birds",
+  reptile: "Reptiles", fish: "Fish", amphibian: "Amphibians", other: "Other",
+};
+
+// Determine badge difficulty color based on requirement
+const getBadgeDifficultyColor = (badge: Badge): "green" | "violet" | "gold" | "red" => {
+  const { requirement_type, requirement_value } = badge;
+  
+  if (requirement_type === "total_count") {
+    const val = parseInt(requirement_value || "1");
+    if (val <= 5) return "green";       // Easy: 1-5
+    if (val <= 25) return "green";      // Bronze-level mapped to green (standard)
+    if (val <= 75) return "violet";     // Silver-level mapped to violet
+    if (val <= 150) return "gold";      // Gold-level
+    return "red";                        // Legendary: 200+
+  }
+  
+  if (requirement_type === "kingdom_count") {
+    try {
+      const req = JSON.parse(requirement_value || "{}");
+      const count = req.count || 1;
+      if (count <= 1) return "green";
+      if (count <= 10) return "violet";
+      return "gold";                     // 25+ = gold
+    } catch { return "green"; }
+  }
+  
+  if (requirement_type === "kingdom_diversity") {
+    const val = parseInt(requirement_value || "1");
+    if (val <= 3) return "green";
+    if (val <= 5) return "violet";
+    return "gold";
+  }
+  
+  if (requirement_type === "challenge_count") {
+    const val = parseInt(requirement_value || "1");
+    if (val <= 1) return "green";
+    if (val <= 10) return "violet";
+    return "gold";
+  }
+  
+  if (requirement_type === "streak") {
+    const val = parseInt(requirement_value || "1");
+    if (val <= 3) return "green";
+    if (val <= 7) return "violet";
+    return "gold";
+  }
+  
+  if (requirement_type === "single_rare") return "red";
+  if (requirement_type === "location_count") return "violet";
+  
+  return "green";
 };
 
 export default function Badges() {
@@ -99,11 +115,8 @@ export default function Badges() {
   const [loading, setLoading] = useState(true);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const [progress, setProgress] = useState<ProgressData>({
-    totalCount: 0,
-    kingdomCounts: {},
-    locationCount: 0,
-    challengeCount: 0,
-    kingdomDiversity: 0,
+    totalCount: 0, kingdomCounts: {}, locationCount: 0,
+    challengeCount: 0, kingdomDiversity: 0,
   });
   const { toast } = useToast();
 
@@ -115,10 +128,7 @@ export default function Badges() {
 
   const fetchBadges = async () => {
     try {
-      const { data, error } = await supabase
-        .from("badges")
-        .select("*");
-
+      const { data, error } = await supabase.from("badges").select("*");
       if (error) throw error;
       setBadges(data || []);
     } catch (error) {
@@ -134,7 +144,6 @@ export default function Badges() {
         .from("user_badges")
         .select("*, badges(*)")
         .order("earned_at", { ascending: false });
-
       if (error) throw error;
       setUserBadges(data || []);
     } catch (error) {
@@ -144,32 +153,19 @@ export default function Badges() {
 
   const fetchProgress = async () => {
     try {
-      // Fetch species identifications
-      const { data: species } = await supabase
-        .from("species_identifications")
-        .select("kingdom");
-
+      const { data: species } = await supabase.from("species_identifications").select("kingdom");
       const kingdomCounts: { [key: string]: number } = {};
       (species || []).forEach((s) => {
         kingdomCounts[s.kingdom] = (kingdomCounts[s.kingdom] || 0) + 1;
       });
-
-      // Fetch locations count
       const { count: locationCount } = await supabase
-        .from("locations")
-        .select("*", { count: "exact", head: true });
-
-      // Fetch completed challenges count
+        .from("locations").select("*", { count: "exact", head: true });
       const { count: challengeCount } = await supabase
-        .from("user_daily_challenges")
-        .select("*", { count: "exact", head: true })
+        .from("user_daily_challenges").select("*", { count: "exact", head: true })
         .eq("is_completed", true);
-
       setProgress({
-        totalCount: species?.length || 0,
-        kingdomCounts,
-        locationCount: locationCount || 0,
-        challengeCount: challengeCount || 0,
+        totalCount: species?.length || 0, kingdomCounts,
+        locationCount: locationCount || 0, challengeCount: challengeCount || 0,
         kingdomDiversity: Object.keys(kingdomCounts).length,
       });
     } catch (error) {
@@ -195,54 +191,51 @@ export default function Badges() {
       const target = parseInt(badge.requirement_value || "1");
       return Math.min(progress.challengeCount / target, 1);
     } else if (badge.requirement_type === "single_rare") {
-      return 0; // No progress tracking for rare finds
+      return 0;
     }
     return 0;
   };
 
   const getBadgeRequirementText = (badge: Badge): string => {
-    if (badge.requirement_type === "total_count") {
-      return `Identify ${badge.requirement_value} species`;
-    } else if (badge.requirement_type === "kingdom_count") {
+    if (badge.requirement_type === "total_count") return `Identify ${badge.requirement_value} species`;
+    if (badge.requirement_type === "kingdom_count") {
       const req = JSON.parse(badge.requirement_value || "{}");
-      const kingdomName = KINGDOM_LABELS[req.kingdom] || req.kingdom;
-      return `Find ${req.count} ${kingdomName.toLowerCase()}`;
-    } else if (badge.requirement_type === "kingdom_diversity") {
-      return `Find species in ${badge.requirement_value} different kingdoms`;
-    } else if (badge.requirement_type === "location_count") {
-      return `Discover species in ${badge.requirement_value} locations`;
-    } else if (badge.requirement_type === "challenge_count") {
-      return `Complete ${badge.requirement_value} daily challenges`;
-    } else if (badge.requirement_type === "streak") {
-      return `Identify species ${badge.requirement_value} days in a row`;
-    } else if (badge.requirement_type === "single_rare") {
-      return "Find a rare species (single occurrence)";
+      return `Find ${req.count} ${(KINGDOM_LABELS[req.kingdom] || req.kingdom).toLowerCase()}`;
     }
+    if (badge.requirement_type === "kingdom_diversity") return `Find species in ${badge.requirement_value} different kingdoms`;
+    if (badge.requirement_type === "location_count") return `Discover species in ${badge.requirement_value} locations`;
+    if (badge.requirement_type === "challenge_count") return `Complete ${badge.requirement_value} daily challenges`;
+    if (badge.requirement_type === "streak") return `Identify species ${badge.requirement_value} days in a row`;
+    if (badge.requirement_type === "single_rare") return "Find a rare species (single occurrence)";
     return "Complete special requirement";
   };
 
   const getProgressText = (badge: Badge): string => {
     const isEarned = userBadges.some((ub) => ub.badge_id === badge.id);
     if (isEarned) return "Completed!";
-
     if (badge.requirement_type === "total_count") {
       const target = parseInt(badge.requirement_value || "1");
       return `${progress.totalCount}/${target}`;
     } else if (badge.requirement_type === "kingdom_count") {
       const req = JSON.parse(badge.requirement_value || "{}");
-      const current = progress.kingdomCounts[req.kingdom] || 0;
-      return `${current}/${req.count}`;
+      return `${progress.kingdomCounts[req.kingdom] || 0}/${req.count}`;
     } else if (badge.requirement_type === "kingdom_diversity") {
-      const target = parseInt(badge.requirement_value || "1");
-      return `${progress.kingdomDiversity}/${target}`;
+      return `${progress.kingdomDiversity}/${badge.requirement_value}`;
     } else if (badge.requirement_type === "location_count") {
-      const target = parseInt(badge.requirement_value || "1");
-      return `${progress.locationCount}/${target}`;
+      return `${progress.locationCount}/${badge.requirement_value}`;
     } else if (badge.requirement_type === "challenge_count") {
-      const target = parseInt(badge.requirement_value || "1");
-      return `${progress.challengeCount}/${target}`;
+      return `${progress.challengeCount}/${badge.requirement_value}`;
     }
     return "";
+  };
+
+  const getDifficultyLabel = (color: "green" | "violet" | "gold" | "red"): string => {
+    switch (color) {
+      case "green": return "Easy";
+      case "violet": return "Hard";
+      case "gold": return "Expert";
+      case "red": return "Legendary";
+    }
   };
 
   if (loading) {
@@ -264,14 +257,10 @@ export default function Badges() {
       </div>
 
       <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-3">
-          Earned ({userBadges.length})
-        </h2>
+        <h2 className="text-lg font-semibold mb-3">Earned ({userBadges.length})</h2>
         {userBadges.length === 0 ? (
           <Card className="p-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              No badges earned yet. Keep exploring!
-            </p>
+            <p className="text-sm text-muted-foreground">No badges earned yet. Keep exploring!</p>
           </Card>
         ) : (
           <div className="grid grid-cols-3 gap-3">
@@ -287,11 +276,10 @@ export default function Badges() {
                     progress={1}
                     isEarned={true}
                     size="lg"
+                    color={getBadgeDifficultyColor(userBadge.badges)}
                   />
                 </div>
-                <h3 className="font-semibold text-xs truncate">
-                  {userBadge.badges.name}
-                </h3>
+                <h3 className="font-semibold text-xs truncate">{userBadge.badges.name}</h3>
               </Card>
             ))}
           </div>
@@ -299,12 +287,11 @@ export default function Badges() {
       </div>
 
       <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-3">
-          Available ({availableBadges.length})
-        </h2>
+        <h2 className="text-lg font-semibold mb-3">Available ({availableBadges.length})</h2>
         <div className="grid grid-cols-3 gap-3">
           {availableBadges.map((badge) => {
             const badgeProgress = getBadgeProgress(badge);
+            const diffColor = getBadgeDifficultyColor(badge);
             return (
               <Card
                 key={badge.id}
@@ -317,52 +304,47 @@ export default function Badges() {
                     progress={badgeProgress}
                     isEarned={false}
                     size="lg"
+                    color={diffColor}
                   />
                 </div>
                 <h3 className="font-semibold text-xs truncate">{badge.name}</h3>
-                <p className="text-[10px] text-muted-foreground">
-                  {getProgressText(badge)}
-                </p>
+                <p className="text-[10px] text-muted-foreground">{getProgressText(badge)}</p>
               </Card>
             );
           })}
         </div>
       </div>
 
-      <Dialog
-        open={!!selectedBadge}
-        onOpenChange={(open) => !open && setSelectedBadge(null)}
-      >
+      <Dialog open={!!selectedBadge} onOpenChange={(open) => !open && setSelectedBadge(null)}>
         <DialogContent className="mx-4 max-w-[calc(100%-2rem)]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
               <BadgeProgressCircle
                 icon={getBadgeIcon(selectedBadge?.icon || "")}
-                progress={
-                  selectedBadge
-                    ? earnedBadgeIds.has(selectedBadge.id)
-                      ? 1
-                      : getBadgeProgress(selectedBadge)
-                    : 0
-                }
-                isEarned={
-                  selectedBadge
-                    ? earnedBadgeIds.has(selectedBadge.id)
-                    : false
-                }
+                progress={selectedBadge ? (earnedBadgeIds.has(selectedBadge.id) ? 1 : getBadgeProgress(selectedBadge)) : 0}
+                isEarned={selectedBadge ? earnedBadgeIds.has(selectedBadge.id) : false}
                 size="lg"
+                color={selectedBadge ? getBadgeDifficultyColor(selectedBadge) : "green"}
               />
-              <span className="text-lg">{selectedBadge?.name}</span>
+              <div>
+                <span className="text-lg">{selectedBadge?.name}</span>
+                {selectedBadge && (
+                  <p className="text-xs font-medium" style={{ color: 
+                    getBadgeDifficultyColor(selectedBadge) === "green" ? "hsl(142, 71%, 45%)" :
+                    getBadgeDifficultyColor(selectedBadge) === "violet" ? "hsl(270, 70%, 55%)" :
+                    getBadgeDifficultyColor(selectedBadge) === "gold" ? "hsl(45, 90%, 55%)" :
+                    "hsl(0, 75%, 55%)"
+                  }}>
+                    {getDifficultyLabel(getBadgeDifficultyColor(selectedBadge))}
+                  </p>
+                )}
+              </div>
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              {selectedBadge?.description}
-            </p>
+            <p className="text-sm text-muted-foreground">{selectedBadge?.description}</p>
             <div className="bg-muted/50 p-3 rounded-lg">
-              <p className="text-xs font-semibold text-foreground mb-1">
-                Requirement:
-              </p>
+              <p className="text-xs font-semibold text-foreground mb-1">Requirement:</p>
               <p className="text-sm text-muted-foreground">
                 {selectedBadge && getBadgeRequirementText(selectedBadge)}
               </p>
@@ -372,19 +354,17 @@ export default function Badges() {
                 </p>
               )}
             </div>
-            {selectedBadge &&
-              userBadges.some((ub) => ub.badge_id === selectedBadge.id) && (
-                <div className="flex items-center gap-2 text-sm text-primary">
-                  <Check className="h-4 w-4" />
-                  <span>
-                    Earned{" "}
-                    {new Date(
-                      userBadges.find((ub) => ub.badge_id === selectedBadge.id)
-                        ?.earned_at || ""
-                    ).toLocaleDateString()}
-                  </span>
-                </div>
-              )}
+            {selectedBadge && userBadges.some((ub) => ub.badge_id === selectedBadge.id) && (
+              <div className="flex items-center gap-2 text-sm text-primary">
+                <Check className="h-4 w-4" />
+                <span>
+                  Earned{" "}
+                  {new Date(
+                    userBadges.find((ub) => ub.badge_id === selectedBadge.id)?.earned_at || ""
+                  ).toLocaleDateString()}
+                </span>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>

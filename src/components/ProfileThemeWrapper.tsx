@@ -19,17 +19,71 @@ const themeStyles: Record<string, { gradient: string; accent: string }> = {
   },
 };
 
-// Nature theme with colorful animated animals and plants spread across the card
+// Nature theme with a large tree on the left and leaves falling from its canopy
 const NatureDecorations = () => (
   <>
-    {/* Top-left: Tree */}
-    <div className="absolute top-0 left-0 w-14 h-16 opacity-25 pointer-events-none animate-sway">
-      <svg viewBox="0 0 64 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M32 10L16 35H24L12 55H28V75H36V55H52L40 35H48L32 10Z" fill="#22c55e"/>
-        <rect x="28" y="55" width="8" height="20" fill="#8B4513"/>
+    {/* Large tree on the left side with canopy extending 3/4 across */}
+    <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
+      {/* Tree trunk */}
+      <svg className="absolute bottom-0 left-4 opacity-30" width="40" height="200" viewBox="0 0 40 200" fill="none">
+        <rect x="12" y="0" width="16" height="200" rx="4" fill="#6b4226"/>
+        <rect x="8" y="80" width="6" height="4" rx="2" fill="#6b4226" transform="rotate(-30 8 80)"/>
+        <rect x="26" y="60" width="8" height="4" rx="2" fill="#6b4226" transform="rotate(25 26 60)"/>
+      </svg>
+      
+      {/* Tree canopy - large leaf umbrella covering 3/4 of the top */}
+      <svg className="absolute top-0 left-0 opacity-25 animate-sway" width="100%" height="120" viewBox="0 0 400 120" preserveAspectRatio="none" fill="none">
+        <ellipse cx="40" cy="80" rx="120" ry="70" fill="#15803d"/>
+        <ellipse cx="80" cy="60" rx="140" ry="55" fill="#16a34a"/>
+        <ellipse cx="120" cy="45" rx="130" ry="45" fill="#22c55e"/>
+        <ellipse cx="60" cy="50" rx="100" ry="50" fill="#15803d"/>
+        <ellipse cx="160" cy="55" rx="120" ry="50" fill="#16a34a"/>
+        <ellipse cx="200" cy="40" rx="100" ry="40" fill="#22c55e" fillOpacity="0.8"/>
+        <ellipse cx="250" cy="55" rx="80" ry="35" fill="#16a34a" fillOpacity="0.6"/>
+        <ellipse cx="100" cy="70" rx="90" ry="40" fill="#15803d" fillOpacity="0.7"/>
       </svg>
     </div>
     
+    {/* Leaves falling from beneath the canopy (within 3/4 width) */}
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div className="absolute top-[12%] left-[5%] w-4 h-4 animate-float-leaf">
+        <svg viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="8" rx="6" ry="3" fill="#4ade80" transform="rotate(-30 8 8)"/></svg>
+      </div>
+      <div className="absolute top-[15%] left-[15%] w-3 h-3 animate-float-leaf-2">
+        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="5" ry="2.5" fill="#86efac" transform="rotate(20 6 6)"/></svg>
+      </div>
+      <div className="absolute top-[10%] left-[25%] w-3 h-3 animate-float-leaf-3">
+        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#22c55e" transform="rotate(-15 6 6)"/></svg>
+      </div>
+      <div className="absolute top-[18%] left-[35%] w-3 h-3 animate-float-leaf" style={{ animationDelay: '1s' }}>
+        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#4ade80" transform="rotate(40 6 6)"/></svg>
+      </div>
+      <div className="absolute top-[14%] left-[45%] w-3 h-3 animate-float-leaf-2" style={{ animationDelay: '3s' }}>
+        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#a3e635" transform="rotate(-25 6 6)"/></svg>
+      </div>
+      <div className="absolute top-[20%] left-[55%] w-3 h-3 animate-float-leaf-3" style={{ animationDelay: '0.5s' }}>
+        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#86efac" transform="rotate(15 6 6)"/></svg>
+      </div>
+      <div className="absolute top-[12%] left-[65%] w-4 h-4 animate-float-leaf" style={{ animationDelay: '2s' }}>
+        <svg viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="8" rx="5" ry="2.5" fill="#4ade80" transform="rotate(-40 8 8)"/></svg>
+      </div>
+      <div className="absolute top-[16%] left-[10%] w-3 h-3 animate-float-leaf-2" style={{ animationDelay: '4s' }}>
+        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#22c55e" transform="rotate(30 6 6)"/></svg>
+      </div>
+      <div className="absolute top-[22%] left-[40%] w-3 h-3 animate-float-leaf-3" style={{ animationDelay: '1.5s' }}>
+        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#a3e635" transform="rotate(-10 6 6)"/></svg>
+      </div>
+      <div className="absolute top-[19%] left-[50%] w-3 h-3 animate-float-leaf" style={{ animationDelay: '3.5s' }}>
+        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="5" ry="2" fill="#4ade80" transform="rotate(25 6 6)"/></svg>
+      </div>
+      <div className="absolute top-[13%] left-[30%] w-3 h-3 animate-float-leaf-2" style={{ animationDelay: '2.5s' }}>
+        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#86efac" transform="rotate(-35 6 6)"/></svg>
+      </div>
+      <div className="absolute top-[25%] left-[20%] w-3 h-3 animate-float-leaf-3" style={{ animationDelay: '0.8s' }}>
+        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#22c55e" transform="rotate(45 6 6)"/></svg>
+      </div>
+    </div>
+
     {/* Top-left area: Owl on branch */}
     <div className="absolute top-8 left-14 opacity-40 pointer-events-none animate-owl-bob">
       <svg width="26" height="30" viewBox="0 0 26 30" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -235,40 +289,6 @@ const NatureDecorations = () => (
       <div className="absolute top-[70%] left-[25%] w-1.5 h-1.5 rounded-full bg-lime-200 animate-firefly-2" style={{ animationDelay: '2s' }} />
       <div className="absolute top-[50%] right-[10%] w-2 h-2 rounded-full bg-yellow-200 animate-firefly-3" style={{ animationDelay: '0.5s' }} />
     </div>
-    
-    {/* Floating leaves scattered - more leaves */}
-    <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      <div className="absolute top-[5%] left-[10%] w-4 h-4 animate-float-leaf">
-        <svg viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="8" rx="6" ry="3" fill="#4ade80" transform="rotate(-30 8 8)"/></svg>
-      </div>
-      <div className="absolute top-[15%] left-[45%] w-3 h-3 animate-float-leaf-2">
-        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="5" ry="2.5" fill="#86efac" transform="rotate(20 6 6)"/></svg>
-      </div>
-      <div className="absolute top-[10%] right-[15%] w-3 h-3 animate-float-leaf-3">
-        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#22c55e" transform="rotate(-15 6 6)"/></svg>
-      </div>
-      <div className="absolute top-[30%] right-[30%] w-3 h-3 animate-float-leaf" style={{ animationDelay: '1s' }}>
-        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#4ade80" transform="rotate(40 6 6)"/></svg>
-      </div>
-      <div className="absolute top-[25%] left-[60%] w-3 h-3 animate-float-leaf-2" style={{ animationDelay: '3s' }}>
-        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#a3e635" transform="rotate(-25 6 6)"/></svg>
-      </div>
-      <div className="absolute top-[50%] left-[15%] w-3 h-3 animate-float-leaf-3" style={{ animationDelay: '0.5s' }}>
-        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#86efac" transform="rotate(15 6 6)"/></svg>
-      </div>
-      <div className="absolute top-[40%] right-[10%] w-4 h-4 animate-float-leaf" style={{ animationDelay: '2s' }}>
-        <svg viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="8" rx="5" ry="2.5" fill="#4ade80" transform="rotate(-40 8 8)"/></svg>
-      </div>
-      <div className="absolute top-[60%] left-[35%] w-3 h-3 animate-float-leaf-2" style={{ animationDelay: '4s' }}>
-        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#22c55e" transform="rotate(30 6 6)"/></svg>
-      </div>
-      <div className="absolute top-[70%] right-[25%] w-3 h-3 animate-float-leaf-3" style={{ animationDelay: '1.5s' }}>
-        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#a3e635" transform="rotate(-10 6 6)"/></svg>
-      </div>
-      <div className="absolute top-[80%] left-[50%] w-3 h-3 animate-float-leaf" style={{ animationDelay: '3.5s' }}>
-        <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="5" ry="2" fill="#4ade80" transform="rotate(25 6 6)"/></svg>
-      </div>
-    </div>
   </>
 );
 
@@ -400,12 +420,14 @@ const OceanDecorations = () => (
       <div className="absolute bottom-0 right-[16%] w-4 h-4 bg-sky-400/20 rounded-full animate-bubble" style={{ animationDelay: '0.3s' }} />
     </div>
     
-    {/* Waves at bottom - continuous seamless */}
-    <div className="absolute bottom-0 left-0 right-0 h-8 opacity-25 pointer-events-none overflow-hidden">
-      <svg className="absolute bottom-0 left-0 h-full animate-wave" style={{ width: '200%' }} viewBox="0 0 800 32" preserveAspectRatio="none">
-        <path d="M0 20 Q50 10 100 20 T200 20 T300 20 T400 20 T500 20 T600 20 T700 20 T800 20 V32 H0 Z" fill="#0ea5e9"/>
-        <path d="M0 24 Q50 16 100 24 T200 24 T300 24 T400 24 T500 24 T600 24 T700 24 T800 24 V32 H0 Z" fill="#0284c7" fillOpacity="0.6"/>
-      </svg>
+    {/* Seamless continuous wave at bottom */}
+    <div className="absolute bottom-0 left-0 right-0 h-10 opacity-30 pointer-events-none overflow-hidden">
+      <div className="absolute bottom-0 left-0 animate-wave" style={{ width: '200%' }}>
+        <svg className="h-10 w-full" viewBox="0 0 1200 40" preserveAspectRatio="none">
+          <path d="M0,20 C100,10 200,30 300,20 C400,10 500,30 600,20 C700,10 800,30 900,20 C1000,10 1100,30 1200,20 L1200,40 L0,40 Z" fill="#0ea5e9"/>
+          <path d="M0,25 C100,18 200,32 300,25 C400,18 500,32 600,25 C700,18 800,32 900,25 C1000,18 1100,32 1200,25 L1200,40 L0,40 Z" fill="#0284c7" fillOpacity="0.6"/>
+        </svg>
+      </div>
     </div>
   </>
 );

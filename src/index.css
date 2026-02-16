@@ -399,7 +399,8 @@ All colors MUST be HSL.
 }
 
 .animate-wave {
-  animation: wave 3s linear infinite;
+  animation: wave 4s linear infinite;
+  will-change: transform;
 }
 
 .animate-golden-glow {
