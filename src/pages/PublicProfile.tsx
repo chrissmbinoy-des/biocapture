@@ -297,8 +297,10 @@ export default function PublicProfile() {
     enabled: !!profileUserId,
   });
 
+  const resolvedProfileUserId = profileUserId || profile?.user_id || null;
+
   const handleFollow = async () => {
-    if (!currentUserId || !profileUserId) {
+    if (!currentUserId || !resolvedProfileUserId) {
       toast.error("Please sign in to follow explorers");
       return;
     }
@@ -306,10 +308,10 @@ export default function PublicProfile() {
     try {
       if (isFollowing) {
         await supabase.from("user_followers").delete()
-          .eq("follower_id", currentUserId).eq("following_id", profileUserId);
+          .eq("follower_id", currentUserId).eq("following_id", resolvedProfileUserId);
         toast.success("Unfollowed explorer");
       } else {
-        await supabase.from("user_followers").insert({ follower_id: currentUserId, following_id: profileUserId });
+        await supabase.from("user_followers").insert({ follower_id: currentUserId, following_id: resolvedProfileUserId });
         toast.success("Now following explorer!");
       }
       queryClient.invalidateQueries({ queryKey: ["isFollowing"] });
@@ -442,7 +444,7 @@ export default function PublicProfile() {
             </div>
           )}
 
-          {currentUserId && currentUserId !== profileUserId && (
+          {currentUserId && resolvedProfileUserId && currentUserId !== resolvedProfileUserId && (
             <div className="mt-4">
               <Button onClick={handleFollow} disabled={followLoading} variant={isFollowing ? "outline" : "default"} className="w-full">
                 {followLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : isFollowing ? <UserMinus className="h-4 w-4 mr-2" /> : <UserPlus className="h-4 w-4 mr-2" />}
