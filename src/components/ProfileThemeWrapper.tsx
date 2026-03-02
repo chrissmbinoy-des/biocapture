@@ -22,64 +22,42 @@ const themeStyles: Record<string, { gradient: string; accent: string }> = {
 // Nature theme with a large tree on the left and leaves falling from its canopy
 const NatureDecorations = () => (
   <>
-    {/* Large tree on the left side with canopy extending 3/4 across */}
-    <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden">
-      {/* Tree trunk */}
-      <svg className="absolute bottom-0 left-4 opacity-30" width="40" height="200" viewBox="0 0 40 200" fill="none">
-        <rect x="12" y="0" width="16" height="200" rx="4" fill="#6b4226"/>
-        <rect x="8" y="80" width="6" height="4" rx="2" fill="#6b4226" transform="rotate(-30 8 80)"/>
-        <rect x="26" y="60" width="8" height="4" rx="2" fill="#6b4226" transform="rotate(25 26 60)"/>
-      </svg>
-      
-      {/* Tree canopy - large leaf umbrella covering 3/4 of the top */}
-      <svg className="absolute top-0 left-0 opacity-25 animate-sway" width="100%" height="120" viewBox="0 0 400 120" preserveAspectRatio="none" fill="none">
-        <ellipse cx="40" cy="80" rx="120" ry="70" fill="#15803d"/>
-        <ellipse cx="80" cy="60" rx="140" ry="55" fill="#16a34a"/>
-        <ellipse cx="120" cy="45" rx="130" ry="45" fill="#22c55e"/>
-        <ellipse cx="60" cy="50" rx="100" ry="50" fill="#15803d"/>
-        <ellipse cx="160" cy="55" rx="120" ry="50" fill="#16a34a"/>
-        <ellipse cx="200" cy="40" rx="100" ry="40" fill="#22c55e" fillOpacity="0.8"/>
-        <ellipse cx="250" cy="55" rx="80" ry="35" fill="#16a34a" fillOpacity="0.6"/>
-        <ellipse cx="100" cy="70" rx="90" ry="40" fill="#15803d" fillOpacity="0.7"/>
-      </svg>
-    </div>
-    
-    {/* Leaves falling from beneath the canopy (within 3/4 width) */}
+    {/* Leaves falling across the card */}
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
-      <div className="absolute top-[12%] left-[5%] w-4 h-4 animate-float-leaf">
+      <div className="absolute top-[5%] left-[8%] w-4 h-4 animate-float-leaf">
         <svg viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="8" rx="6" ry="3" fill="#4ade80" transform="rotate(-30 8 8)"/></svg>
       </div>
-      <div className="absolute top-[15%] left-[15%] w-3 h-3 animate-float-leaf-2">
+      <div className="absolute top-[8%] left-[25%] w-3 h-3 animate-float-leaf-2">
         <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="5" ry="2.5" fill="#86efac" transform="rotate(20 6 6)"/></svg>
       </div>
-      <div className="absolute top-[10%] left-[25%] w-3 h-3 animate-float-leaf-3">
+      <div className="absolute top-[3%] left-[45%] w-3 h-3 animate-float-leaf-3">
         <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#22c55e" transform="rotate(-15 6 6)"/></svg>
       </div>
-      <div className="absolute top-[18%] left-[35%] w-3 h-3 animate-float-leaf" style={{ animationDelay: '1s' }}>
+      <div className="absolute top-[10%] left-[60%] w-3 h-3 animate-float-leaf" style={{ animationDelay: '1s' }}>
         <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#4ade80" transform="rotate(40 6 6)"/></svg>
       </div>
-      <div className="absolute top-[14%] left-[45%] w-3 h-3 animate-float-leaf-2" style={{ animationDelay: '3s' }}>
+      <div className="absolute top-[6%] left-[78%] w-3 h-3 animate-float-leaf-2" style={{ animationDelay: '3s' }}>
         <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#a3e635" transform="rotate(-25 6 6)"/></svg>
       </div>
-      <div className="absolute top-[20%] left-[55%] w-3 h-3 animate-float-leaf-3" style={{ animationDelay: '0.5s' }}>
+      <div className="absolute top-[12%] left-[90%] w-3 h-3 animate-float-leaf-3" style={{ animationDelay: '0.5s' }}>
         <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#86efac" transform="rotate(15 6 6)"/></svg>
       </div>
-      <div className="absolute top-[12%] left-[65%] w-4 h-4 animate-float-leaf" style={{ animationDelay: '2s' }}>
+      <div className="absolute top-[4%] left-[38%] w-4 h-4 animate-float-leaf" style={{ animationDelay: '2s' }}>
         <svg viewBox="0 0 16 16" fill="none"><ellipse cx="8" cy="8" rx="5" ry="2.5" fill="#4ade80" transform="rotate(-40 8 8)"/></svg>
       </div>
-      <div className="absolute top-[16%] left-[10%] w-3 h-3 animate-float-leaf-2" style={{ animationDelay: '4s' }}>
+      <div className="absolute top-[9%] left-[55%] w-3 h-3 animate-float-leaf-2" style={{ animationDelay: '4s' }}>
         <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#22c55e" transform="rotate(30 6 6)"/></svg>
       </div>
-      <div className="absolute top-[22%] left-[40%] w-3 h-3 animate-float-leaf-3" style={{ animationDelay: '1.5s' }}>
+      <div className="absolute top-[7%] left-[15%] w-3 h-3 animate-float-leaf-3" style={{ animationDelay: '1.5s' }}>
         <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#a3e635" transform="rotate(-10 6 6)"/></svg>
       </div>
-      <div className="absolute top-[19%] left-[50%] w-3 h-3 animate-float-leaf" style={{ animationDelay: '3.5s' }}>
+      <div className="absolute top-[11%] left-[70%] w-3 h-3 animate-float-leaf" style={{ animationDelay: '3.5s' }}>
         <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="5" ry="2" fill="#4ade80" transform="rotate(25 6 6)"/></svg>
       </div>
-      <div className="absolute top-[13%] left-[30%] w-3 h-3 animate-float-leaf-2" style={{ animationDelay: '2.5s' }}>
+      <div className="absolute top-[2%] left-[50%] w-3 h-3 animate-float-leaf-2" style={{ animationDelay: '2.5s' }}>
         <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#86efac" transform="rotate(-35 6 6)"/></svg>
       </div>
-      <div className="absolute top-[25%] left-[20%] w-3 h-3 animate-float-leaf-3" style={{ animationDelay: '0.8s' }}>
+      <div className="absolute top-[14%] left-[82%] w-3 h-3 animate-float-leaf-3" style={{ animationDelay: '0.8s' }}>
         <svg viewBox="0 0 12 12" fill="none"><ellipse cx="6" cy="6" rx="4" ry="2" fill="#22c55e" transform="rotate(45 6 6)"/></svg>
       </div>
     </div>
