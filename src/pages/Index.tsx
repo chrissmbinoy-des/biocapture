@@ -34,15 +34,16 @@ const Index = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set up auth listener
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Set up auth listener FIRST, then check session
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
-      if (!session) {
+      // Only redirect to auth on explicit sign-out, not on token refresh failures
+      if (event === 'SIGNED_OUT') {
         navigate("/auth");
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (!session) {
         navigate("/auth");
