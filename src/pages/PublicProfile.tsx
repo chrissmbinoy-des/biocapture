@@ -12,7 +12,7 @@ import {
   Leaf, Cat, Bug, Bird, Fish, Microscope, Target, Zap, Shield, Heart,
   Sun, Moon, Mountain, Trees, Waves, Wind, Cloud, Snowflake, Sparkles,
   Compass, Rainbow, Earth, Map, Calendar, CalendarDays, CalendarCheck,
-  Dumbbell, ArrowLeft, Feather, LucideIcon, UserPlus, UserMinus,
+  Dumbbell, ArrowLeft, LucideIcon, UserPlus, UserMinus,
 } from "lucide-react";
 import { BadgeProgressCircle } from "@/components/BadgeProgressCircle";
 import { ProfileThemeWrapper, getFrameStyles, getTitleStyles } from "@/components/ProfileThemeWrapper";
@@ -118,7 +118,6 @@ export default function PublicProfile() {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const shareId = searchParams.get("share");
-  const [profileUserId, setProfileUserId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [followLoading, setFollowLoading] = useState(false);
 
@@ -134,88 +133,106 @@ export default function PublicProfile() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Find user by share ID
-  const { data: profile, isLoading: profileLoading } = useQuery({
-    queryKey: ["publicProfile", shareId],
+  // Step 1: Resolve share ID to user_id
+  const { data: resolvedUserId, isLoading: resolvingUser } = useQuery({
+    queryKey: ["resolveShareId", shareId],
     queryFn: async () => {
       if (!shareId) return null;
-      const { data: profiles, error } = await supabase.from("user_profiles").select("*");
-      if (error) throw error;
-      const matchedProfile = profiles?.find(p => p.user_id.toLowerCase().endsWith(shareId.toLowerCase()));
-      if (matchedProfile) {
-        setProfileUserId(matchedProfile.user_id);
-        return matchedProfile as UserProfile;
-      }
+      // Try matching from profiles first
+      const { data: profiles } = await supabase.from("user_profiles").select("user_id");
+      const match = profiles?.find(p => p.user_id.toLowerCase().endsWith(shareId.toLowerCase()));
+      if (match) return match.user_id;
+      // Fallback to RPC
       const { data: userId } = await supabase.rpc("get_user_id_by_share_id", { share_id: shareId });
-      if (userId) {
-        setProfileUserId(userId);
-        return { id: "", user_id: userId, username: null, display_name: null, bio: null, country: null, avatar_url: null, display_badges: null, equipped_items: null } as UserProfile;
-      }
-      return null;
+      return userId || null;
     },
     enabled: !!shareId,
+    staleTime: 5 * 60 * 1000,
   });
 
-  const { data: isFollowing = false } = useQuery({
-    queryKey: ["isFollowing", currentUserId, profileUserId],
+  // Step 2: Fetch profile data using resolved user ID
+  const { data: profile, isLoading: profileLoading } = useQuery({
+    queryKey: ["publicProfile", resolvedUserId],
     queryFn: async () => {
-      if (!currentUserId || !profileUserId) return false;
+      if (!resolvedUserId) return null;
+      const { data, error } = await supabase.from("user_profiles").select("*").eq("user_id", resolvedUserId).maybeSingle();
+      if (error) throw error;
+      return (data as UserProfile) || {
+        id: "", user_id: resolvedUserId, username: null, display_name: null,
+        bio: null, country: null, avatar_url: null, display_badges: null, equipped_items: null,
+      } as UserProfile;
+    },
+    enabled: !!resolvedUserId,
+    staleTime: 60 * 1000,
+  });
+
+  // All dependent queries use resolvedUserId directly - no stale state issues
+  const { data: isFollowing = false } = useQuery({
+    queryKey: ["isFollowing", currentUserId, resolvedUserId],
+    queryFn: async () => {
+      if (!currentUserId || !resolvedUserId) return false;
       const { data } = await supabase.from("user_followers").select("id")
-        .eq("follower_id", currentUserId).eq("following_id", profileUserId).maybeSingle();
+        .eq("follower_id", currentUserId).eq("following_id", resolvedUserId).maybeSingle();
       return !!data;
     },
-    enabled: !!currentUserId && !!profileUserId && currentUserId !== profileUserId,
+    enabled: !!currentUserId && !!resolvedUserId && currentUserId !== resolvedUserId,
+    staleTime: 30 * 1000,
   });
 
   const { data: followerCount = 0 } = useQuery({
-    queryKey: ["followerCount", profileUserId],
+    queryKey: ["followerCount", resolvedUserId],
     queryFn: async () => {
-      if (!profileUserId) return 0;
-      const { count } = await supabase.from("user_followers").select("*", { count: "exact", head: true }).eq("following_id", profileUserId);
+      if (!resolvedUserId) return 0;
+      const { count } = await supabase.from("user_followers").select("*", { count: "exact", head: true }).eq("following_id", resolvedUserId);
       return count || 0;
     },
-    enabled: !!profileUserId,
+    enabled: !!resolvedUserId,
+    staleTime: 30 * 1000,
   });
 
   const { data: followingCount = 0 } = useQuery({
-    queryKey: ["followingCount", profileUserId],
+    queryKey: ["followingCount", resolvedUserId],
     queryFn: async () => {
-      if (!profileUserId) return 0;
-      const { count } = await supabase.from("user_followers").select("*", { count: "exact", head: true }).eq("follower_id", profileUserId);
+      if (!resolvedUserId) return 0;
+      const { count } = await supabase.from("user_followers").select("*", { count: "exact", head: true }).eq("follower_id", resolvedUserId);
       return count || 0;
     },
-    enabled: !!profileUserId,
+    enabled: !!resolvedUserId,
+    staleTime: 30 * 1000,
   });
 
   const { data: speciesCount = 0 } = useQuery({
-    queryKey: ["publicSpeciesCount", profileUserId],
+    queryKey: ["publicSpeciesCount", resolvedUserId],
     queryFn: async () => {
-      if (!profileUserId) return 0;
-      const { data } = await supabase.rpc("get_user_species_count", { target_user_id: profileUserId });
+      if (!resolvedUserId) return 0;
+      const { data } = await supabase.rpc("get_user_species_count", { target_user_id: resolvedUserId });
       return data || 0;
     },
-    enabled: !!profileUserId,
+    enabled: !!resolvedUserId,
+    staleTime: 60 * 1000,
   });
 
   const { data: uniqueSpeciesCount = 0 } = useQuery({
-    queryKey: ["publicUniqueSpecies", profileUserId],
+    queryKey: ["publicUniqueSpecies", resolvedUserId],
     queryFn: async () => {
-      if (!profileUserId) return 0;
-      const { data } = await supabase.rpc("get_user_unique_species_count", { target_user_id: profileUserId });
+      if (!resolvedUserId) return 0;
+      const { data } = await supabase.rpc("get_user_unique_species_count", { target_user_id: resolvedUserId });
       return data || 0;
     },
-    enabled: !!profileUserId,
+    enabled: !!resolvedUserId,
+    staleTime: 60 * 1000,
   });
 
   const { data: allUserBadges = [] } = useQuery({
-    queryKey: ["publicUserBadges", profileUserId],
+    queryKey: ["publicUserBadges", resolvedUserId],
     queryFn: async () => {
-      if (!profileUserId) return [];
-      const { data, error } = await supabase.from("user_badges").select("*, badges(*)").eq("user_id", profileUserId);
+      if (!resolvedUserId) return [];
+      const { data, error } = await supabase.from("user_badges").select("*, badges(*)").eq("user_id", resolvedUserId);
       if (error) throw error;
       return (data as UserBadge[]) || [];
     },
-    enabled: !!profileUserId,
+    enabled: !!resolvedUserId,
+    staleTime: 60 * 1000,
   });
 
   const displayedEarnedBadges = profile?.display_badges?.length
@@ -223,15 +240,16 @@ export default function PublicProfile() {
     : allUserBadges.slice(0, 3);
 
   const { data: userPurchases = [] } = useQuery({
-    queryKey: ["publicUserPurchases", profileUserId],
+    queryKey: ["publicUserPurchases", resolvedUserId],
     queryFn: async () => {
-      if (!profileUserId) return [];
+      if (!resolvedUserId) return [];
       const { data, error } = await supabase.from("user_purchases").select("*, shop_items(*)")
-        .eq("user_id", profileUserId).eq("is_active", true);
+        .eq("user_id", resolvedUserId).eq("is_active", true);
       if (error) throw error;
       return (data as UserPurchase[]) || [];
     },
-    enabled: !!profileUserId,
+    enabled: !!resolvedUserId,
+    staleTime: 60 * 1000,
   });
 
   const displayedShopBadges = profile?.display_badges?.length
@@ -263,44 +281,44 @@ export default function PublicProfile() {
   };
 
   const { data: streakData } = useQuery({
-    queryKey: ["publicStreak", profileUserId],
+    queryKey: ["publicStreak", resolvedUserId],
     queryFn: async () => {
-      if (!profileUserId) return null;
-      const { data } = await supabase.from("login_streaks").select("*").eq("user_id", profileUserId).maybeSingle();
+      if (!resolvedUserId) return null;
+      const { data } = await supabase.from("login_streaks").select("*").eq("user_id", resolvedUserId).maybeSingle();
       return data;
     },
-    enabled: !!profileUserId,
+    enabled: !!resolvedUserId,
+    staleTime: 60 * 1000,
   });
 
   const { data: globalRank } = useQuery({
-    queryKey: ["publicGlobalRank", profileUserId],
+    queryKey: ["publicGlobalRank", resolvedUserId],
     queryFn: async () => {
-      if (!profileUserId) return null;
+      if (!resolvedUserId) return null;
       const { data } = await supabase.rpc("get_worldwide_leaderboard", { limit_count: 100 });
-      return data?.find((e: { user_id: string }) => e.user_id === profileUserId)?.rank || null;
+      return data?.find((e: { user_id: string }) => e.user_id === resolvedUserId)?.rank || null;
     },
-    enabled: !!profileUserId,
+    enabled: !!resolvedUserId,
+    staleTime: 60 * 1000,
   });
 
-  // Fetch recent observations
   const { data: recentObservations = [] } = useQuery({
-    queryKey: ["publicObservations", profileUserId],
+    queryKey: ["publicObservations", resolvedUserId],
     queryFn: async () => {
-      if (!profileUserId) return [];
+      if (!resolvedUserId) return [];
       const { data, error } = await supabase.rpc("get_user_recent_identifications", {
-        target_user_id: profileUserId,
+        target_user_id: resolvedUserId,
         limit_count: 20,
       });
       if (error) throw error;
       return (data as PublicIdentification[]) || [];
     },
-    enabled: !!profileUserId,
+    enabled: !!resolvedUserId,
+    staleTime: 60 * 1000,
   });
 
-  const resolvedProfileUserId = profileUserId || profile?.user_id || null;
-
   const handleFollow = async () => {
-    if (!currentUserId || !resolvedProfileUserId) {
+    if (!currentUserId || !resolvedUserId) {
       toast.error("Please sign in to follow explorers");
       return;
     }
@@ -308,10 +326,10 @@ export default function PublicProfile() {
     try {
       if (isFollowing) {
         await supabase.from("user_followers").delete()
-          .eq("follower_id", currentUserId).eq("following_id", resolvedProfileUserId);
+          .eq("follower_id", currentUserId).eq("following_id", resolvedUserId);
         toast.success("Unfollowed explorer");
       } else {
-        await supabase.from("user_followers").insert({ follower_id: currentUserId, following_id: resolvedProfileUserId });
+        await supabase.from("user_followers").insert({ follower_id: currentUserId, following_id: resolvedUserId });
         toast.success("Now following explorer!");
       }
       queryClient.invalidateQueries({ queryKey: ["isFollowing"] });
@@ -327,8 +345,8 @@ export default function PublicProfile() {
   const getExplorerName = () => {
     if (profile?.display_name) return profile.display_name;
     if (profile?.username) return `@${profile.username}`;
-    if (!profileUserId) return "Explorer";
-    return `Explorer #${profileUserId.slice(-4).toUpperCase()}`;
+    if (!resolvedUserId) return "Explorer";
+    return `Explorer #${resolvedUserId.slice(-4).toUpperCase()}`;
   };
 
   const getUsername = () => profile?.username ? `@${profile.username}` : null;
@@ -352,7 +370,7 @@ export default function PublicProfile() {
     );
   };
 
-  if (profileLoading) {
+  if (resolvingUser || profileLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -360,7 +378,7 @@ export default function PublicProfile() {
     );
   }
 
-  if (!profile) {
+  if (!profile || !resolvedUserId) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-background p-4">
         <Card className="p-8 text-center max-w-md">
@@ -379,7 +397,6 @@ export default function PublicProfile() {
 
   return (
     <div className="min-h-screen bg-background pb-8">
-      {/* Header */}
       <ProfileThemeWrapper theme={equippedTheme} className="px-4 pt-8 pb-6">
         <div className="max-w-lg mx-auto">
           <Link to="/" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4">
@@ -444,7 +461,7 @@ export default function PublicProfile() {
             </div>
           )}
 
-          {currentUserId && resolvedProfileUserId && currentUserId !== resolvedProfileUserId && (
+          {currentUserId && resolvedUserId && currentUserId !== resolvedUserId && (
             <div className="mt-4">
               <Button onClick={handleFollow} disabled={followLoading} variant={isFollowing ? "outline" : "default"} className="w-full">
                 {followLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : isFollowing ? <UserMinus className="h-4 w-4 mr-2" /> : <UserPlus className="h-4 w-4 mr-2" />}
@@ -462,7 +479,6 @@ export default function PublicProfile() {
         </div>
       </ProfileThemeWrapper>
 
-      {/* Recent Observations */}
       {recentObservations.length > 0 && (
         <div className="max-w-lg mx-auto px-4 mt-6">
           <h2 className="text-lg font-semibold mb-3">Recent Observations</h2>

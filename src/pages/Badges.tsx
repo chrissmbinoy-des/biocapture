@@ -246,8 +246,12 @@ export default function Badges() {
     );
   }
 
+  const RARITY_ORDER: Record<string, number> = { green: 0, violet: 1, gold: 2, red: 3 };
+  const sortByRarity = (a: Badge, b: Badge) => RARITY_ORDER[getBadgeDifficultyColor(a)] - RARITY_ORDER[getBadgeDifficultyColor(b)];
+
   const earnedBadgeIds = new Set(userBadges.map((ub) => ub.badge_id));
-  const availableBadges = badges.filter((badge) => !earnedBadgeIds.has(badge.id));
+  const sortedEarnedBadges = [...userBadges].sort((a, b) => sortByRarity(a.badges as unknown as Badge, b.badges as unknown as Badge));
+  const availableBadges = badges.filter((badge) => !earnedBadgeIds.has(badge.id)).sort(sortByRarity);
 
   return (
     <div className="p-4 pb-20">
@@ -257,14 +261,14 @@ export default function Badges() {
       </div>
 
       <div className="mb-6">
-        <h2 className="text-lg font-semibold mb-3">Earned ({userBadges.length})</h2>
-        {userBadges.length === 0 ? (
+        <h2 className="text-lg font-semibold mb-3">Earned ({sortedEarnedBadges.length})</h2>
+        {sortedEarnedBadges.length === 0 ? (
           <Card className="p-6 text-center">
             <p className="text-sm text-muted-foreground">No badges earned yet. Keep exploring!</p>
           </Card>
         ) : (
           <div className="grid grid-cols-3 gap-3">
-            {userBadges.map((userBadge) => (
+            {sortedEarnedBadges.map((userBadge) => (
               <Card
                 key={userBadge.id}
                 className="p-3 text-center cursor-pointer active:scale-95 transition-transform"
