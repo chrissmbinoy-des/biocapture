@@ -264,7 +264,7 @@ export default function Profile() {
       return count || 0;
     },
     enabled: !!userId,
-    refetchInterval: 30000, // Refresh every 30 seconds
+    staleTime: 60 * 1000,
   });
 
   // Fetch unique species count (live updated)
@@ -281,7 +281,7 @@ export default function Profile() {
       return unique.size;
     },
     enabled: !!userId,
-    refetchInterval: 30000, // Refresh every 30 seconds
+    staleTime: 60 * 1000,
   });
 
   // Fetch badges earned with details (for display - limited to selected or first 3)
@@ -297,14 +297,13 @@ export default function Profile() {
       if (error) throw error;
       
       const allBadges = (data as UserBadge[]) || [];
-      // Return selected earned badges or first 3
       if (userProfile?.display_badges?.length) {
         return allBadges.filter(ub => userProfile.display_badges?.includes(ub.badge_id)).slice(0, 3);
       }
       return allBadges.slice(0, 3);
     },
     enabled: !!userId,
-    refetchInterval: 30000,
+    staleTime: 60 * 1000,
   });
 
   // Fetch purchased shop badges that are selected for display
@@ -334,7 +333,7 @@ export default function Profile() {
       return (data as AllBadge[]) || [];
     },
     enabled: !!userId,
-    refetchInterval: 30000, // Live updates every 30 seconds
+    staleTime: 60 * 1000,
   });
 
   // Fetch coin balance (live updated)
@@ -351,7 +350,7 @@ export default function Profile() {
       return data?.balance || 0;
     },
     enabled: !!userId,
-    refetchInterval: 30000, // Live updates every 30 seconds
+    staleTime: 60 * 1000,
   });
 
   // Fetch login streak
@@ -398,7 +397,7 @@ export default function Profile() {
       return count || 0;
     },
     enabled: !!userId,
-    refetchInterval: 30000, // Refetch every 30 seconds for live updates
+    staleTime: 30 * 1000,
   });
 
   // Fetch country and country rank
@@ -435,8 +434,9 @@ export default function Profile() {
   const fetchProfileData = async () => {
     try {
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
+        data: { session },
+      } = await supabase.auth.getSession();
+      const user = session?.user;
       if (!user) return;
       setUserId(user.id);
 
