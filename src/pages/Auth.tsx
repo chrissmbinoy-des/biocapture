@@ -141,6 +141,31 @@ const Auth = () => {
     }
   };
 
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail.trim()) {
+      toast({ title: "Please enter your email", variant: "destructive" });
+      return;
+    }
+    setForgotLoading(true);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (error) throw error;
+      toast({ title: "Reset email sent!", description: "Check your inbox for a password reset link." });
+      setShowForgot(false);
+    } catch (error: any) {
+      toast({ title: "Failed to send reset email", description: error.message, variant: "destructive" });
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -212,7 +237,41 @@ const Auth = () => {
                 {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Sign In
               </Button>
+
+              <div className="text-center">
+                <button
+                  type="button"
+                  className="text-sm text-primary hover:underline"
+                  onClick={() => { setShowForgot(true); setForgotEmail(email); }}
+                >
+                  Forgot password?
+                </button>
+              </div>
             </form>
+
+            {showForgot && (
+              <div className="mt-4 p-4 border rounded-lg bg-muted/50 space-y-3">
+                <p className="text-sm font-medium">Reset your password</p>
+                <form onSubmit={handleForgotPassword} className="space-y-3">
+                  <Input
+                    type="email"
+                    placeholder="Enter your email"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    required
+                  />
+                  <div className="flex gap-2">
+                    <Button type="submit" size="sm" disabled={forgotLoading} className="flex-1">
+                      {forgotLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      Send Reset Link
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setShowForgot(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="signup">

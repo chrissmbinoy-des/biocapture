@@ -32,6 +32,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 const PublicProfile = lazy(() => import("./pages/PublicProfile"));
 const Feed = lazy(() => import("./pages/Feed"));
 const AIAssistant = lazy(() => import("./pages/AIAssistant"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 
 // Optimized QueryClient with stale time to reduce refetches
 const queryClient = new QueryClient({
@@ -62,6 +63,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/install" element={<Install />} />
             <Route element={<Layout />}>
               <Route path="/species" element={<Species />} />
