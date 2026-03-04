@@ -598,13 +598,81 @@ export default function Profile() {
     }
   };
 
-  const openEditDialog = () => {
+  const checkAndAwardMissingBadges = async () => {
+    if (!userId) return;
+    try {
+      // Fetch all badges and user's earned badges
+      const [{ data: allBadges }, { data: earnedBadges }, { data: species }] = await Promise.all([
+        supabase.from("badges").select("*"),
+        supabase.from("user_badges").select("badge_id"),
+        supabase.from("species_identifications").select("species_name, kingdom").eq("user_id", userId),
+      ]);
+
+      const earnedIds = new Set(earnedBadges?.map(b => b.badge_id) || []);
+      const speciesList = species || [];
+      const total = speciesList.length;
+
+      // Kingdom counts
+      const kingdomCounts: Record<string, number> = {};
+      const speciesCounts: Record<string, number> = {};
+      speciesList.forEach(s => {
+        kingdomCounts[s.kingdom] = (kingdomCounts[s.kingdom] || 0) + 1;
+        speciesCounts[s.species_name] = (speciesCounts[s.species_name] || 0) + 1;
+      });
+      const hasSingleOccurrence = Object.values(speciesCounts).some(c => c === 1);
+      const kingdomDiversity = Object.keys(kingdomCounts).length;
+
+      // Location & challenge counts
+      const [{ count: locationCount }, { count: challengeCount }] = await Promise.all([
+        supabase.from("locations").select("*", { count: "exact", head: true }).eq("user_id", userId),
+        supabase.from("user_daily_challenges").select("*", { count: "exact", head: true }).eq("user_id", userId).eq("is_completed", true),
+      ]);
+
+      let awarded = false;
+      for (const badge of (allBadges || [])) {
+        if (earnedIds.has(badge.id)) continue;
+        let shouldAward = false;
+
+        if (badge.requirement_type === "total_count") {
+          shouldAward = total >= parseInt(badge.requirement_value || "0");
+        } else if (badge.requirement_type === "kingdom_count") {
+          try {
+            const req = JSON.parse(badge.requirement_value || "{}");
+            shouldAward = (kingdomCounts[req.kingdom] || 0) >= req.count;
+          } catch {}
+        } else if (badge.requirement_type === "single_rare") {
+          shouldAward = hasSingleOccurrence;
+        } else if (badge.requirement_type === "kingdom_diversity") {
+          shouldAward = kingdomDiversity >= parseInt(badge.requirement_value || "0");
+        } else if (badge.requirement_type === "location_count") {
+          shouldAward = (locationCount || 0) >= parseInt(badge.requirement_value || "0");
+        } else if (badge.requirement_type === "challenge_count") {
+          shouldAward = (challengeCount || 0) >= parseInt(badge.requirement_value || "0");
+        }
+
+        if (shouldAward) {
+          await supabase.from("user_badges").insert({ badge_id: badge.id, user_id: userId });
+          awarded = true;
+        }
+      }
+
+      if (awarded) {
+        queryClient.invalidateQueries({ queryKey: ["allUserBadges", userId] });
+      }
+    } catch (error) {
+      console.error("Error checking badges:", error);
+    }
+  };
+
+  const openEditDialog = async () => {
     setEditBio(userProfile?.bio || "");
     setEditDisplayName(userProfile?.display_name || "");
     setEditCountry(userProfile?.country || "");
     setEditAvatarUrl(userProfile?.avatar_url || "");
     setSelectedBadges(userProfile?.display_badges || []);
     setIsEditDialogOpen(true);
+    // Check for any missing badges in the background
+    await checkAndAwardMissingBadges();
   };
 
   const isEquipped = (itemId: string) => {
