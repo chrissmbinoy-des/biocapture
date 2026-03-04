@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -13,23 +13,60 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [isRecovery, setIsRecovery] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const recoveryDetected = useRef(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check for recovery token in URL hash
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    // Check hash for recovery type
+    const hash = window.location.hash.substring(1);
+    const hashParams = new URLSearchParams(hash);
     if (hashParams.get("type") === "recovery") {
+      recoveryDetected.current = true;
       setIsRecovery(true);
+      setChecking(false);
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") {
+        recoveryDetected.current = true;
         setIsRecovery(true);
+        setChecking(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Also check if there's already an active session (recovery token was already consumed)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && !recoveryDetected.current) {
+        // If we have a session and arrived at this page, it's likely a recovery redirect
+        // Check if the URL had recovery params (they may have been consumed already)
+        if (hash.includes("access_token") || hash.includes("type=recovery")) {
+          recoveryDetected.current = true;
+          setIsRecovery(true);
+        }
+      }
+      setChecking(false);
+    });
+
+    // Fallback: give Supabase a moment to process the token
+    const timeout = setTimeout(() => {
+      if (!recoveryDetected.current) {
+        // One more session check after delay
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (session) {
+            recoveryDetected.current = true;
+            setIsRecovery(true);
+          }
+          setChecking(false);
+        });
+      }
+    }, 2000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, []);
 
   const handleResetPassword = async (e: React.FormEvent) => {
@@ -56,6 +93,14 @@ const ResetPassword = () => {
       setLoading(false);
     }
   };
+
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 flex items-center justify-center p-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!isRecovery) {
     return (
