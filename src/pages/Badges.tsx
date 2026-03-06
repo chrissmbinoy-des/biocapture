@@ -103,7 +103,7 @@ const getBadgeDifficultyColor = (badge: Badge): "green" | "violet" | "gold" | "r
     return "gold";
   }
   
-  if (requirement_type === "single_rare") return "red";
+  if (requirement_type === "single_rare") return "violet";
   if (requirement_type === "location_count") return "violet";
   
   return "green";
@@ -142,7 +142,7 @@ export default function Badges() {
     try {
       const { data, error } = await supabase
         .from("user_badges")
-        .select("*, badges(*)")
+        .select("id,badge_id,earned_at,badges(id,name,description,icon,requirement_type,requirement_value)")
         .order("earned_at", { ascending: false });
       if (error) throw error;
       setUserBadges(data || []);
