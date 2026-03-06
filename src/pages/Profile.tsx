@@ -130,6 +130,8 @@ interface UserBadge {
     name: string;
     icon: string;
     description: string;
+    requirement_type?: string;
+    requirement_value?: string | null;
   };
 }
 
@@ -206,6 +208,65 @@ const getShopBadgeColor = (item: ShopItem): "green" | "violet" | "gold" | "red" 
   if (rarity === "mythic") return "red";
   return "green"; // uncommon/default
 };
+
+const getAchievementBadgeColor = (badge: {
+  name?: string;
+  requirement_type?: string;
+  requirement_value?: string | null;
+}): "green" | "violet" | "gold" | "red" => {
+  const { requirement_type, requirement_value } = badge;
+
+  if (requirement_type === "single_rare") return "violet";
+  if (requirement_type === "location_count") return "violet";
+
+  if (requirement_type === "total_count") {
+    const val = parseInt(requirement_value || "1", 10);
+    if (val <= 25) return "green";
+    if (val <= 75) return "violet";
+    if (val <= 150) return "gold";
+    return "red";
+  }
+
+  if (requirement_type === "kingdom_count") {
+    try {
+      const req = JSON.parse(requirement_value || "{}");
+      const count = Number(req?.count || 1);
+      if (count <= 1) return "green";
+      if (count <= 10) return "violet";
+      return "gold";
+    } catch {
+      return "green";
+    }
+  }
+
+  if (requirement_type === "kingdom_diversity") {
+    const val = parseInt(requirement_value || "1", 10);
+    if (val <= 3) return "green";
+    if (val <= 5) return "violet";
+    return "gold";
+  }
+
+  if (requirement_type === "challenge_count") {
+    const val = parseInt(requirement_value || "1", 10);
+    if (val <= 1) return "green";
+    if (val <= 10) return "violet";
+    return "gold";
+  }
+
+  if (requirement_type === "streak") {
+    const val = parseInt(requirement_value || "1", 10);
+    if (val <= 3) return "green";
+    if (val <= 7) return "violet";
+    return "gold";
+  }
+
+  const lowerName = (badge.name || "").toLowerCase();
+  if (lowerName.includes("rare")) return "violet";
+  if (lowerName.includes("legendary")) return "gold";
+  if (lowerName.includes("mythic")) return "red";
+
+  return "green";
+};
 interface UserProfile {
   id: string;
   user_id: string;
@@ -225,6 +286,8 @@ interface AllBadge {
     name: string;
     icon: string;
     description: string;
+    requirement_type?: string;
+    requirement_value?: string | null;
   };
 }
 
@@ -879,6 +942,7 @@ export default function Profile() {
                     progress={1}
                     isEarned={true}
                     size="sm"
+                    color={getAchievementBadgeColor(ub.badges)}
                   />
                 </div>
               ))}
@@ -1099,6 +1163,7 @@ export default function Profile() {
                                   progress={1}
                                   isEarned={true}
                                   size="sm"
+                                  color={getAchievementBadgeColor(ub.badges)}
                                 />
                                 <p className="text-[10px] text-center font-medium truncate w-full">
                                   {ub.badges.name}
