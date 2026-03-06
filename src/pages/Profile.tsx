@@ -354,7 +354,7 @@ export default function Profile() {
       if (!userId) return [];
       const { data, error } = await supabase
         .from("user_badges")
-        .select("*, badges(*)")
+        .select("id,badge_id,badges(id,name,icon,description,requirement_type,requirement_value)")
         .eq("user_id", userId)
         .order("earned_at", { ascending: false });
       if (error) throw error;
@@ -389,7 +389,7 @@ export default function Profile() {
       if (!userId) return [];
       const { data, error } = await supabase
         .from("user_badges")
-        .select("*, badges(*)")
+        .select("id,badge_id,badges(id,name,icon,description,requirement_type,requirement_value)")
         .eq("user_id", userId)
         .order("earned_at", { ascending: false });
       if (error) throw error;
