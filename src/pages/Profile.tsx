@@ -657,7 +657,7 @@ export default function Profile() {
       }
 
       if (awarded) {
-        queryClient.invalidateQueries({ queryKey: ["allUserBadges", userId] });
+        await queryClient.refetchQueries({ queryKey: ["allUserBadges", userId] });
       }
     } catch (error) {
       console.error("Error checking badges:", error);
@@ -665,14 +665,14 @@ export default function Profile() {
   };
 
   const openEditDialog = async () => {
+    // Check for any missing badges first, then open dialog
+    await checkAndAwardMissingBadges();
     setEditBio(userProfile?.bio || "");
     setEditDisplayName(userProfile?.display_name || "");
     setEditCountry(userProfile?.country || "");
     setEditAvatarUrl(userProfile?.avatar_url || "");
     setSelectedBadges(userProfile?.display_badges || []);
     setIsEditDialogOpen(true);
-    // Check for any missing badges in the background
-    await checkAndAwardMissingBadges();
   };
 
   const isEquipped = (itemId: string) => {
