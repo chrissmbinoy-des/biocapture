@@ -49,6 +49,7 @@ import {
   Twitter,
   Facebook,
   Camera,
+  Medal,
 } from "lucide-react";
 
 import { BadgeProgressCircle } from "@/components/BadgeProgressCircle";
