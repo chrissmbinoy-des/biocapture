@@ -831,7 +831,7 @@ export default function Profile() {
                     progress={1}
                     isEarned={true}
                     size="sm"
-                    color={getAchievementBadgeColor(ub.badges)}
+                    color={getBadgeColor(ub.badges)}
                   />
                 </div>
               ))}
