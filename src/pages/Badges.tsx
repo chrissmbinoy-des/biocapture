@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { Loader2, Award, Leaf, Cat, Bug, Bird, Fish, Microscope, Star, Trophy, Target, Zap, Crown, Medal, Shield, Heart, Flame, Sun, Moon, Mountain, Trees, Waves, Wind, Cloud, Snowflake, LucideIcon, Check, Compass, Globe, Map, MapPin, Calendar, CalendarDays, CalendarCheck, Sparkles, Rainbow, Earth, Dumbbell } from "lucide-react";
+import { Loader2, Trophy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -10,25 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { BadgeProgressCircle } from "@/components/BadgeProgressCircle";
-import CrocodileIcon from "@/components/icons/CrocodileIcon";
-import FrogIcon from "@/components/icons/FrogIcon";
-
-const BADGE_ICON_MAP: { [key: string]: LucideIcon } = {
-  "🌿": Leaf, "🦁": Cat, "🦋": Bug, "🦅": Bird, "🐟": Fish,
-  "🦎": CrocodileIcon as unknown as LucideIcon,
-  "🐸": FrogIcon as unknown as LucideIcon,
-  "🦠": Microscope, "⭐": Star, "🌟": Star, "🏆": Trophy, "🎯": Target,
-  "⚡": Zap, "👑": Crown, "🥇": Medal, "🏅": Medal, "🎖️": Medal,
-  "🛡️": Shield, "❤️": Heart, "🔥": Flame, "☀️": Sun, "🌙": Moon,
-  "🏔️": Mountain, "🌲": Trees, "🌊": Waves, "💨": Wind, "☁️": Cloud,
-  "❄️": Snowflake, "✨": Sparkles, "🧭": Compass, "🌈": Rainbow,
-  "🌍": Earth, "🌏": Globe, "🗺️": Map, "📅": Calendar,
-  "🗓️": CalendarDays, "📆": CalendarCheck, "💪": Dumbbell, "💎": Star,
-};
-
-const getBadgeIcon = (iconStr: string): LucideIcon => {
-  return BADGE_ICON_MAP[iconStr] || Award;
-};
+import { getBadgeIcon, getBadgeColor, getDifficultyLabel, BADGE_COLOR_HSL, RARITY_ORDER, KINGDOM_LABELS } from "@/lib/badge-utils";
 
 interface Badge {
   id: string;
@@ -54,60 +36,6 @@ interface ProgressData {
   kingdomDiversity: number;
 }
 
-const KINGDOM_LABELS: { [key: string]: string } = {
-  plant: "Plants", mammal: "Mammals", insect: "Insects", bird: "Birds",
-  reptile: "Reptiles", fish: "Fish", amphibian: "Amphibians", other: "Other",
-};
-
-// Determine badge difficulty color based on requirement
-const getBadgeDifficultyColor = (badge: Badge): "green" | "violet" | "gold" | "red" => {
-  const { requirement_type, requirement_value } = badge;
-  
-  if (requirement_type === "total_count") {
-    const val = parseInt(requirement_value || "1");
-    if (val <= 5) return "green";       // Easy: 1-5
-    if (val <= 25) return "green";      // Bronze-level mapped to green (standard)
-    if (val <= 75) return "violet";     // Silver-level mapped to violet
-    if (val <= 150) return "gold";      // Gold-level
-    return "red";                        // Legendary: 200+
-  }
-  
-  if (requirement_type === "kingdom_count") {
-    try {
-      const req = JSON.parse(requirement_value || "{}");
-      const count = req.count || 1;
-      if (count <= 1) return "green";
-      if (count <= 10) return "violet";
-      return "gold";                     // 25+ = gold
-    } catch { return "green"; }
-  }
-  
-  if (requirement_type === "kingdom_diversity") {
-    const val = parseInt(requirement_value || "1");
-    if (val <= 3) return "green";
-    if (val <= 5) return "violet";
-    return "gold";
-  }
-  
-  if (requirement_type === "challenge_count") {
-    const val = parseInt(requirement_value || "1");
-    if (val <= 1) return "green";
-    if (val <= 10) return "violet";
-    return "gold";
-  }
-  
-  if (requirement_type === "streak") {
-    const val = parseInt(requirement_value || "1");
-    if (val <= 3) return "green";
-    if (val <= 7) return "violet";
-    return "gold";
-  }
-  
-  if (requirement_type === "single_rare") return "violet";
-  if (requirement_type === "location_count") return "violet";
-  
-  return "green";
-};
 
 export default function Badges() {
   const [badges, setBadges] = useState<Badge[]>([]);
@@ -229,15 +157,6 @@ export default function Badges() {
     return "";
   };
 
-  const getDifficultyLabel = (color: "green" | "violet" | "gold" | "red"): string => {
-    switch (color) {
-      case "green": return "Easy";
-      case "violet": return "Hard";
-      case "gold": return "Expert";
-      case "red": return "Legendary";
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -246,8 +165,7 @@ export default function Badges() {
     );
   }
 
-  const RARITY_ORDER: Record<string, number> = { green: 0, violet: 1, gold: 2, red: 3 };
-  const sortByRarity = (a: Badge, b: Badge) => RARITY_ORDER[getBadgeDifficultyColor(a)] - RARITY_ORDER[getBadgeDifficultyColor(b)];
+  const sortByRarity = (a: Badge, b: Badge) => RARITY_ORDER[getBadgeColor(a)] - RARITY_ORDER[getBadgeColor(b)];
 
   const earnedBadgeIds = new Set(userBadges.map((ub) => ub.badge_id));
   const sortedEarnedBadges = [...userBadges].sort((a, b) => sortByRarity(a.badges as unknown as Badge, b.badges as unknown as Badge));
@@ -280,7 +198,7 @@ export default function Badges() {
                     progress={1}
                     isEarned={true}
                     size="lg"
-                    color={getBadgeDifficultyColor(userBadge.badges)}
+                    color={getBadgeColor(userBadge.badges)}
                   />
                 </div>
                 <h3 className="font-semibold text-xs truncate">{userBadge.badges.name}</h3>
@@ -295,7 +213,7 @@ export default function Badges() {
         <div className="grid grid-cols-3 gap-3">
           {availableBadges.map((badge) => {
             const badgeProgress = getBadgeProgress(badge);
-            const diffColor = getBadgeDifficultyColor(badge);
+            const diffColor = getBadgeColor(badge);
             return (
               <Card
                 key={badge.id}
@@ -328,18 +246,13 @@ export default function Badges() {
                 progress={selectedBadge ? (earnedBadgeIds.has(selectedBadge.id) ? 1 : getBadgeProgress(selectedBadge)) : 0}
                 isEarned={selectedBadge ? earnedBadgeIds.has(selectedBadge.id) : false}
                 size="lg"
-                color={selectedBadge ? getBadgeDifficultyColor(selectedBadge) : "green"}
+                color={selectedBadge ? getBadgeColor(selectedBadge) : "green"}
               />
               <div>
                 <span className="text-lg">{selectedBadge?.name}</span>
                 {selectedBadge && (
-                  <p className="text-xs font-medium" style={{ color: 
-                    getBadgeDifficultyColor(selectedBadge) === "green" ? "hsl(142, 71%, 45%)" :
-                    getBadgeDifficultyColor(selectedBadge) === "violet" ? "hsl(270, 70%, 55%)" :
-                    getBadgeDifficultyColor(selectedBadge) === "gold" ? "hsl(45, 90%, 55%)" :
-                    "hsl(0, 75%, 55%)"
-                  }}>
-                    {getDifficultyLabel(getBadgeDifficultyColor(selectedBadge))}
+                  <p className="text-xs font-medium" style={{ color: BADGE_COLOR_HSL[getBadgeColor(selectedBadge)] }}>
+                    {getDifficultyLabel(getBadgeColor(selectedBadge))}
                   </p>
                 )}
               </div>
