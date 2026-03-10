@@ -36,60 +36,6 @@ interface ProgressData {
   kingdomDiversity: number;
 }
 
-const KINGDOM_LABELS: { [key: string]: string } = {
-  plant: "Plants", mammal: "Mammals", insect: "Insects", bird: "Birds",
-  reptile: "Reptiles", fish: "Fish", amphibian: "Amphibians", other: "Other",
-};
-
-// Determine badge difficulty color based on requirement
-const getBadgeDifficultyColor = (badge: Badge): "green" | "violet" | "gold" | "red" => {
-  const { requirement_type, requirement_value } = badge;
-  
-  if (requirement_type === "total_count") {
-    const val = parseInt(requirement_value || "1");
-    if (val <= 5) return "green";       // Easy: 1-5
-    if (val <= 25) return "green";      // Bronze-level mapped to green (standard)
-    if (val <= 75) return "violet";     // Silver-level mapped to violet
-    if (val <= 150) return "gold";      // Gold-level
-    return "red";                        // Legendary: 200+
-  }
-  
-  if (requirement_type === "kingdom_count") {
-    try {
-      const req = JSON.parse(requirement_value || "{}");
-      const count = req.count || 1;
-      if (count <= 1) return "green";
-      if (count <= 10) return "violet";
-      return "gold";                     // 25+ = gold
-    } catch { return "green"; }
-  }
-  
-  if (requirement_type === "kingdom_diversity") {
-    const val = parseInt(requirement_value || "1");
-    if (val <= 3) return "green";
-    if (val <= 5) return "violet";
-    return "gold";
-  }
-  
-  if (requirement_type === "challenge_count") {
-    const val = parseInt(requirement_value || "1");
-    if (val <= 1) return "green";
-    if (val <= 10) return "violet";
-    return "gold";
-  }
-  
-  if (requirement_type === "streak") {
-    const val = parseInt(requirement_value || "1");
-    if (val <= 3) return "green";
-    if (val <= 7) return "violet";
-    return "gold";
-  }
-  
-  if (requirement_type === "single_rare") return "violet";
-  if (requirement_type === "location_count") return "violet";
-  
-  return "green";
-};
 
 export default function Badges() {
   const [badges, setBadges] = useState<Badge[]>([]);
