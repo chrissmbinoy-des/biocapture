@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { Loader2, Award, Leaf, Cat, Bug, Bird, Fish, Microscope, Star, Trophy, Target, Zap, Crown, Medal, Shield, Heart, Flame, Sun, Moon, Mountain, Trees, Waves, Wind, Cloud, Snowflake, LucideIcon, Check, Compass, Globe, Map, MapPin, Calendar, CalendarDays, CalendarCheck, Sparkles, Rainbow, Earth, Dumbbell } from "lucide-react";
+import { Loader2, Trophy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -10,25 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { BadgeProgressCircle } from "@/components/BadgeProgressCircle";
-import CrocodileIcon from "@/components/icons/CrocodileIcon";
-import FrogIcon from "@/components/icons/FrogIcon";
-
-const BADGE_ICON_MAP: { [key: string]: LucideIcon } = {
-  "🌿": Leaf, "🦁": Cat, "🦋": Bug, "🦅": Bird, "🐟": Fish,
-  "🦎": CrocodileIcon as unknown as LucideIcon,
-  "🐸": FrogIcon as unknown as LucideIcon,
-  "🦠": Microscope, "⭐": Star, "🌟": Star, "🏆": Trophy, "🎯": Target,
-  "⚡": Zap, "👑": Crown, "🥇": Medal, "🏅": Medal, "🎖️": Medal,
-  "🛡️": Shield, "❤️": Heart, "🔥": Flame, "☀️": Sun, "🌙": Moon,
-  "🏔️": Mountain, "🌲": Trees, "🌊": Waves, "💨": Wind, "☁️": Cloud,
-  "❄️": Snowflake, "✨": Sparkles, "🧭": Compass, "🌈": Rainbow,
-  "🌍": Earth, "🌏": Globe, "🗺️": Map, "📅": Calendar,
-  "🗓️": CalendarDays, "📆": CalendarCheck, "💪": Dumbbell, "💎": Star,
-};
-
-const getBadgeIcon = (iconStr: string): LucideIcon => {
-  return BADGE_ICON_MAP[iconStr] || Award;
-};
+import { getBadgeIcon, getBadgeColor, getDifficultyLabel, BADGE_COLOR_HSL, RARITY_ORDER, KINGDOM_LABELS } from "@/lib/badge-utils";
 
 interface Badge {
   id: string;
