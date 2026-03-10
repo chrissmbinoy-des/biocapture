@@ -157,15 +157,6 @@ export default function Badges() {
     return "";
   };
 
-  const getDifficultyLabel = (color: "green" | "violet" | "gold" | "red"): string => {
-    switch (color) {
-      case "green": return "Easy";
-      case "violet": return "Hard";
-      case "gold": return "Expert";
-      case "red": return "Legendary";
-    }
-  };
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
@@ -174,8 +165,7 @@ export default function Badges() {
     );
   }
 
-  const RARITY_ORDER: Record<string, number> = { green: 0, violet: 1, gold: 2, red: 3 };
-  const sortByRarity = (a: Badge, b: Badge) => RARITY_ORDER[getBadgeDifficultyColor(a)] - RARITY_ORDER[getBadgeDifficultyColor(b)];
+  const sortByRarity = (a: Badge, b: Badge) => RARITY_ORDER[getBadgeColor(a)] - RARITY_ORDER[getBadgeColor(b)];
 
   const earnedBadgeIds = new Set(userBadges.map((ub) => ub.badge_id));
   const sortedEarnedBadges = [...userBadges].sort((a, b) => sortByRarity(a.badges as unknown as Badge, b.badges as unknown as Badge));
