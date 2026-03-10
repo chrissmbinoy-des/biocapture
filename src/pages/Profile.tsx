@@ -1052,7 +1052,7 @@ export default function Profile() {
                                   progress={1}
                                   isEarned={true}
                                   size="sm"
-                                  color={getAchievementBadgeColor(ub.badges)}
+                                  color={getBadgeColor(ub.badges)}
                                 />
                                 <p className="text-[10px] text-center font-medium truncate w-full">
                                   {ub.badges.name}
