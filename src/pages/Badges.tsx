@@ -213,7 +213,7 @@ export default function Badges() {
         <div className="grid grid-cols-3 gap-3">
           {availableBadges.map((badge) => {
             const badgeProgress = getBadgeProgress(badge);
-            const diffColor = getBadgeDifficultyColor(badge);
+            const diffColor = getBadgeColor(badge);
             return (
               <Card
                 key={badge.id}
