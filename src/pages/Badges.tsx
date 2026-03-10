@@ -246,18 +246,13 @@ export default function Badges() {
                 progress={selectedBadge ? (earnedBadgeIds.has(selectedBadge.id) ? 1 : getBadgeProgress(selectedBadge)) : 0}
                 isEarned={selectedBadge ? earnedBadgeIds.has(selectedBadge.id) : false}
                 size="lg"
-                color={selectedBadge ? getBadgeDifficultyColor(selectedBadge) : "green"}
+                color={selectedBadge ? getBadgeColor(selectedBadge) : "green"}
               />
               <div>
                 <span className="text-lg">{selectedBadge?.name}</span>
                 {selectedBadge && (
-                  <p className="text-xs font-medium" style={{ color: 
-                    getBadgeDifficultyColor(selectedBadge) === "green" ? "hsl(142, 71%, 45%)" :
-                    getBadgeDifficultyColor(selectedBadge) === "violet" ? "hsl(270, 70%, 55%)" :
-                    getBadgeDifficultyColor(selectedBadge) === "gold" ? "hsl(45, 90%, 55%)" :
-                    "hsl(0, 75%, 55%)"
-                  }}>
-                    {getDifficultyLabel(getBadgeDifficultyColor(selectedBadge))}
+                  <p className="text-xs font-medium" style={{ color: BADGE_COLOR_HSL[getBadgeColor(selectedBadge)] }}>
+                    {getDifficultyLabel(getBadgeColor(selectedBadge))}
                   </p>
                 )}
               </div>
