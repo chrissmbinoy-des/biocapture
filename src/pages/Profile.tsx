@@ -77,8 +77,7 @@ import {
 
 import { BadgeProgressCircle } from "@/components/BadgeProgressCircle";
 import { ProfileThemeWrapper, getFrameStyles, getTitleStyles } from "@/components/ProfileThemeWrapper";
-import CrocodileIcon from "@/components/icons/CrocodileIcon";
-import FrogIcon from "@/components/icons/FrogIcon";
+import { getBadgeIcon, getBadgeColor } from "@/lib/badge-utils";
 import type { Json } from "@/integrations/supabase/types";
 
 const countries = [
