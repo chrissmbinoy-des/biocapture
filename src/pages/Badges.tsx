@@ -198,7 +198,7 @@ export default function Badges() {
                     progress={1}
                     isEarned={true}
                     size="lg"
-                    color={getBadgeDifficultyColor(userBadge.badges)}
+                    color={getBadgeColor(userBadge.badges)}
                   />
                 </div>
                 <h3 className="font-semibold text-xs truncate">{userBadge.badges.name}</h3>
