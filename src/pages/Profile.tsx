@@ -148,122 +148,12 @@ const iconMap: Record<string, React.ReactNode> = {
   "plus-circle": <PlusCircle className="h-5 w-5" />,
 };
 
-const BADGE_ICON_MAP: { [key: string]: LucideIcon } = {
-  "🌿": Leaf,
-  "🦁": Cat,
-  "🦋": Bug,
-  "🦅": Bird,
-  "🐟": Fish,
-  "🦎": CrocodileIcon as unknown as LucideIcon,
-  "🐸": FrogIcon as unknown as LucideIcon,
-  "🦠": Microscope,
-  "⭐": Star,
-  "🌟": Star,
-  "🏆": Trophy,
-  "🎯": Target,
-  "⚡": Zap,
-  "👑": Crown,
-  "🥇": Medal,
-  "🏅": Medal,
-  "🎖️": Medal,
-  "🛡️": Shield,
-  "❤️": Heart,
-  "🔥": Flame,
-  "☀️": Sun,
-  "🌙": Moon,
-  "🏔️": Mountain,
-  "🌲": Trees,
-  "🌊": Waves,
-  "💨": Wind,
-  "☁️": Cloud,
-  "❄️": Snowflake,
-  "✨": Sparkles,
-  "🧭": Compass,
-  "🌈": Rainbow,
-  "🌍": Earth,
-  "🌏": Globe,
-  "🗺️": Map,
-  "📅": Calendar,
-  "🗓️": CalendarDays,
-  "📆": CalendarCheck,
-  "💪": Dumbbell,
-};
-
-const getBadgeIcon = (iconStr: string): LucideIcon => {
-  // Check emoji map first, then string name map for shop badges
-  if (BADGE_ICON_MAP[iconStr]) return BADGE_ICON_MAP[iconStr];
-  const STRING_ICON_MAP: Record<string, LucideIcon> = {
-    leaf: Leaf, star: Star, butterfly: Sparkles, feather: Feather,
-    crown: Crown, award: Award, trophy: Trophy, shield: Shield,
-  };
-  return STRING_ICON_MAP[iconStr] || Award;
-};
-
 const getShopBadgeColor = (item: ShopItem): "green" | "violet" | "gold" | "red" => {
   const meta = item.metadata as Record<string, unknown> | null;
   const rarity = (meta?.rarity as string) || "";
   if (rarity === "legendary") return "gold";
   if (rarity === "rare") return "violet";
   if (rarity === "mythic") return "red";
-  return "green"; // uncommon/default
-};
-
-const getAchievementBadgeColor = (badge: {
-  name?: string;
-  requirement_type?: string;
-  requirement_value?: string | null;
-}): "green" | "violet" | "gold" | "red" => {
-  const { requirement_type, requirement_value } = badge;
-
-  if (requirement_type === "single_rare") return "violet";
-  if (requirement_type === "location_count") return "violet";
-
-  if (requirement_type === "total_count") {
-    const val = parseInt(requirement_value || "1", 10);
-    if (val <= 25) return "green";
-    if (val <= 75) return "violet";
-    if (val <= 150) return "gold";
-    return "red";
-  }
-
-  if (requirement_type === "kingdom_count") {
-    try {
-      const req = JSON.parse(requirement_value || "{}");
-      const count = Number(req?.count || 1);
-      if (count <= 1) return "green";
-      if (count <= 10) return "violet";
-      return "gold";
-    } catch {
-      return "green";
-    }
-  }
-
-  if (requirement_type === "kingdom_diversity") {
-    const val = parseInt(requirement_value || "1", 10);
-    if (val <= 3) return "green";
-    if (val <= 5) return "violet";
-    return "gold";
-  }
-
-  if (requirement_type === "challenge_count") {
-    const val = parseInt(requirement_value || "1", 10);
-    if (val <= 1) return "green";
-    if (val <= 10) return "violet";
-    return "gold";
-  }
-
-  if (requirement_type === "streak") {
-    const val = parseInt(requirement_value || "1", 10);
-    if (val <= 3) return "green";
-    if (val <= 7) return "violet";
-    return "gold";
-  }
-
-  const lowerName = (badge.name || "").toLowerCase();
-  if (lowerName.includes("rare")) return "violet";
-  if (lowerName.includes("legendary")) return "gold";
-  if (lowerName.includes("mythic")) return "red";
-
   return "green";
 };
 interface UserProfile {
