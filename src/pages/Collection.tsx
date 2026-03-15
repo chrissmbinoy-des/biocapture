@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { cacheSpecies, getCachedSpecies, cacheBadges, getCachedBadges, cacheUserBadges, getCachedUserBadges } from "@/lib/offline-db";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
