@@ -289,6 +289,7 @@ export default function Collection() {
 
       if (error) throw error;
       setUserBadges(data || []);
+      if (data) cacheUserBadges(data).catch(() => {});
     } catch (error) {
       console.error("Error fetching user badges:", error);
     }
