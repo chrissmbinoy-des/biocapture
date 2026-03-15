@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { cacheSpecies, getCachedSpecies } from "@/lib/offline-db";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope, Share2, Copy, Twitter, Facebook } from "lucide-react";
