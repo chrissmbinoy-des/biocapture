@@ -193,6 +193,8 @@ export default function Collection() {
       if (error) throw error;
 
       setFindings(data || []);
+      // Cache for offline use
+      if (data) cacheSpecies(data).catch(() => {});
       
       // Calculate stats
       const kingdomCounts: { [key: string]: number } = {};
