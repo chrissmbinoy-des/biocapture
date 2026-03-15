@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { cacheBadges, getCachedBadges, cacheUserBadges, getCachedUserBadges, getCachedSpecies } from "@/lib/offline-db";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { Card } from "@/components/ui/card";
 import { Loader2, Trophy, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
