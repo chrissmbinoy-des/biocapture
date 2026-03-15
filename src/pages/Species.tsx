@@ -63,6 +63,7 @@ const KINGDOM_ICONS: { [key: string]: IconComponent } = {
 };
 
 export default function Species() {
+  const isOnline = useOnlineStatus();
   const [findings, setFindings] = useState<Finding[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<Stats>({ total: 0, kingdoms: {} });
