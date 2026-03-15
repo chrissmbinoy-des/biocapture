@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { cacheSpecies, getCachedSpecies } from "@/lib/offline-db";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope, Share2, Copy, Twitter, Facebook } from "lucide-react";
@@ -61,6 +63,7 @@ const KINGDOM_ICONS: { [key: string]: IconComponent } = {
 };
 
 export default function Species() {
+  const isOnline = useOnlineStatus();
   const [findings, setFindings] = useState<Finding[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<Stats>({ total: 0, kingdoms: {} });
@@ -76,8 +79,31 @@ export default function Species() {
   const activeKingdom = kingdomParam && ALL_KINGDOMS.includes(kingdomParam) ? kingdomParam : null;
 
   useEffect(() => {
-    fetchFindings();
-    
+    const loadData = async () => {
+      if (isOnline) {
+        fetchFindings();
+      } else {
+        try {
+          const cached = await getCachedSpecies();
+          if (cached.length > 0) {
+            const sorted = cached.sort((a: any, b: any) =>
+              new Date(b.identified_at).getTime() - new Date(a.identified_at).getTime()
+            );
+            setFindings(sorted);
+            const newStats: Stats = { total: sorted.length, kingdoms: {} };
+            sorted.forEach((f: any) => {
+              newStats.kingdoms[f.kingdom] = (newStats.kingdoms[f.kingdom] || 0) + 1;
+            });
+            setStats(newStats);
+          }
+          setLoading(false);
+        } catch {
+          setLoading(false);
+        }
+      }
+    };
+    loadData();
+
     const channel = supabase
       .channel('species_identifications_changes')
       .on(
@@ -96,7 +122,7 @@ export default function Species() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [isOnline]);
 
   const fetchFindings = async () => {
     try {
@@ -108,6 +134,8 @@ export default function Species() {
       if (error) throw error;
 
       setFindings(data || []);
+      // Cache for offline
+      if (data) cacheSpecies(data).catch(() => {});
 
       const newStats: Stats = { total: data?.length || 0, kingdoms: {} };
       data?.forEach((finding) => {

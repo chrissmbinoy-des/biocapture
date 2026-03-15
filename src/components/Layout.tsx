@@ -2,6 +2,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { CoinDisplay } from "@/components/CoinDisplay";
 import { FloatingCameraButton } from "@/components/FloatingCameraButton";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { Menu } from "lucide-react";
 import { Outlet } from "react-router-dom";
 
@@ -18,7 +19,10 @@ export default function Layout() {
               </SidebarTrigger>
               <h1 className="text-lg font-semibold">Specassist</h1>
             </div>
-            <CoinDisplay />
+            <div className="flex items-center gap-2">
+              <OfflineIndicator />
+              <CoinDisplay />
+            </div>
           </header>
           <main className="flex-1 overflow-y-auto overflow-x-hidden">
             <Outlet />

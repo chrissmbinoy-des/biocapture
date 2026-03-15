@@ -20,6 +20,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
 import { ActiveBoostsIndicator } from "@/components/ActiveBoostsIndicator";
+import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -32,6 +33,7 @@ const Index = () => {
   const [reportReason, setReportReason] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isOnline, queueIdentification } = useOfflineQueue();
 
   useEffect(() => {
     // Set up auth listener FIRST, then check session
@@ -87,6 +89,13 @@ const Index = () => {
   };
 
   const identifySpecies = async (imageData: string) => {
+    // If offline, queue for later
+    if (!isOnline) {
+      await queueIdentification(imageData, coordinates);
+      setSelectedImage(null);
+      return;
+    }
+
     setIsIdentifying(true);
     setResult(null);
     
