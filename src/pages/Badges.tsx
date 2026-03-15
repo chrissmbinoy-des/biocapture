@@ -40,6 +40,7 @@ interface ProgressData {
 
 
 export default function Badges() {
+  const isOnline = useOnlineStatus();
   const [badges, setBadges] = useState<Badge[]>([]);
   const [userBadges, setUserBadges] = useState<UserBadge[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,10 +52,40 @@ export default function Badges() {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchBadges();
-    fetchUserBadges();
-    fetchProgress();
-  }, []);
+    const loadData = async () => {
+      if (isOnline) {
+        fetchBadges();
+        fetchUserBadges();
+        fetchProgress();
+      } else {
+        try {
+          const [cachedB, cachedUB, cachedSpecies] = await Promise.all([
+            getCachedBadges(),
+            getCachedUserBadges(),
+            getCachedSpecies(),
+          ]);
+          if (cachedB.length > 0) setBadges(cachedB);
+          if (cachedUB.length > 0) setUserBadges(cachedUB);
+          // Compute progress from cached species
+          const kingdomCounts: { [key: string]: number } = {};
+          cachedSpecies.forEach((s: any) => {
+            kingdomCounts[s.kingdom] = (kingdomCounts[s.kingdom] || 0) + 1;
+          });
+          setProgress({
+            totalCount: cachedSpecies.length,
+            kingdomCounts,
+            locationCount: 0,
+            challengeCount: 0,
+            kingdomDiversity: Object.keys(kingdomCounts).length,
+          });
+          setLoading(false);
+        } catch {
+          setLoading(false);
+        }
+      }
+    };
+    loadData();
+  }, [isOnline]);
 
   const fetchBadges = async () => {
     try {
