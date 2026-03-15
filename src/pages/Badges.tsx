@@ -108,6 +108,7 @@ export default function Badges() {
         .order("earned_at", { ascending: false });
       if (error) throw error;
       setUserBadges(data || []);
+      if (data) cacheUserBadges(data).catch(() => {});
     } catch (error) {
       console.error("Error fetching user badges:", error);
     }
