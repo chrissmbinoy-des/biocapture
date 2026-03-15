@@ -79,8 +79,31 @@ export default function Species() {
   const activeKingdom = kingdomParam && ALL_KINGDOMS.includes(kingdomParam) ? kingdomParam : null;
 
   useEffect(() => {
-    fetchFindings();
-    
+    const loadData = async () => {
+      if (isOnline) {
+        fetchFindings();
+      } else {
+        try {
+          const cached = await getCachedSpecies();
+          if (cached.length > 0) {
+            const sorted = cached.sort((a: any, b: any) =>
+              new Date(b.identified_at).getTime() - new Date(a.identified_at).getTime()
+            );
+            setFindings(sorted);
+            const newStats: Stats = { total: sorted.length, kingdoms: {} };
+            sorted.forEach((f: any) => {
+              newStats.kingdoms[f.kingdom] = (newStats.kingdoms[f.kingdom] || 0) + 1;
+            });
+            setStats(newStats);
+          }
+          setLoading(false);
+        } catch {
+          setLoading(false);
+        }
+      }
+    };
+    loadData();
+
     const channel = supabase
       .channel('species_identifications_changes')
       .on(
@@ -99,7 +122,7 @@ export default function Species() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [isOnline]);
 
   const fetchFindings = async () => {
     try {
