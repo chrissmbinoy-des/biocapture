@@ -33,6 +33,7 @@ const Index = () => {
   const [reportReason, setReportReason] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isOnline, queueIdentification } = useOfflineQueue();
 
   useEffect(() => {
     // Set up auth listener FIRST, then check session
