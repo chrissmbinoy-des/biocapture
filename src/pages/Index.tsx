@@ -20,6 +20,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
 import { ActiveBoostsIndicator } from "@/components/ActiveBoostsIndicator";
+import { useOfflineQueue } from "@/hooks/useOfflineQueue";
 
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
