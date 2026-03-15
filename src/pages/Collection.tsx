@@ -106,6 +106,7 @@ const KINGDOM_ICONS: { [key: string]: string } = {
 };
 
 export default function Collection() {
+  const isOnline = useOnlineStatus();
   const [findings, setFindings] = useState<Finding[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [items, setItems] = useState<Item[]>([]);
