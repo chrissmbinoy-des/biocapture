@@ -89,6 +89,13 @@ const Index = () => {
   };
 
   const identifySpecies = async (imageData: string) => {
+    // If offline, queue for later
+    if (!isOnline) {
+      await queueIdentification(imageData, coordinates);
+      setSelectedImage(null);
+      return;
+    }
+
     setIsIdentifying(true);
     setResult(null);
     
