@@ -121,12 +121,45 @@ export default function Collection() {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchFindings();
-    fetchLocations();
-    fetchItems();
-    fetchBadges();
-    fetchUserBadges();
-  }, []);
+    const loadData = async () => {
+      if (isOnline) {
+        fetchFindings();
+        fetchLocations();
+        fetchItems();
+        fetchBadges();
+        fetchUserBadges();
+      } else {
+        // Load from cache when offline
+        try {
+          const [cachedSpecies, cachedBadgesData, cachedUserBadgesData] = await Promise.all([
+            getCachedSpecies(),
+            getCachedBadges(),
+            getCachedUserBadges(),
+          ]);
+          if (cachedSpecies.length > 0) {
+            const sorted = cachedSpecies.sort((a: any, b: any) => 
+              new Date(b.identified_at).getTime() - new Date(a.identified_at).getTime()
+            );
+            setFindings(sorted);
+            const kingdomCounts: { [key: string]: number } = {};
+            const speciesCounts: { [key: string]: number } = {};
+            sorted.forEach((f: any) => {
+              kingdomCounts[f.kingdom] = (kingdomCounts[f.kingdom] || 0) + 1;
+              speciesCounts[f.species_name] = (speciesCounts[f.species_name] || 0) + 1;
+            });
+            setSingleOccurrences(sorted.filter((f: any) => speciesCounts[f.species_name] === 1));
+            setStats({ total: sorted.length, kingdoms: kingdomCounts });
+          }
+          if (cachedBadgesData.length > 0) setBadges(cachedBadgesData);
+          if (cachedUserBadgesData.length > 0) setUserBadges(cachedUserBadgesData);
+          setLoading(false);
+        } catch {
+          setLoading(false);
+        }
+      }
+    };
+    loadData();
+  }, [isOnline]);
 
   useEffect(() => {
     // Subscribe to real-time updates
