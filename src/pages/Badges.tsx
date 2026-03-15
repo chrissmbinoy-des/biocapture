@@ -92,6 +92,7 @@ export default function Badges() {
       const { data, error } = await supabase.from("badges").select("*");
       if (error) throw error;
       setBadges(data || []);
+      if (data) cacheBadges(data).catch(() => {});
     } catch (error) {
       console.error("Error fetching badges:", error);
     } finally {
