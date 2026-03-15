@@ -2,6 +2,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { CoinDisplay } from "@/components/CoinDisplay";
 import { FloatingCameraButton } from "@/components/FloatingCameraButton";
+import { OfflineIndicator } from "@/components/OfflineIndicator";
 import { Menu } from "lucide-react";
 import { Outlet } from "react-router-dom";
 
