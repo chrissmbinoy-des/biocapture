@@ -134,6 +134,8 @@ export default function Species() {
       if (error) throw error;
 
       setFindings(data || []);
+      // Cache for offline
+      if (data) cacheSpecies(data).catch(() => {});
 
       const newStats: Stats = { total: data?.length || 0, kingdoms: {} };
       data?.forEach((finding) => {
