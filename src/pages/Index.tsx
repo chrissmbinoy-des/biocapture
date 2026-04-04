@@ -21,6 +21,9 @@ import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
 import { ActiveBoostsIndicator } from "@/components/ActiveBoostsIndicator";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
+import { PermissionRequest, usePermissionCheck } from "@/components/PermissionRequest";
+import { saveToGallery } from "@/lib/gallery-save";
+import { toast as sonnerToast } from "sonner";
 
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
@@ -34,6 +37,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isOnline, queueIdentification } = useOfflineQueue();
+  const { needsPermissions, checked, markComplete } = usePermissionCheck();
 
   useEffect(() => {
     // Set up auth listener FIRST, then check session
@@ -154,6 +158,18 @@ const Index = () => {
         title: "Species Identified!",
         description: `Found: ${data.name}`,
       });
+
+      // Auto-save to gallery
+      saveToGallery({
+        species_name: data.name,
+        scientific_name: data.scientificName,
+        kingdom: data.category,
+        description: data.description,
+        image_url: selectedImage,
+        confidence: data.confidence,
+      }).then((saved) => {
+        if (saved) sonnerToast.success("Saved to gallery!");
+      });
     } catch (error: any) {
       console.error("Error identifying species:", error);
       const errorMsg = error?.message || "";
@@ -208,6 +224,12 @@ const Index = () => {
     setShowReport(false);
     setReportReason("");
   };
+
+  if (!checked) return null;
+
+  if (needsPermissions) {
+    return <PermissionRequest onComplete={markComplete} />;
+  }
 
   if (!session) {
     return null;

@@ -5,13 +5,14 @@ import { cacheSpecies, getCachedSpecies } from "@/lib/offline-db";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope, Share2, Copy, Twitter, Facebook } from "lucide-react";
+import { Loader2, Trash2, Flag, Leaf, Cat, Bug, Bird, Fish, Search, Microscope, Share2, Copy, Twitter, Facebook, Download } from "lucide-react";
+import { saveToGallery } from "@/lib/gallery-save";
+import { toast as sonnerToast } from "sonner";
 import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
 import { IconBadge, getKingdomVariant, IconComponent } from "@/components/IconBadge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { toast as sonnerToast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -334,6 +335,19 @@ export default function Species() {
                     <p className="text-xs text-muted-foreground">
                       {new Date(finding.identified_at).toLocaleDateString()}
                     </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs text-muted-foreground"
+                      onClick={async () => {
+                        const saved = await saveToGallery(finding);
+                        if (saved) sonnerToast.success("Saved to gallery!");
+                        else sonnerToast.error("Failed to save");
+                      }}
+                    >
+                      <Download className="h-3 w-3 mr-1" />
+                      Save
+                    </Button>
                     <Button
                       variant="ghost"
                       size="sm"
