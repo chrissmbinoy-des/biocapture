@@ -213,8 +213,15 @@ const Index = () => {
     setReportReason("");
   };
 
+  if (!checked) return null;
+
+  if (needsPermissions) {
+    return <PermissionRequest onComplete={markComplete} />;
+  }
+
   if (!session) {
     return null;
+  }
   }
 
   return (
