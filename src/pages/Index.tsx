@@ -21,6 +21,9 @@ import CrocodileIcon from "@/components/icons/CrocodileIcon";
 import FrogIcon from "@/components/icons/FrogIcon";
 import { ActiveBoostsIndicator } from "@/components/ActiveBoostsIndicator";
 import { useOfflineQueue } from "@/hooks/useOfflineQueue";
+import { PermissionRequest, usePermissionCheck } from "@/components/PermissionRequest";
+import { saveToGallery } from "@/lib/gallery-save";
+import { toast as sonnerToast } from "sonner";
 
 const Index = () => {
   const [session, setSession] = useState<Session | null>(null);
