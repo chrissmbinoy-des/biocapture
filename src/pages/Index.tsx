@@ -37,6 +37,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isOnline, queueIdentification } = useOfflineQueue();
+  const { needsPermissions, checked, markComplete } = usePermissionCheck();
 
   useEffect(() => {
     // Set up auth listener FIRST, then check session
