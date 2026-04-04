@@ -13,7 +13,6 @@ import FrogIcon from "@/components/icons/FrogIcon";
 import { IconBadge, getKingdomVariant, IconComponent } from "@/components/IconBadge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { toast as sonnerToast } from "sonner";
 import {
   Dialog,
   DialogContent,
