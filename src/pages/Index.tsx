@@ -159,13 +159,13 @@ const Index = () => {
         description: `Found: ${data.name}`,
       });
 
-      // Auto-save to gallery
+      // Auto-save to gallery (use imageData which is the param, not stale state)
       saveToGallery({
         species_name: data.name,
         scientific_name: data.scientificName,
         kingdom: data.category,
         description: data.description,
-        image_url: selectedImage,
+        image_url: imageData,
         confidence: data.confidence,
       }).then((saved) => {
         if (saved) sonnerToast.success("Saved to gallery!");
