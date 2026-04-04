@@ -234,7 +234,6 @@ const Index = () => {
   if (!session) {
     return null;
   }
-  }
 
   return (
     <SidebarProvider>
