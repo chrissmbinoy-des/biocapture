@@ -340,6 +340,19 @@ export default function Species() {
                       variant="ghost"
                       size="sm"
                       className="h-6 px-2 text-xs text-muted-foreground"
+                      onClick={async () => {
+                        const saved = await saveToGallery(finding);
+                        if (saved) sonnerToast.success("Saved to gallery!");
+                        else sonnerToast.error("Failed to save");
+                      }}
+                    >
+                      <Download className="h-3 w-3 mr-1" />
+                      Save
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs text-muted-foreground"
                       onClick={() => setShareItem(finding)}
                     >
                       <Share2 className="h-3 w-3 mr-1" />
