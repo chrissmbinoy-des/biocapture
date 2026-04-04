@@ -158,6 +158,18 @@ const Index = () => {
         title: "Species Identified!",
         description: `Found: ${data.name}`,
       });
+
+      // Auto-save to gallery
+      saveToGallery({
+        species_name: data.name,
+        scientific_name: data.scientificName,
+        kingdom: data.category,
+        description: data.description,
+        image_url: selectedImage,
+        confidence: data.confidence,
+      }).then((saved) => {
+        if (saved) sonnerToast.success("Saved to gallery!");
+      });
     } catch (error: any) {
       console.error("Error identifying species:", error);
       const errorMsg = error?.message || "";
