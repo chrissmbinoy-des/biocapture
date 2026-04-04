@@ -33,17 +33,28 @@ export function PermissionRequest({ onComplete }: { onComplete: () => void }) {
     try {
       const cam = await navigator.permissions.query({ name: "camera" as PermissionName });
       updated.camera = cam.state as PermissionStatus["camera"];
-    } catch { /* not supported */ }
+    } catch {
+      // API not supported — treat as prompt so user can try
+    }
 
     try {
       const geo = await navigator.permissions.query({ name: "geolocation" as PermissionName });
       updated.location = geo.state as PermissionStatus["location"];
-    } catch { /* not supported */ }
+    } catch {
+      // API not supported — treat as prompt
+    }
 
     try {
       const mic = await navigator.permissions.query({ name: "microphone" as PermissionName });
       updated.microphone = mic.state as PermissionStatus["microphone"];
-    } catch { /* not supported */ }
+    } catch {
+      // API not supported — treat as prompt
+    }
+
+    // Contacts API is rarely supported; don't mark denied if unavailable
+    if (!("contacts" in navigator && (navigator as any).contacts)) {
+      updated.contacts = "granted"; // skip — not relevant for this browser
+    }
 
     setPermissions((prev) => ({ ...prev, ...updated }));
   };
