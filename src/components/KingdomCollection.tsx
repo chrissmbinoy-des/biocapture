@@ -356,7 +356,8 @@ export function KingdomCollection({ kingdom }: KingdomCollectionProps) {
   const KingdomIcon = KINGDOM_ICONS[kingdom] || Search;
   const kingdomLabel = KINGDOM_LABELS[kingdom] || kingdom;
 
-  if (loading) {
+  // Only show the spinner on the very first load with no cached data.
+  if (isLoading && findings.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
