@@ -210,58 +210,50 @@ interface KingdomCollectionProps {
 }
 
 export function KingdomCollection({ kingdom }: KingdomCollectionProps) {
-  const [findings, setFindings] = useState<Finding[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showReport, setShowReport] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [reportingId, setReportingId] = useState<string | null>(null);
   const [expandedSpecies, setExpandedSpecies] = useState<Set<string>>(new Set());
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetchFindings();
-    
-    const channel = supabase
-      .channel(`${kingdom}_identifications_changes`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'species_identifications'
-        },
-        () => {
-          fetchFindings();
-        }
-      )
-      .subscribe();
+  const queryKey = ["kingdom-findings", kingdom] as const;
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [kingdom]);
-
-  const fetchFindings = async () => {
-    try {
+  const { data: findings = [], isLoading } = useQuery({
+    queryKey,
+    queryFn: async (): Promise<Finding[]> => {
       const { data, error } = await supabase
         .from("species_identifications")
         .select("*")
         .eq("kingdom", kingdom)
         .order("identified_at", { ascending: false });
-
       if (error) throw error;
-      setFindings(data || []);
-    } catch (error) {
-      console.error("Error fetching findings:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load species",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+      const rows = (data || []) as Finding[];
+      findingsMemoryCache[kingdom] = rows;
+      return rows;
+    },
+    initialData: findingsMemoryCache[kingdom],
+    staleTime: 1000 * 60 * 2,
+    refetchOnMount: "always",
+  });
+
+  // Realtime: invalidate the query when rows change.
+  useEffect(() => {
+    const channel = supabase
+      .channel(`${kingdom}_identifications_changes`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'species_identifications' },
+        () => {
+          queryClient.invalidateQueries({ queryKey });
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [kingdom, queryClient]);
+
 
   // Group findings by species name
   const groupedSpecies = useMemo(() => {
