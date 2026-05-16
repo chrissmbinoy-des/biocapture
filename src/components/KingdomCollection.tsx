@@ -298,7 +298,7 @@ export function KingdomCollection({ kingdom }: KingdomCollectionProps) {
 
       if (error) throw error;
 
-      fetchFindings();
+      queryClient.invalidateQueries({ queryKey });
       toast({
         title: "Deleted",
         description: "Species removed from collection",
