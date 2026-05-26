@@ -55,9 +55,6 @@ const PageLoader = () => (
 );
 
 const App = () => {
-  useEffect(() => {
-    prefetchAllRoutesIdle();
-  }, []);
   return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
